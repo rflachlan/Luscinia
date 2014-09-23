@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="lib" path="/Users/Rob/Documents/Programming Projects/workspace/h2-1.1.118.jar"/>
+	<classpathentry kind="lib" path="/Users/Rob/Documents/Programming Projects/workspace/hsqldb.jar"/>
+	<classpathentry kind="lib" path="/Users/Rob/Documents/Programming Projects/workspace/mysql-connector-java-3.0.15-ga-bin.jar"/>
+	<classpathentry kind="lib" path="/Users/Rob/Documents/Programming Projects/workspace/poi-2.5.1-final-20040804.jar"/>
+	<classpathentry kind="lib" path="/Users/Rob/Documents/Programming Projects/workspace/jl1.0.1.jar"/>
+	<classpathentry kind="lib" path="/Users/Rob/Documents/Programming Projects/workspace/mp3spi1.9.5.jar"/>
+	<classpathentry kind="lib" path="/Users/Rob/Documents/Programming Projects/workspace/tritonus_share.jar"/>
+	<classpathentry kind="lib" path="/Users/Rob/Documents/Programming Projects/git/LusciniaRepository/Luscinia/mdsj.jar"/>
+	<classpathentry kind="lib" path="colt.jar"/>
+	<classpathentry kind="lib" path="/Users/Rob/Documents/Programming Projects/git/LusciniaRepository/Luscinia/ejml-0.20.jar"/>
+	<classpathentry kind="lib" path="/Users/Rob/Downloads/AppleJavaExtensions/AppleJavaExtensions.jar"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>

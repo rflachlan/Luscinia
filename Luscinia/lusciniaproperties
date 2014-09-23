@@ -1,0 +1,12 @@
+#---No Comment---
+#Mon Sep 22 23:10:46 BST 2014
+filename=RandomSounds.luscdb
+h2locs=/Volumes/HD2/Song Databases/RandomSounds.luscdb/RandomSounds'|~|'/Volumes/HD2/Song Databases/Chaffinch.luscdb/Chaffinch'|~|'/Users/Rob/Desktop/anewtest.luscdb/anewtest'|~|'/Volumes/HD2/Song Databases/RandomSounds.luscdb/RandomSounds'|~|'
+port=8080
+huser=ROB
+lochsq=1
+engine=2
+neth2=0
+luser=SA
+h2netlocs=192.168.1.68\:8080/~/Desktop/TestDB.luscdb/TestDB'|~|'192.168.1.97\:9092//Volumes/HD2/Song Databases/RandomSounds.luscdb/RandomSounds'|~|'localhost/~/Desktop/anewtest.luscdb/anewtest'|~|'localhost//Volumes/HD2/Sound Databases/RandomSounds.luscdb/RandomSounds'|~|'
+path=/Volumes/HD2/Song Databases/RandomSounds.luscdb
