@@ -9,6 +9,8 @@ package lusc.net.github;
 
 import java.util.*;
 
+import lusc.net.github.db.DataBaseController;
+
 public class Individual {
 	
 	DataBaseController dbc;
@@ -39,7 +41,80 @@ public class Individual {
 		list=null;
 	}
 	
-	void writeIndividual(){
+	public String getName(){
+		return name;
+	}
+	
+	public void setName(String s){
+		name=s;
+	}
+	
+	public String getLocation(){
+		return location;
+	}
+	
+	public void setLocation(String s){
+		location=s;
+	}
+	
+	public String getGridType(){
+		return gridType;
+	}
+	
+	public void setGridType(String s){
+		gridType=s;
+	}
+	
+	public String getXco(){
+		return xco;
+	}
+	
+	public void setXco(String s){
+		xco=s;
+	}
+	
+	public String getYco(){
+		return yco;
+	}
+	
+	public void setYco(String s){
+		yco=s;
+	}
+	
+	public String getSpecies(){
+		return species;
+	}
+	
+	public void setSpecies(String s){
+		species=s;
+	}
+	
+	public String getPopulation(){
+		return population;
+	}
+	
+	public void setPopulation(String s){
+		population=s;
+	}
+	
+	public int getID(){
+		return ID;
+	}
+	
+	public void setID(int s){
+		ID=s;
+	}
+	
+	
+	public DataBaseController getDBC(){
+		return dbc;
+	}
+	
+	public void setDBC(DataBaseController d){
+		dbc=d;
+	}
+	
+	public void writeIndividual(){
 		String []query=new String[8];
 		query[0]="UPDATE individual SET name='"+name+"' WHERE id="+ID;
 		query[1]="UPDATE individual SET SpecID='"+species+"' WHERE id="+ID;
@@ -54,7 +129,7 @@ public class Individual {
 		}
 	}
 	
-	void insertIntoDB(){
+	public void insertIntoDB(){
 		dbc.writeToDataBase("INSERT INTO individual (name, SpecID, PopID, locdesc, gridtype, gridx, gridy) VALUES ('"+name+"','"+species+"','"+population+"','"+location+"','"+gridType+"','"+xco+"','"+yco+"')");
 	}
 

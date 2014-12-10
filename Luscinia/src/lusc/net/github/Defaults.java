@@ -10,13 +10,18 @@ package lusc.net.github;
 import java.io.*;
 import java.text.*;
 import java.util.*;
+
 //import java.util.Properties.*;
 import javax.swing.*;
+
+import lusc.net.github.ui.compmethods.DTWPanel;
+import lusc.net.github.ui.StatOptionPanel;
+import lusc.net.github.ui.spectrogram.SpectrPane;
 
 public class Defaults {
 	NumberFormat num;
 	
-	Properties props=new Properties();
+	public Properties props=new Properties();
 	
 	static LookAndFeel lnf;
 
@@ -26,7 +31,7 @@ public class Defaults {
 		readProperties();
 	}
 	
-	void readProperties(){
+	public void readProperties(){
 		try{
 			//InputStream in = Luscinia.class.getClassLoader().getResourceAsStream(sConfigFile);
 			FileInputStream in = new FileInputStream("lusciniaproperties");
@@ -40,7 +45,7 @@ public class Defaults {
 		}
 	}
 	
-	void writeProperties(){
+	public void writeProperties(){
 		try{
 			FileOutputStream out = new FileOutputStream("lusciniaproperties");
 			props.store(out, "---No Comment---");
@@ -176,32 +181,32 @@ public class Defaults {
 		return results;
 	}
 	
-	void setIndividualDetails(Individual ind){
+	public void setIndividualDetails(Individual ind){
 		props.setProperty("spec", ind.species);
 		props.setProperty("popu", ind.population);
 	}
 	
-	void getIndividualDetails(Individual ind){
+	public void getIndividualDetails(Individual ind){
 		ind.species=props.getProperty("spec", " ");
 		ind.population=props.getProperty("popu", " ");
 	}
 	
 	
 	
-	void setSongDetails(Song song){
+	public void setSongDetails(Song song){
 		props.setProperty("reco", song.recordist);
 		props.setProperty("rece", song.recordEquipment);
 		props.setProperty("loca", song.location);
 	}
 	
-	void getSongDetails(Song song){
+	public void getSongDetails(Song song){
 		song.recordist=props.getProperty("reco");
 		song.recordEquipment=props.getProperty("rece");
 		song.location=props.getProperty("loca");
 	}
 	
 	
-	void setSongParameters(Song song){
+	public void setSongParameters(Song song){
 		setIntProperty("maxf", song.maxf);
 		setDoubleProperty("frl", song.frameLength, 1000);
 		setDoubleProperty("tst", song.timeStep, 1000);
@@ -226,7 +231,7 @@ public class Defaults {
 		setIntProperty("brushtype", song.brushType);
 	}
 	
-	void getSongParameters(Song song){
+	public void getSongParameters(Song song){
 		song.maxf=getIntProperty("maxf", 8000);
 		song.frameLength=getDoubleProperty("frl", 1000, 5);
 		song.timeStep=getDoubleProperty("tst", 1000, 1);
@@ -244,7 +249,7 @@ public class Defaults {
 		song.brushSize=getIntProperty("brush", 1);
 	}
 	
-	void getMiscellaneousSongParameters(Song song){
+	public void getMiscellaneousSongParameters(Song song){
 		System.out.println("HERE GETTING RANDOM VALUES");
 		song.fundAdjust=getDoubleProperty("fund", 1000, 1);
 		song.minGap=getDoubleProperty("gap", 1000, 0);
@@ -258,25 +263,29 @@ public class Defaults {
 		song.brushType=getIntProperty("brushtype", 1);
 	}
 	
-	void setDTWParameters(SongGroup sg){
+	public void setDTWParameters(DTWPanel sg){
 		
-		for (int i=0; i<sg.parameterValues.length; i++){
+		double[] pv=sg.getParameterValues();
+		
+		for (int i=0; i<pv.length; i++){
 			
 			if (i<10){
-				setDoubleProperty("dtwpa0"+i, sg.parameterValues[i], 1000);
+				setDoubleProperty("dtwpa0"+i, pv[i], 1000);
 			}
 			else{
-				setDoubleProperty("dtwpa"+i, sg.parameterValues[i], 1000);
+				setDoubleProperty("dtwpa"+i, pv[i], 1000);
 			}
 		}
 		
-		if (sg.weightByAmp){
+		boolean w=sg.getWeightByAmp();
+		if (w){
 			setIntProperty("dtwwba", 1);
 		}
 		else{
 			setIntProperty("dtwwba", 0);
 		}
-		setIntProperty("dtwsti", sg.stitchSyllables);
+		int st=sg.getStitchSyllables();
+		setIntProperty("dtwsti", st);
 		/*
 		if (sg.stitchSyllables){
 			setIntProperty("dtwsti", 1);
@@ -285,21 +294,22 @@ public class Defaults {
 			setIntProperty("dtwsti", 0);
 		}
 		*/
-		if (sg.logFrequencies){
+		boolean lf=sg.getLogFrequencies();
+		if (lf){
 			setIntProperty("dtwlf", 1);
 		}
 		else{
 			setIntProperty("dtwlf", 0);
 		}
-		setDoubleProperty("dtwmrf", sg.mainReductionFactor, 1000);
-		setDoubleProperty("dtwsdr", sg.sdRatio, 1000);
-		setDoubleProperty("dtwstp", sg.stitchPunishment, 1000);
-		setDoubleProperty("dtwalc", sg.alignmentCost, 1000);
-		setIntProperty("dtwmpo", sg.minPoints);
-		setDoubleProperty("dtwsrw", sg.syllableRepetitionWeighting, 1000);
+		setDoubleProperty("dtwmrf", sg.getMainReductionFactor(), 1000);
+		setDoubleProperty("dtwsdr", sg.getSDRatio(), 1000);
+		setDoubleProperty("dtwstp", sg.getStitchPunishment(), 1000);
+		setDoubleProperty("dtwalc", sg.getAlignmentCost(), 1000);
+		setIntProperty("dtwmpo", sg.getMinPoints());
+		setDoubleProperty("dtwsrw", sg.getSyllableRepetitionWeighting(), 1000);
 	}
 	
-	void getDTWParameters(SongGroup sg){
+	public void getDTWParameters(DTWPanel sg){
 		
 		for (int i=0; i<sg.parameterValues.length; i++){
 			
@@ -313,123 +323,123 @@ public class Defaults {
 		
 		int a=getIntProperty("dtwwba", 0);
 		if (a==0){
-			sg.weightByAmp=false;
+			sg.setWeightByAmp(false);
 		}
 		else{
-			sg.weightByAmp=true;
+			sg.setWeightByAmp(true);
 		}
 		
 		int b=getIntProperty("dtwsti", 0);
-		sg.stitchSyllables=b;
+		sg.setStitchSyllables(b);
 
 		
 		int c=getIntProperty("dtwlf", 1);
 		if (c==0){
-			sg.logFrequencies=false;
+			sg.setLogFrequencies(false);
 		}
 		else{
-			sg.logFrequencies=true;
+			sg.setLogFrequencies(true);
 		}
 		
-		sg.mainReductionFactor=getDoubleProperty("dtwmrf", 1000, 1);
-		sg.minPoints=getIntProperty("dtwmpo", 10);
-		sg.sdRatio=getDoubleProperty("dtwsdr", 1000, 0.5);
-		sg.stitchPunishment=getDoubleProperty("dtwstp", 1000, 150);
-		sg.alignmentCost=getDoubleProperty("dtwalc", 1000, 150);
-		sg.syllableRepetitionWeighting=getDoubleProperty("dtwsrw", 1000, 0);
+		sg.setMainReductionFactor(getDoubleProperty("dtwmrf", 1000, 1));
+		sg.setMinPoints(getIntProperty("dtwmpo", 10));
+		sg.setSDRatio(getDoubleProperty("dtwsdr", 1000, 0.5));
+		sg.setStitchPunishment(getDoubleProperty("dtwstp", 1000, 150));
+		sg.setAlignmentCost(getDoubleProperty("dtwalc", 1000, 150));
+		sg.setSyllableRepetitionWeighting(getDoubleProperty("dtwsrw", 1000, 0));
 	}
 	
-	void setAnalysisOptions(StatOptionPanel sop){
-		setBooleanArray("anatyp", sop.analysisTypes);
-		setBooleanArray("analev", sop.analysisLevels);
-		setBooleanArray("anamis", sop.miscOptions);
+	public void setAnalysisOptions(StatOptionPanel sop){
+		setBooleanArray("anatyp", sop.getAnalysisTypes());
+		setBooleanArray("analev", sop.getAnalysisLevels());
+		setBooleanArray("anamis", sop.getMiscOptions());
 		
-		setIntProperty("anandi", sop.ndi);
-		setIntProperty("anadmo", sop.dendrogramMode);
-		setIntProperty("anasmo", sop.syntaxMode);
-		setIntProperty("anamxk", sop.maxClusterK);
-		setIntProperty("anamnk", sop.minClusterK);
-		setIntProperty("anasnnk", sop.snnK);
-		setIntProperty("anaSMPS", sop.snnMinPts);
-		setIntProperty("anaSEPS", sop.snnEps);
-		setIntProperty("anamsk", sop.maxSyntaxK);	
+		setIntProperty("anandi", sop.getndi());
+		setIntProperty("anadmo", sop.getDendrogramMode());
+		setIntProperty("anasmo", sop.getSyntaxMode());
+		setIntProperty("anamxk", sop.getMaxClusterK());
+		setIntProperty("anamnk", sop.getMinClusterK());
+		setIntProperty("anasnnk", sop.getsnnK());
+		setIntProperty("anaSMPS", sop.getsnnMinPts());
+		setIntProperty("anaSEPS", sop.getsnnEps());
+		setIntProperty("anamsk", sop.getMaxSyntaxK());	
 		
-		setDoubleProperty("anasoup", sop.songUpperLimit, 100);
-		setDoubleProperty("anasolo", sop.songLowerLimit, 100);
-		setDoubleProperty("anageog", sop.geogPropLimit, 100);
+		setDoubleProperty("anasoup", sop.getSongUpperLimit(), 100);
+		setDoubleProperty("anasolo", sop.getSongLowerLimit(), 100);
+		setDoubleProperty("anageog", sop.getGeogPropLimit(), 100);
 	}
 	
-	void getAnalysisOptions(StatOptionPanel sop){
+	public void getAnalysisOptions(StatOptionPanel sop){
 		boolean[] results1=getBooleanArray("anatyp", 11);
 		if (results1!=null){
-			sop.analysisTypes=results1;
+			sop.setAnalysisTypes(results1);
 		}
 		boolean[] results2=getBooleanArray("analev", 4);
 		if (results2!=null){
-			sop.analysisLevels=results2;
+			sop.setAnalysisLevels(results2);
 		}
 		boolean[] results3=getBooleanArray("anamis", 3);
 		if (results3!=null){
-			sop.miscOptions=results3;
+			sop.setMiscOptions(results3);
 		}
 		
-		sop.ndi=getIntProperty("anandi", 5);
-		sop.dendrogramMode=getIntProperty("anadmo", 1);
-		sop.syntaxMode=getIntProperty("anasmo", 2);
-		sop.maxClusterK=getIntProperty("anamxk", 10);
-		sop.minClusterK=getIntProperty("anamnk", 2);
-		sop.snnK=getIntProperty("anasnnk", 20);
-		sop.snnMinPts=getIntProperty("anaSMPS", 10);
-		sop.snnEps=getIntProperty("anaSEPS", 10);
-		sop.maxSyntaxK=getIntProperty("anamsk", 10);
+		sop.setndi(getIntProperty("anandi", 5));
+		sop.setDendrogramMode(getIntProperty("anadmo", 1));
+		sop.setSyntaxMode(getIntProperty("anasmo", 2));
+		sop.setMaxClusterK(getIntProperty("anamxk", 10));
+		sop.setMinClusterK(getIntProperty("anamnk", 2));
+		sop.setsnnK(getIntProperty("anasnnk", 20));
+		sop.setsnnMinPts(getIntProperty("anaSMPS", 10));
+		sop.setsnnEps(getIntProperty("anaSEPS", 10));
+		sop.setMaxSyntaxK(getIntProperty("anamsk", 10));
 		
-		sop.songUpperLimit=getDoubleProperty("anasoup", 100, 1000);
-		sop.songLowerLimit=getDoubleProperty("anasolo", 100, 0);
-		sop.geogPropLimit=getDoubleProperty("anageog", 100, 5);
+		sop.setSongUpperLimit(getDoubleProperty("anasoup", 100, 1000));
+		sop.setSongLowerLimit(getDoubleProperty("anasolo", 100, 0));
+		sop.setGeogPropLimit(getDoubleProperty("anageog", 100, 5));
 	}
 						
 	
 		
-	void setDefaultSoundFormat(int a){
+	public void setDefaultSoundFormat(int a){
 		setIntProperty("sofo", a);
 	}
 	
-	int getDefaultSoundFormat(){
+	public int getDefaultSoundFormat(){
 		int p=getIntProperty("sofo", 0);
 		return p;					 
 	}
 	
-	void setDefaultImageFormat(int a){
+	public void setDefaultImageFormat(int a){
 		setIntProperty("imfo", a);
 	}
 	
-	int getDefaultImageFormat(){
+	public int getDefaultImageFormat(){
 		int p=getIntProperty("imfo", 0);
 		return p;					 
 	}
 	
-	void setDefaultDocFormat(int a){
+	public void setDefaultDocFormat(int a){
 		setIntProperty("dofo", a);
 	}
 	
-	int getDefaultDocFormat(){
+	public int getDefaultDocFormat(){
 		int p=getIntProperty("dofo", 0);
 		return p;					 
 	}
 	
 	
-	void setParameterViews(SpectrPane sp){
-		setBooleanArray("viewp", sp.viewParameters);
+	public void setParameterViews(SpectrPane sp){
+		setBooleanArray("viewp", sp.getViewParameters());
 	}
 	
-	void getParameterViews(SpectrPane sp){
+	public void getParameterViews(SpectrPane sp){
 		boolean[] results=getBooleanArray("viewp", 19);
 		if (results!=null){
-			sp.viewParameters=results;
+			sp.setViewParameters(results);
 		}
 	}
 	
-	void setStatisticsOutput(boolean[] chooserV, boolean[] chooserP, boolean[] chooserM, boolean[] chooserS, boolean[] chooserSy){
+	public void setStatisticsOutput(boolean[] chooserV, boolean[] chooserP, boolean[] chooserM, boolean[] chooserS, boolean[] chooserSy){
 		
 		setBooleanArray("vecOut", chooserV);
 		setBooleanArray("parOut", chooserP);

@@ -8,9 +8,13 @@ package lusc.net.github;
 //	This program is provided under the GPL 2.0 software licence. Please see accompanying material for details.
 
 
+//import java.awt.image.BufferedImage;
+import java.sql.Blob;
 import java.util.LinkedList;
 import java.util.Arrays;
+
 import javax.sound.sampled.*;
+
 
 public class Song {
 	
@@ -20,7 +24,11 @@ public class Song {
 	boolean relativeAmp=true;
 	float data[];
 	float maxAmp, maxAmp2;
-
+	
+	double [] phase;
+	int minFreq=5;
+	double octstep=10;
+	
 	private static final int EXTERNAL_BUFFER_SIZE = 128000;
 	
 	float [] trig1, trig2;
@@ -107,8 +115,641 @@ public class Song {
 	boolean[] phraseId;
 	SourceDataLine  line = null;
 	AudioFormat af;
+	SpectrogramMeasurement sm;
 	
-	void clearUp(){
+	public SpectrogramMeasurement getMeasurer(){
+		sm=new SpectrogramMeasurement(this);
+		
+		return sm;
+	}
+	
+	public double getTimeStep(){
+		return timeStep;
+	}
+	
+	public double getFrameLength(){
+		return frameLength;
+	}
+	
+	public double getEchoComp(){
+		return echoComp;
+	}
+	
+	public double getSampRate(){
+		return sampRate;
+	}
+	
+	public double getDynRange(){
+		return dynRange;
+	}
+	
+	public double getDx(){
+		return dx;
+	}
+	
+	public double getDy(){
+		return dy;
+	}
+	
+	public double getFundAdjust(){
+		return fundAdjust;
+	}
+	
+	public double getMinLength(){
+		return minLength;
+	}
+	
+	public double getMinGap(){
+		return minGap;
+	}
+	
+	public int getFrameSize(){
+		return frameSize;
+	}
+	
+	public float getDynMax(){
+		return dynMax;
+	}
+	
+	public int getMaxF(){
+		return maxf;
+	}
+	
+	public int getDynEqual(){
+		return dynEqual;
+	}
+	
+	public int getEchoRange(){
+		return echoRange;
+	}
+	
+	public int getOverallLength(){
+		return overallLength;
+	}
+	
+	public int getNx(){
+		return nx;
+	}
+	
+	public int getNy(){
+		return ny;
+	}
+	
+	public int getBrushType(){
+		return brushType;
+	}
+	
+	public int getBrushSize(){
+		return brushSize;
+	}
+	
+	public int getMaxBrush(){
+		return maxBrush;
+	}
+	
+	public int getMinBrush(){
+		return minBrush;
+	}
+	
+	public float getNoiseRemoval(){
+		return noiseRemoval;
+	}
+	
+	public float[][] getOut(){
+		return out;
+	}
+	
+	public float[][] getEnvelope(){
+		return envelope;
+	}
+	
+	public int getNumPhrases(){
+		if (phrases==null){
+			interpretSyllables();
+			if (phrases==null){
+				return 0;
+			}
+		}
+		return phrases.size();
+	}
+	
+	public int[][] getPhrase(int a){
+		//System.out.println("getting phrase "+a+" out of "+phrases.size());
+		if (phrases==null){
+			System.out.println("WARNING NULL PHRASES");
+			interpretSyllables();
+		}
+		return phrases.get(a);
+	}
+	
+	public void setPhrases(LinkedList<int[][]> a){
+		phrases=a;
+	}
+	
+	public void setSyllList(LinkedList<int[]> a){
+		syllList=a;
+	}
+	
+	//This is a legacy function to update syllable measurements for old versions of the db.
+	public void updateSyllableList(){
+		System.out.println("UPDATING!!!");
+		for(int i=0; i<syllList.size(); i++){
+			int[] s=syllList.get(i);
+			int[]t=new int[2];
+			t[0]=(int)Math.round(s[0]*dx);
+			t[1]=(int)Math.round(s[1]*dx);
+			syllList.remove(i);
+			syllList.add(t);
+		}
+	}
+	
+	public int[] getSyllable(int a){
+		if (a>=syllList.size()){
+			return null;
+		}
+		return syllList.get(a);
+	}
+	
+	public int getNumSyllables(){
+		if (syllList==null){
+			return 0;
+		}
+		return syllList.size();
+	}
+	
+	public void removeSyllable(int a){
+		if (a<syllList.size()){
+			syllList.remove(a);
+		}
+	}
+	
+	public void addSyllable(int a, int[] syl){
+		syllList.add(a, syl);
+	}
+	
+	public void addSyllable(int[] syl){
+		syllList.add(syl);
+	}
+	
+	public void clearSyllables(){
+		syllList.clear();
+	}
+	
+	public void setEleList(LinkedList<Element> a){
+		eleList=a;
+	}
+	
+	public Element getElement(int a){
+		if (a>=eleList.size()){
+			return null;
+		}
+		return eleList.get(a);
+	}
+	
+	public int getNumElements(){
+		if (eleList==null){
+			return 0;
+		}
+		return eleList.size();
+	}
+	
+	public void removeElement(int a){
+		if (a<eleList.size()){
+			eleList.remove(a);
+		}
+	}
+	
+	public void addElement(int a, Element ele){
+		eleList.add(a, ele);
+	}
+	
+	public void addElement(Element ele){
+		eleList.add(ele);
+	}
+	
+	public void clearElements(){
+		eleList.clear();
+	}
+	
+	public void setTimeStep(double a){
+		timeStep=a;
+	}
+	
+	public void setFrameLength(double a){
+		frameLength=a;
+	}
+	
+	public void setEchoComp(double a){
+		echoComp=a;
+	}
+	
+	public void setSampRate(double a){
+		sampRate=a;
+	}
+	
+	public void setDynRange(double a){
+		dynRange=a;
+	}
+	
+	public void setDx(double a){
+		dx=a;
+	}
+	
+	public void setDy(double a){
+		dy=a;
+	}
+	
+	public void setFundAdjust(double a){
+		fundAdjust=a;
+	}
+	
+	public void setMinLength(double a){
+		minLength=a;
+	}
+	
+	public void setMinGap(double a){
+		minGap=a;
+	}
+	
+	public void setFrameSize(int a){
+		frameSize=a;
+	}
+	
+	public void setDynMax(float a){
+		dynMax=a;
+	}
+	
+	public void setMaxF(int a){
+		maxf=a;
+	}
+	
+	public void setDynEqual(int a){
+		dynEqual=a;
+	}
+	
+	public void setEchoRange(int a){
+		echoRange=a;
+	}
+	
+	public void setOverallLength(int a){
+		overallLength=a;
+	}
+	
+	public void setNx(int a){
+		nx=a;
+	}
+	
+	public void setNy(int a){
+		ny=a;
+	}
+	
+	public void setBrushType(int a){
+		brushType=a;
+	}
+	
+	public void setBrushSize(int a){
+		brushSize=a;
+	}
+	
+	public void setMaxBrush(int a){
+		maxBrush=a;
+	}
+	
+	public void setMinBrush(int a){
+		minBrush=a;
+	}
+	
+	public void setNoiseRemoval(float a){
+		noiseRemoval=a;
+	}
+	
+	public void setOut(float[][] a){
+		out=a;
+	}
+	
+	public void setEnvelope(float[][]a){
+		envelope=a;
+	}
+	
+	public int getSongID(){
+		return songID;
+	}
+	
+	public int getIndividualID(){
+		return individualID;
+	}
+	
+	public String getIndividualName(){
+		return individualName;
+	}
+	
+	public String getLocationX(){
+		return locationX;
+	}
+	
+	public String getLocationY(){
+		return locationY;
+	}
+	
+	public String getSpecies(){
+		return species;
+	}
+	
+	public String getName(){
+		return name;
+	}
+	
+	public String getPopulation(){
+		return population;
+	}
+	
+	public void setSongID(int a){
+		songID=a;
+	}
+	
+	public void setIndividualID(int a){
+		individualID=a;
+	}
+	
+	public void setIndividualName(String a){
+		individualName=a;
+	}
+	
+	public void setLocationX(String a){
+		locationX=a;
+	}
+	
+	public void setLocationY(String a){
+		locationY=a;
+	}
+	
+	public void setSpecies(String a){
+		species=a;
+		if (species==null){species=" ";}
+	}
+	
+	public void setPopulation(String a){
+		population=a;
+		if (population==null){population=" ";}
+	}
+	
+	public void setName(String a){
+		name=a;
+		if (name==null){name=" ";}
+	}
+	
+	public AudioFormat getAf(){
+		return af;
+	}
+	
+	public int getRDLength(){
+		return rawData.length;
+	}
+	
+	public boolean getLoaded(){
+		return loaded;
+	}
+	
+	public void setLoaded(boolean a){
+		loaded=a;
+	}
+	
+	public int getStereo(){
+		return stereo;
+	}
+	
+	public boolean getBigEnd(){
+		return bigEnd;
+	}
+
+	public double getSampleRate(){
+		return sampleRate;
+	}
+	
+	public byte[] getRawData(){
+		return rawData;
+	}
+	
+	public int getSizeInBits(){
+		return ssizeInBits;
+	}
+	
+	public long getTDate(){
+		return tDate;
+	}
+	
+	public boolean getSigned(){
+		return signed;
+	}
+	
+	public void setStereo(int a){
+		stereo=a;
+	}
+	
+	public void setBigEnd(boolean a){
+		bigEnd=a;
+	}
+	
+	public void setSampleRate(double a){
+		sampleRate=a;
+	}
+	
+	public void setRawData(byte[] a){
+		rawData=a;
+	}
+	
+	public void setSizeInBits(int a){
+		ssizeInBits=a;
+	}
+	
+	public void setTDate(long a){
+		tDate=a;
+	}
+	
+	public void setSigned(boolean a){
+		signed=a;
+	}
+	
+	public double getFrequencyCutOff(){
+		return frequencyCutOff;
+	}
+	
+	public int getWindowMethod(){
+		return windowMethod;
+	}
+	
+	public int getNoiseLength1(){
+		return noiseLength1;
+	}
+	
+	public int getNoiseLength2(){
+		return noiseLength2;
+	}
+	
+	public void setFrequencyCutOff(double a){
+		frequencyCutOff=a;
+	}
+	
+	public void setWindowMethod(int a){
+		windowMethod=a;
+	}
+	
+	public void setNoiseLength1(int a){
+		noiseLength1=a;
+	}
+	
+	public void setNoiseLength2(int a){
+		noiseLength2=a;
+	}
+	
+	public String getLocation(){
+		return location;
+	}
+	
+	public void setLocation(String a){
+		location=a;
+	}
+	
+	public String getNotes(){
+		return notes;
+	}
+	
+	public void setNotes(String a){
+		notes=a;
+	}
+	
+	public String getRecordEquipment(){
+		return recordEquipment;
+	}
+	
+	public void setRecordEquipment(String a){
+		recordEquipment=a;
+	}
+	
+	public String getRecordist(){
+		return recordist;
+	}
+	
+	public void setRecordist(String a){
+		recordist=a;
+	}
+	
+	public int getStartTime(){
+		return startTime;
+	}
+	
+	public int getEndTime(){
+		return endTime;
+	}
+	
+	public String getSx(){
+		return sx;
+	}
+	
+	public void setSx(String a){
+		sx=a;
+	}
+	
+	public String getSy(){
+		return sy;
+	}
+	
+	public void setSy(String a){
+		sy=a;
+	}
+	
+	public boolean getSetRangeToMax(){
+		return setRangeToMax;
+	}
+	
+	public void setSetRangeToMax(boolean a){
+		setRangeToMax=a;
+	}
+	
+	public double getOverlap(){
+		return overlap;
+	}
+	
+	public void setOverlap(double a){
+		overlap=a;
+	}
+	
+	public int getFrame(){
+		return frame;
+	}
+	
+	public void setFrame(int a){
+		frame=a;
+	}
+	
+	public double getFundJumpSuppression(){
+		return fundJumpSuppression;
+	}
+	
+	public void setFundJumpSuppression(double a){
+		fundJumpSuppression=a;
+	}
+	
+	public double getUpperLoop(){
+		return upperLoop;
+	}
+	
+	public void setUpperLoop(double a){
+		upperLoop=a;
+	}
+	
+	public double getLowerLoop(){
+		return lowerLoop;
+	}
+	
+	public void setLowerLoop(double a){
+		lowerLoop=a;
+	}
+	
+	public int getPlaybackDivider(){
+		return playbackDivider;
+	}
+	
+	public void setPlaybackDivider(int a){
+		playbackDivider=a;
+	}
+	
+	public int getRawDataLength(){
+		return rawData.length;
+	}
+	
+	public float getMaxDB(){
+		return maxDB;
+	}
+	
+	
+	//Convenience get Method to build a complex SQL line to write data into database...
+	public String getDetails(String b){
+		int sa=(int)sampleRate;
+		String details="echocomp="+echoComp+b+"echorange="+echoRange+b+"noise1="+noiseRemoval+b+"noise2="+
+				noiseLength1+b+"noise3="+noiseLength2+b+"dyncomp="+dynRange+
+				b+"dynrange="+dynEqual+b+"maxfreq="+maxf+b+"framelength="+frameLength+b+"timestep="
+				+timeStep+b+"filtercutoff="+frequencyCutOff+b+"windowmethod="+windowMethod+b+"dx="+
+				dx+b+"dy="+dy+b+"samplerate="+sa;
+		return details;
+	}
+	
+	
+	
+	public void setOverallSize(){
+		if (frameSize==0){frameSize++;}
+		overallSize=rawData.length/frameSize;
+	}
+	
+	public int getOverallSize(){
+		return overallSize;
+	}
+	
+	public boolean[] getPhraseID(){
+		return phraseId;
+	}
+	
+	public void clearUp(){
 		rawData=null;
 		rawData2=null;
 		bitTab=null;
@@ -135,7 +776,7 @@ public class Song {
 		
 	}
 	
-	void tidyUp(){
+	public void tidyUp(){
 		out=null;
 		out1=null;
 		data=null;
@@ -291,7 +932,7 @@ public class Song {
 	}
 
 	
-	void makeMyFFT(int startTime, int endTime){
+	public void makeMyFFT(int startTime, int endTime){
 		this.startTime=startTime;
 		this.endTime=endTime;
 		
@@ -388,7 +1029,7 @@ public class Song {
 		equalize();	
 	}
 	
-	void makeAmplitude(int startTime, int endTime, int steps){
+	public void makeAmplitude(int startTime, int endTime, int steps){
 		int s=(int)Math.round(startTime*step);
 		int e=(int)Math.round(endTime*step);
 		int overSize=overallSize;
@@ -455,7 +1096,7 @@ public class Song {
 		}
 	}
 	
-	void setFFTParameters(){
+	public void setFFTParameters(){
 		//if (frameSize==1){frameSize=2;}
 		sampRate=sampleRate;
 		//step=(int)Math.round(timeStep*sampRate*0.001);	//step is the time-step of the spectrogram expressed in samples
@@ -493,7 +1134,7 @@ public class Song {
 		System.out.println("Spect params: "+nx+" "+overallSize+" "+overallLength+" "+stereo+" "+frameSize+" "+sampRate+" "+step+" "+frame+" "+dy+" "+ny+" "+framePad);
 	}
 	
-	void  setFFTParameters2(int dist){
+	public void  setFFTParameters2(int dist){
 		double start=0;
 		anx=0;
 		while (start+frame<dist*step+frame){start+=step; anx++;}
@@ -504,7 +1145,7 @@ public class Song {
 		System.out.println("out dims: "+ny+" "+anx);
 	}
 	
-	int setFFTParameters3(int newny){
+	public int setFFTParameters3(int newny){
 		sampRate=sampleRate;
 		dy=maxf/(newny+0.0);
 		framePad=2;
@@ -523,7 +1164,7 @@ public class Song {
 		return ny;
 	}
 	
-	void makeAudioFormat(){
+	public void makeAudioFormat(){
 		af=new AudioFormat((float)sampleRate, ssizeInBits, stereo, signed, bigEnd);
 	}	
 	
@@ -661,6 +1302,31 @@ public class Song {
 		}
 		catch(Exception e){}
 	}
+	
+	public double[] prepPlayback(int[] syll){
+		
+		int a=0;
+		int b=0;
+		
+		if (ssizeInBits<=16){
+			int p1=syll[0]-7;
+			if (p1<0){p1=0;}
+			int p2=syll[1]+7;
+			if (p2>=overallLength){
+				p2=overallLength-1;
+			}
+			a=(int)(p1*Math.round(sampleRate*stereo*0.002));
+			b=(int)(p2*Math.round(sampleRate*stereo*0.002));
+		}
+		if(rawData.length<=b){
+			b=a;
+		}	
+		
+		playSound(a, b);
+		
+		double[] c={a/rawData.length, b/rawData.length};
+		return c;
+	}
 		
 	
 		
@@ -727,7 +1393,7 @@ public class Song {
 		}
 	}
 	
-	void stopSound(){
+	public void stopSound(){
 		try{
 			if (line.isOpen()){
 				line.stop();
@@ -740,7 +1406,7 @@ public class Song {
 		}
 	}
 	
-	void sortSyllsEles(){
+	public void sortSyllsEles(){
 		int num=syllList.size();
 		int [] dat;
 		while (num>0){
@@ -2080,6 +2746,184 @@ void blobAccentuator4(){
 				*/
 				phrases.add(eletable);
 				//System.out.println(phrases.size()+" "+eletable.length+" "+maxlength);
+			}
+		}
+	}
+	
+	public double[] getPhase(){
+		return phase;
+	}
+	
+	public int getMinFreq(){
+		return minFreq;
+	}
+	
+	public void makePhase(){
+		
+		double log2Adj=1/Math.log(2);
+		double logMax=Math.log(ny-1)*log2Adj;
+		double logMin=Math.log(minFreq)*log2Adj;
+		double step=(logMax-logMin)/(ny+0.0);
+		octstep=1/step;
+		double[] logTransform=new double[ny];
+		for (int i=0; i<ny; i++){
+			logTransform[i]=Math.pow(2, logMin+(i*step));
+		}
+
+		phase=new double[ny*ny];
+
+		int count=0;
+		for (int j=0; j<ny; j++){			
+						
+			for (int i=0; i<ny; i++){
+				
+				double q=Math.cos(Math.PI*((i)/logTransform[j]));
+				q=Math.pow(q, 2);
+				if (i<logTransform[j]*0.5){q=0;}
+				phase[count]=q;
+	
+				count++;
+			}
+		}
+	}
+	
+	public float[][] runPitchCalculator(int unx){
+		int ncores=Runtime.getRuntime().availableProcessors();
+		
+		float[][] pout=new float[unx][ny];
+		
+		PitchCalculator ct[]=new PitchCalculator[ncores];
+		
+		
+		int[] starts=new int[ncores];
+		int[] stops=new int[ncores];
+		for (int i=0; i<ncores; i++){
+			starts[i]=i*(unx/ncores);
+			stops[i]=(i+1)*(unx/ncores);
+		}
+		stops[ncores-1]=unx;
+		//System.out.println("CORES USED: "+ncores);
+		
+		for (int i=0; i<ncores; i++){
+			ct[i]=new PitchCalculator(starts[i], stops[i]);
+			ct[i].setPriority(Thread.MIN_PRIORITY);
+			ct[i].start();
+		}
+		
+		try{
+			for (int cores=0; cores<ncores; cores++){
+				ct[cores].join();
+			}
+			for (int cores=0; cores<ncores; cores++){
+				//System.out.println(cores);
+				for (int i=ct[cores].start; i<ct[cores].end; i++){
+					int ii=i-ct[cores].start;
+					for (int j=0; j<ny; j++){
+						pout[i][j]=ct[cores].pout[ii][j];
+						/*
+						int h=ny-j-1;
+						int sh=ct[cores].out[ii][j];
+
+						img.setRGB(i, h, colpal[sh]);
+						*/
+					}
+				}
+			}
+		}
+		catch (Exception e){
+			e.printStackTrace();
+		}
+		return pout;
+	}
+	
+	public class PitchCalculator extends Thread{
+		
+		int start, end;
+		float[][] pout;
+		double subsup=0.25;
+		
+		public PitchCalculator(int start, int end){
+			this.start=start;
+			this.end=end;	
+			pout=new float[end-start][ny];
+		}
+
+		public void run(){
+			int oct=(int)Math.round(octstep);
+			double[] spectrum=new double[ny];
+			double[] hscor=new double[ny];
+			double maxHscor;
+			double subSuppression=fundAdjust;
+			for (int i=start; i<end; i++){
+				double peakAmp=-1000;
+				for (int j=0; j<ny; j++){
+					spectrum[j]=out[j][i];
+					if (spectrum[j]<0){
+						spectrum[j]=0;
+					}
+				
+					hscor[j]=0;
+					if (spectrum[j]>peakAmp){
+						peakAmp=spectrum[j];
+					}
+					spectrum[j]=Math.pow(spectrum[j], subSuppression);
+				}
+
+				int count=0;
+				double sumxy=0;
+				for (int j=0; j<ny; j++){
+					sumxy=0;
+					for (int k=0; k<ny; k++){
+						sumxy+=phase[count]*spectrum[k];
+						count++;
+					}
+					hscor[j]=sumxy;
+				}
+				maxHscor=-1000000;
+
+				for (int j=0; j<ny-oct; j++){
+					hscor[j]-=subsup*hscor[j+oct];
+					if (hscor[j]<0.0001){hscor[j]=0.0001;}
+				}
+				for (int j=ny-oct; j<ny; j++){
+					hscor[j]-=subsup*hscor[ny-1];
+				}
+				
+				
+				for (int j=0; j<ny; j++){
+					hscor[j]=Math.pow(hscor[j], 2);
+					if (hscor[j]>maxHscor){
+						maxHscor=hscor[j];
+					}
+				}
+				for (int j=0; j<ny; j++){
+					hscor[j]=(hscor[j]/maxHscor);
+				}
+			
+				if (maxHscor>0){
+					for (int j=minFreq; j<ny; j++){
+						
+						hscor[j]*=peakAmp/(dynRange);					
+					}
+				}
+				else{
+					for (int j=0; j<ny; j++){
+						hscor[j]=0;
+					}
+				}
+				int ii=i-start;
+				for (int j=minFreq; j<ny; j++){
+					pout[ii][j]=(float)hscor[j];
+				}
+				/*
+				for (int j=minFreq; j<ny; j++){
+					double p=1-hscor[j];
+					int q=(int)(p*255);
+					if (q>255){q=255;}
+					if (q<0){q=0;}
+					out[ii][j]=q;
+				}
+				*/
 			}
 		}
 	}

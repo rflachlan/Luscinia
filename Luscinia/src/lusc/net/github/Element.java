@@ -1,4 +1,6 @@
 package lusc.net.github;
+
+import lusc.net.github.analysis.BasicStatistics;
 //
 //  Element.java
 //  Luscinia
@@ -339,7 +341,231 @@ public class Element {
 		calculatePowerSpectrumStats();
 	}
 	
-	void calculateStatistics(){
+	public String getDBStamp(String b){
+		String v=overallPeak1+b+overallPeak2+b+begintime+b+timelength+b+timeBefore+b+timeAfter+b+timeStep+b+frameLength+b+dy+b+maxf+b+echoComp+b+echoRange+b+dynRange+b+dynEqual+")";
+		return v;
+	}
+	
+	public int[][] getSignal(){
+		return signal;
+	}
+	
+	public void setSignal(int[][] a){
+		signal=a;
+	}
+	
+	public double[] getPowerSpectrum(){
+		return powerSpectrum;
+	}
+	
+	public void setPowerSpectrum(double[] a){
+		powerSpectrum=a;
+	}
+	
+	public double[][] getMeasurements(){
+		return measurements;
+	}
+	
+	public void setMeasurements(double[][] a){
+		measurements=a;
+	}
+	
+	public int getLength(){
+		return length;
+	}
+	
+	public void setLength(int a){
+		length=a;
+	}
+	
+	public double getDy(){
+		return dy;
+	}
+	
+	public int getMaxF(){
+		return maxf;
+	}
+	
+	public double getTimeStep(){
+		return timeStep;
+	}
+	
+	public void setTimeStep(double a){
+		timeStep=a;
+	}
+	
+	public double getFrameLength(){
+		return frameLength;
+	}
+	
+	public void setFrameLength(double a){
+		frameLength=a;
+	}
+	
+	public void setMaxf(int a){
+		maxf=a;
+	}
+	
+	public int getWindowMethod(){
+		return windowMethod;
+	}
+	
+	public void setWindowMethod(int a){
+		windowMethod=a;
+	}
+	
+	public double getDynEqual(){
+		return dynEqual;
+	}
+	
+	public void setDynEqual(double a){
+		dynEqual=a;
+	}
+	
+	public double getDynRange(){
+		return dynRange;
+	}
+	
+	public void setDynRange(double a){
+		dynRange=a;
+	}
+	
+	public int getEchoRange(){
+		return echoRange;
+	}
+	
+	public void setEchoRange(int a){
+		echoRange=a;
+	}
+	
+	public double getEchoComp(){
+		return echoComp;
+	}
+	
+	public void setEchoComp(double a){
+		echoComp=a;
+	}
+	
+	public void setDy(double a){
+		dy=a;
+	}
+	
+	public float getTimeBefore(){
+		return timeBefore;
+	}
+	
+	public void setTimeBefore(float a){
+		timeBefore=a;
+	}
+	
+	public float getTimeAfter(){
+		return timeAfter;
+	}
+	
+	public void setTimeAfter(float a){
+		timeAfter=a;
+	}
+	
+	public float getTb(){
+		return tb;
+	}
+	
+	public void setTb(float a){
+		tb=a;
+	}
+	
+	public float getTa(){
+		return ta;
+	}
+	
+	public void setTa(float a){
+		ta=a;
+	}
+	
+	public int getBeginTime(){
+		return begintime;
+	}
+	
+	public void setBeginTime(int a){
+		begintime=a;
+	}
+	
+	public float getTimelength(){
+		return timelength;
+	}
+	
+	public void setTimelength(float a){
+		timelength=a;
+	}
+	
+	public float getOverallPeak1(){
+		return overallPeak1;
+	}
+	
+	public void setOverallPeak1(float a){
+		overallPeak1=a;
+	}
+	
+	public float getOverallPeak2(){
+		return overallPeak2;
+	}
+	
+	public void setOverallPeak2(float a){
+		overallPeak2=a;
+	}
+	
+	public double getMinFreq(){
+		return minFreq;
+	}
+	
+	public double getMaxFreq(){
+		return maxFreq;
+	}
+	
+	public double getLowerQuartile(){
+		return lowerQuartile;
+	}
+	
+	public double getUpperQuartile(){
+		return upperQuartile;
+	}
+	
+	public double getLower95tile(){
+		return lower95tile;
+	}
+	
+	public double getUpper95tile(){
+		return upper95tile;
+	}
+	
+	public double getEnergyVariance(){
+		return energyVariance;
+	}
+	
+	public double[][] getStatistics(){
+		return statistics;
+	}
+	
+	public double getWithinSyllableGap(){
+		return withinSyllableGap;
+	}
+	
+	public double getBetweenSyllableGap(){
+		return betweenSyllableGap;
+	}
+	
+	public int[] getCompressedPoints(){
+		return compressedPoints;
+	}
+	
+	public void setId(int a){
+		id=a;
+	}
+	
+	
+	
+	
+	public void calculateStatistics(){
 		double results[][]=new double[length+5][15];
 		double maxvals, minvals, timemax, timemin, avvals;
 		overallPeak1=0;
@@ -403,7 +629,7 @@ public class Element {
 		//System.out.println(overallPeak1+" "+overallPeak2);
 	}
 	
-	void calculateStatisticsS(){
+	public void calculateStatisticsS(){
 		
 		calculateStatisticsAbsolute();
 		
@@ -437,7 +663,7 @@ public class Element {
 	}
 	
 	
-	void calculateStatisticsAbsolute(){
+	public void calculateStatisticsAbsolute(){
 		double results[][]=new double[length+5][19];
 		double maxvals, minvals, timemax, timemin, avvals;
 		for (int j=0; j<15; j++){

@@ -8,9 +8,8 @@ package lusc.net.github;
 //	This program is provided under the GPL 2.0 software licence. Please see accompanying material for details.
 
 import javax.swing.*;
+
 import java.awt.*;
-import java.util.ResourceBundle;
-import java.util.Locale;
 import java.util.List;
 import java.util.*;
 import java.io.*;
@@ -20,11 +19,20 @@ import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeEvent;
+
 import javax.swing.BorderFactory; 
 import javax.swing.border.Border;
 import javax.swing.event.*;
+
 import java.awt.event.*;
 import java.lang.reflect.*;
+
+import lusc.net.github.db.*;
+import lusc.net.github.ui.AboutBox;
+import lusc.net.github.ui.TabType;
+import lusc.net.github.ui.db.DatabaseView;
+import lusc.net.github.ui.db.SdLogin;
+
 import com.apple.eawt.event.*;
 import com.apple.eawt.*;
 
@@ -53,6 +61,21 @@ public class Luscinia implements WindowListener, ActionListener, ChangeListener,
 	
 	public static boolean MAC_OS_X = (System.getProperty("os.name").toLowerCase().startsWith("mac os x"));
 	JFrame frame;
+	
+	
+	public DataBaseController getDBController(){
+		return dbc;
+	}
+	
+	public String getLVersion(){
+		return lversion;
+	}
+	
+	public String getDVersion(){
+		return dversion;
+	}
+	
+	
 	
 	private void buildUI() {
 
@@ -134,7 +157,7 @@ public class Luscinia implements WindowListener, ActionListener, ChangeListener,
     }
 	
 	public void addNewTab(){
-		SdLogin login=new SdLogin(this, true);
+		SdLogin login=new SdLogin(this, true, defaults);
 		login.setPreferredSize(new Dimension(800, 550));
 		tabbedPane.addTab("Log In", login);
 		tabbedPane.setSelectedComponent(login);
@@ -151,7 +174,7 @@ public class Luscinia implements WindowListener, ActionListener, ChangeListener,
 		DataBaseController dbc=new DataBaseController(db);
 		DatabaseView dv=new DatabaseView(dbc, defaults, this);
 		tabbedPane.add(dv, p);
-		tabbedPane.setTitleAt(p, db.dbase);
+		tabbedPane.setTitleAt(p, db.getDBase());
 		connections.add(db);
 		tabbedPane.setSelectedIndex(p);
 	}
@@ -162,16 +185,17 @@ public class Luscinia implements WindowListener, ActionListener, ChangeListener,
 	}
 	
 	public void loggedOut(DatabaseView dv){
-		DbConnection db=dv.dbc.getConnection();
+		DataBaseController dbc=dv.getDBController();
+		DbConnection db=dbc.getConnection();
 		connections.remove(db);
 		db.clearUp();
 		db=null;
-		dv.dbc=null;
+		dbc=null;
 		int p=tabbedPane.indexOfComponent(dv);
 		tabbedPane.remove(dv);
 		dv.clearUp();
 		dv=null;
-		SdLogin login=new SdLogin(this, true);
+		SdLogin login=new SdLogin(this, true, defaults);
 		tabbedPane.add(login, p);
 		tabbedPane.setTitleAt(p, "Log-In");
 		tabbedPane.setSelectedIndex(p);
@@ -186,16 +210,17 @@ public class Luscinia implements WindowListener, ActionListener, ChangeListener,
 	public void addNewConnection(DbConnection db){
 		DataBaseController dbc=new DataBaseController(db);
 		DatabaseView dv=new DatabaseView(dbc, defaults, this);
-		tabbedPane.addTab(db.dbase, dv);
+		tabbedPane.addTab(db.getDBase(), dv);
 		connections.add(db);
 	}
 	
 	public void removeConnection(DatabaseView dv){
-		DbConnection db=dv.dbc.getConnection();
+		DataBaseController dbc=dv.getDBController();
+		DbConnection db=dbc.getConnection();
 		connections.remove(db);
 		db.clearUp();
 		db=null;
-		dv.dbc=null;
+		dbc=null;
 		tabbedPane.remove(dv);
 		dv.clearUp();
 		dv=null;
