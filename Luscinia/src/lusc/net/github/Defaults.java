@@ -18,18 +18,35 @@ import lusc.net.github.ui.compmethods.DTWPanel;
 import lusc.net.github.ui.StatOptionPanel;
 import lusc.net.github.ui.spectrogram.SpectrPane;
 
+/**
+ * Defaults coordinates - across the whole of Luscinia - the writing and reading of 
+ * default parameters for the UI to use. In general the rule here is that Defaults should
+ * only interact with UI classes, and in the future it may be moved to the ui package.
+ * @author Rob
+ *
+ */
+
 public class Defaults {
 	NumberFormat num;
 	
 	public Properties props=new Properties();
 	
 	static LookAndFeel lnf;
+	
+	/**
+	 * constructor
+	 */
 
 	public Defaults(){
 		num=NumberFormat.getNumberInstance();
 		num.setMaximumFractionDigits(10);
 		readProperties();
 	}
+	
+	/**
+	 * Reads all default properties from file into a new Properties object.
+	 * Should be called once near the initiation of the program.
+	 */
 	
 	public void readProperties(){
 		try{
@@ -45,6 +62,12 @@ public class Defaults {
 		}
 	}
 	
+	/**
+	 * Writes all the default values to file (lusciniaproperties).
+	 * Should be called whenever a more permanent updating of default values
+	 * is called for (especially on program shutdown, but also more frequently).
+	 */
+	
 	public void writeProperties(){
 		try{
 			FileOutputStream out = new FileOutputStream("lusciniaproperties");
@@ -56,6 +79,12 @@ public class Defaults {
 		}
 	}
 	
+	/**
+	 * Returns an integer value from the Properties store.
+	 * @param key the key value (String)
+	 * @return an integer default value.
+	 */
+	
 	public int getIntProperty(String key){
 		String s=props.getProperty(key, "0");
 		int x=0;
@@ -66,6 +95,14 @@ public class Defaults {
 		catch(ParseException e){}
 		return x;
 	}
+	
+	/**
+	 * Returns an integer value from the Properties store. If one is not found, returns
+	 * a supplied default value instead
+	 * @param key the key value (String)
+	 * @param defval the default value to return if nothing is found in the store
+	 * @return an integer default value.
+	 */
 	
 	public int getIntProperty(String key, int defval){
 		Integer a=new Integer(defval);
@@ -79,10 +116,28 @@ public class Defaults {
 		return x;
 	}
 	
+	/**
+	 * Returns a double value from the Properties store.
+	 * @param key the key value (String)
+	 * @param multiplier (actually a divider). This allows double values to be stored as integers
+	 * and must be specified. 
+	 * @return a double parameter, calculated as the value obtained from the store divided by multiplier
+	 */
+	
 	public double getDoubleProperty(String key, double multiplier){
 		int x=getIntProperty(key);
 		return x/multiplier;
 	}
+	
+	/**
+	 * Returns a double value from the Properties store. If one is not found, returns
+	 * a supplied default value instead
+	 * @param key the key value (String)
+	 * @param multiplier (actually a divider). This allows double values to be stored as integers
+	 * and must be specified. 
+	 * @param defval the default value to return if nothing is found in the store
+	 * @return a double parameter, calculated as the value obtained from the store divided by multiplier
+	 */
 	
 	public double getDoubleProperty(String key, double multiplier, double defval){
 		
@@ -91,6 +146,13 @@ public class Defaults {
 		int x=getIntProperty(key, defdoub);
 		return x/multiplier;
 	}
+	
+	/**
+	 * Returns a LinkedList of Strings from the properties store. Internally, '|~|' is 
+	 * used as a rather idiosyncratic separator between values.
+	 * @param key the key value (String)
+	 * @return a list of strings.
+	 */
 	
 	public LinkedList<String> getStringList(String key){
 		String s=props.getProperty(key);
@@ -110,6 +172,12 @@ public class Defaults {
 		return LList;
 	}
 	
+	/**
+	 * Adds/replaces a list of Strings to the store
+	 * @param key the key value (String)
+	 * @param ll a LinkedList of Strings.
+	 */
+	
 	public void setStringList(String key, LinkedList<String> ll){
 	
 		StringBuffer sb=new StringBuffer();
@@ -122,16 +190,36 @@ public class Defaults {
 		props.setProperty(key, s);
 	}
 	
+	/**
+	 * Adds/replaces an integer to the store
+	 * @param key the key value (String)
+	 * @param x an integer value to store
+	 */
+	
 	public void setIntProperty(String key, int x){
 		Integer y=new Integer(x);
 		String s=y.toString();
 		props.setProperty(key, s);
 	}
 	
+	/**
+	 * Adds/replaces a double to the store
+	 * @param key the key value (String)
+	 * @param x a double value to store
+	 * @param multiplier a value to multiply x by, after which it is rounded to an integer before storage.
+	 */
+	
 	public void setDoubleProperty(String key, double x, int multiplier){
 		int p=(int)Math.round(x*multiplier);
 		setIntProperty(key, p);
 	}
+	
+	/**
+	 * Adds/replaces an array of booleans to the store. This is used for sets of radiobuttons,
+	 * for example
+	 * @param key the key value (String)
+	 * @param data an array of booleans to store.
+	 */
 	
 	public void setBooleanArray(String key, boolean[]data){
 		StringBuffer sb=new StringBuffer();
@@ -142,6 +230,13 @@ public class Defaults {
 		String s=sb.toString();
 		props.setProperty(key, s);	
 	}
+	
+	/**
+	 * gets an array of booleans from the store.
+	 * @param key the key value (String)
+	 * @param length the length of the array. I'm pretty sure this is superfluous!
+	 * @return an array of booleans
+	 */
 	
 	public boolean[] getBooleanArray(String key, int length){
 		String s=props.getProperty(key);
@@ -162,6 +257,12 @@ public class Defaults {
 		return results;
 	}
 	
+	/**
+	 * gets an array of booleans from the store.
+	 * @param key the key value (String)
+	 * @return an array of booleans.
+	 */
+	
 	public boolean[] getBooleanArray(String key){
 		String s=props.getProperty(key);
 		boolean[] results=null;
@@ -181,17 +282,34 @@ public class Defaults {
 		return results;
 	}
 	
+	/**
+	 * Convenience method that sets details of Individual objects to the defaults. This
+	 * is used (with its get counterpart) for quickly filling in species, population details, for example.
+	 * @param ind An Individual object
+	 */
+	
 	public void setIndividualDetails(Individual ind){
 		props.setProperty("spec", ind.species);
 		props.setProperty("popu", ind.population);
 	}
+	
+	/**
+	 * Convenience method that gets details of Individual objects to the defaults. This
+	 * is used for quickly filling in species, population details, for example.
+	 * Ideally, this should probably call set methods in Individual.
+	 * @param ind An Individual object
+	 */
 	
 	public void getIndividualDetails(Individual ind){
 		ind.species=props.getProperty("spec", " ");
 		ind.population=props.getProperty("popu", " ");
 	}
 	
-	
+	/**
+	 * Convenience method that sets details about Song objects. This is used with its
+	 * get counterpart for quickly filling in recording details, for example.
+	 * @param song A Song object
+	 */
 	
 	public void setSongDetails(Song song){
 		props.setProperty("reco", song.recordist);
@@ -199,11 +317,24 @@ public class Defaults {
 		props.setProperty("loca", song.location);
 	}
 	
+	/**
+	 * Convenience method that gets details about Song objects. This is used for 
+	 * quickly filling in recording details, for example.
+	 * This should probably use the set functions in Song.
+	 * @param song A Song object
+	 */
+	
 	public void getSongDetails(Song song){
 		song.recordist=props.getProperty("reco");
 		song.recordEquipment=props.getProperty("rece");
 		song.location=props.getProperty("loca");
 	}
+	
+	/**
+	 * Convenience method that gets spectrogram details about Song objects. This is used for 
+	 * defaul spectrogram parameters
+	 * @param song A Song object.
+	 */
 	
 	
 	public void setSongParameters(Song song){
@@ -231,6 +362,12 @@ public class Defaults {
 		setIntProperty("brushtype", song.brushType);
 	}
 	
+	/**
+	 * A convenience method that gets spectrogram parameters for a Song object.
+	 * This should probably use the set functions in Song.
+	 * @param song a Song object.
+	 */
+	
 	public void getSongParameters(Song song){
 		song.maxf=getIntProperty("maxf", 8000);
 		song.frameLength=getDoubleProperty("frl", 1000, 5);
@@ -249,8 +386,13 @@ public class Defaults {
 		song.brushSize=getIntProperty("brush", 1);
 	}
 	
+	/**
+	 * A convenience function that gets a range of measurement parameters for a Song
+	 * object. Is this necessary (or used)? Should it be rolled into the previous function?
+	 * @param song A Song object
+	 */
+	
 	public void getMiscellaneousSongParameters(Song song){
-		System.out.println("HERE GETTING RANDOM VALUES");
 		song.fundAdjust=getDoubleProperty("fund", 1000, 1);
 		song.minGap=getDoubleProperty("gap", 1000, 0);
 		song.brushSize=getIntProperty("brush", 1);
@@ -262,6 +404,11 @@ public class Defaults {
 		song.minBrush=getIntProperty("minbrush", 0);
 		song.brushType=getIntProperty("brushtype", 1);
 	}
+	
+	/**
+	 * A convenience function that sets parameters for a DTW comparison.
+	 * @param sg a DTWPanel object.
+	 */
 	
 	public void setDTWParameters(DTWPanel sg){
 		
@@ -309,6 +456,11 @@ public class Defaults {
 		setDoubleProperty("dtwsrw", sg.getSyllableRepetitionWeighting(), 1000);
 	}
 	
+	/**
+	 * A convenience function that gets parameters for a DTW comparisons
+	 * @param sg a DTWPanel object.
+	 */
+	
 	public void getDTWParameters(DTWPanel sg){
 		
 		for (int i=0; i<sg.parameterValues.length; i++){
@@ -349,6 +501,11 @@ public class Defaults {
 		sg.setSyllableRepetitionWeighting(getDoubleProperty("dtwsrw", 1000, 0));
 	}
 	
+	/**
+	 * A convenience function that sets options for various statistical analyses
+	 * @param sop a StatOptionPanel object.
+	 */
+	
 	public void setAnalysisOptions(StatOptionPanel sop){
 		setBooleanArray("anatyp", sop.getAnalysisTypes());
 		setBooleanArray("analev", sop.getAnalysisLevels());
@@ -368,6 +525,11 @@ public class Defaults {
 		setDoubleProperty("anasolo", sop.getSongLowerLimit(), 100);
 		setDoubleProperty("anageog", sop.getGeogPropLimit(), 100);
 	}
+	
+	/**
+	 * A convenience method that gets various parameters for statistical analyses.
+	 * @param sop a StatOptionPanel object.
+	 */
 	
 	public void getAnalysisOptions(StatOptionPanel sop){
 		boolean[] results1=getBooleanArray("anatyp", 11);
@@ -398,46 +560,94 @@ public class Defaults {
 		sop.setGeogPropLimit(getDoubleProperty("anageog", 100, 5));
 	}
 						
-	
+	/**
+	 * a function to specifically set a sound format parameter. Why not just use setInt?
+	 * @param a
+	 */
 		
 	public void setDefaultSoundFormat(int a){
 		setIntProperty("sofo", a);
 	}
+	
+	/**
+	 * a function to specifically get a sound format parameter. Why not just use getInt?
+	 * @param a
+	 */
 	
 	public int getDefaultSoundFormat(){
 		int p=getIntProperty("sofo", 0);
 		return p;					 
 	}
 	
+	/**
+	 * a function to specifically set an image format parameter. Why not just use setInt?
+	 * @param a
+	 */
+	
 	public void setDefaultImageFormat(int a){
 		setIntProperty("imfo", a);
 	}
+	
+	/**
+	 * a function to specifically get an image format parameter. Why not just use getInt?
+	 * @param a
+	 */
 	
 	public int getDefaultImageFormat(){
 		int p=getIntProperty("imfo", 0);
 		return p;					 
 	}
 	
+	/**
+	 * a function to specifically set a spreadsheet parameter. Why not just use setInt?
+	 * @param a
+	 */
+	
 	public void setDefaultDocFormat(int a){
 		setIntProperty("dofo", a);
 	}
+	
+	/**
+	 * a function to specifically get a spreadsheet format parameter. Why not just use getInt?
+	 * @param a
+	 */
 	
 	public int getDefaultDocFormat(){
 		int p=getIntProperty("dofo", 0);
 		return p;					 
 	}
 	
+	/**
+	 * A convenience function to set the defaults for which parameters to view 
+	 * on a spectrogram
+	 * @param sp a SpectrPane object
+	 */
 	
 	public void setParameterViews(SpectrPane sp){
 		setBooleanArray("viewp", sp.getViewParameters());
 	}
 	
+	/**
+	 * A convenience function to get the defaults for which parameters to view
+	 * on a spectrogram
+	 * @param sp a SpectrPane object
+	 */
 	public void getParameterViews(SpectrPane sp){
 		boolean[] results=getBooleanArray("viewp", 19);
 		if (results!=null){
 			sp.setViewParameters(results);
 		}
 	}
+	
+	/**
+	 * A convenience function to set the defaults for the statistics output. This method works
+	 * in conjunction with StatisticsOutput.
+	 * @param chooserV a boolean array for which element measures to set.
+	 * @param chooserP a boolean array for a range of metadata parameters.
+	 * @param chooserM a boolean array for which types of measures (mean, min, max etx) to set.
+	 * @param chooserS a boolean array for a range of scalar, typically temporal parameters.
+	 * @param chooserSy a boolean array for syllable parameters
+	 */
 	
 	public void setStatisticsOutput(boolean[] chooserV, boolean[] chooserP, boolean[] chooserM, boolean[] chooserS, boolean[] chooserSy){
 		
