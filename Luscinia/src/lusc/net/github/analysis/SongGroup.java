@@ -2692,7 +2692,7 @@ public class SongGroup {
 	
 	}
 	
-		
+	/*
 	public double[][][] getSyllableData (Song[] songs, double[][][] d){
 		
 		int syllSize=0;
@@ -2769,6 +2769,7 @@ public class SongGroup {
 		}
 		return data;
 	}
+	*/
 	
 
 	public synchronized float[][] runDTW(DTWSwingWorker dtws, boolean stitch){
@@ -4233,7 +4234,7 @@ public class SongGroup {
 		return placeholder;
 	}
 	
-	
+	/*
 	public void compressElement(){
 		for (int i=0; i<songs.length; i++){
 			for (int j=0; j<songs[i].getNumElements(); j++){
@@ -4242,6 +4243,7 @@ public class SongGroup {
 			}
 		}
 	}
+	*/
 	
 	
 	public void compressElements(){
