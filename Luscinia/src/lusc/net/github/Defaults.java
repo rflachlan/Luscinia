@@ -571,7 +571,7 @@ public class Defaults {
 	
 	/**
 	 * a function to specifically get a sound format parameter. Why not just use getInt?
-	 * @param a
+	 * @param p
 	 */
 	
 	public int getDefaultSoundFormat(){
@@ -590,7 +590,7 @@ public class Defaults {
 	
 	/**
 	 * a function to specifically get an image format parameter. Why not just use getInt?
-	 * @param a
+	 * @param p
 	 */
 	
 	public int getDefaultImageFormat(){
@@ -609,7 +609,7 @@ public class Defaults {
 	
 	/**
 	 * a function to specifically get a spreadsheet format parameter. Why not just use getInt?
-	 * @param a
+	 * @param p
 	 */
 	
 	public int getDefaultDocFormat(){

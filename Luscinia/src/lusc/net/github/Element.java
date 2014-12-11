@@ -381,7 +381,7 @@ public class Element {
 	/**
 	 * This method returns a String of Element details that can be written to the database
 	 * @param b a separator String supplied by the DBC.
-	 * @return
+	 * @return a long String of semi-composed sql
 	 */
 	
 	public String getDBStamp(String b){
@@ -678,7 +678,7 @@ public class Element {
 	/**
 	 * gets a time parameter related to drawing element sketches for analysis displays.
 	 * @see lusc.net.github.ui.statistics.DisplaySketches
-	 * @return
+	 * @return a time parameter float
 	 */
 	
 	public float getTb(){
@@ -698,7 +698,7 @@ public class Element {
 	/**
 	 * gets a time parameter related to drawing element sketches for analysis displays.
 	 * @see lusc.net.github.ui.statistics.DisplaySketches
-	 * @return
+	 * @return a time parameter float
 	 */
 	
 	public float getTa(){
@@ -886,7 +886,7 @@ public class Element {
 	/**
 	 * returns the within syllable gap parameter - something that only applies if this element
 	 * has been formed by joining together several elements. This is counter-intuitive.
-	 * @return
+	 * @return a double time value
 	 */
 	
 	public double getWithinSyllableGap(){
@@ -896,7 +896,7 @@ public class Element {
 	/**
 	 * returns the between syllable gap parameter - something that only applies if this element
 	 * has been formed by joining together several elements. This is counter-intuitive
-	 * @return
+	 * @return a double time value
 	 */
 	
 	public double getBetweenSyllableGap(){
