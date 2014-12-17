@@ -9,721 +9,1170 @@ package lusc.net.github;
 
 
 //import java.awt.image.BufferedImage;
-import java.sql.Blob;
+//import java.sql.Blob;
 import java.util.LinkedList;
 import java.util.Arrays;
 
 import javax.sound.sampled.*;
 
 
+/**
+ * Song is the object that recording units are held in. It contains both acoustic recording data
+ * and measured sub-units like elements and syllables. It contains methods to make spectrograms.
+ * It is one of the most central classes in Luscinia, and one of the largest. 
+ * @author Rob
+ *
+ */
 public class Song {
-	
+
 	boolean loaded=false;
 	boolean running=false;
-	boolean setRangeToMax=true;
-	boolean relativeAmp=true;
-	float data[];
-	float maxAmp, maxAmp2;
-	
-	double [] phase;
-	int minFreq=5;
-	double octstep=10;
-	
-	private static final int EXTERNAL_BUFFER_SIZE = 128000;
-	
-	float [] trig1, trig2;
-	int [] places1,  places2,  places3,  places4;
-	int bitTab[][];
-	float window[];
-	double[] filtl, filtu;
-	int counter=0;
-	int counter2=0;
-	int rangef=0;
-	int overallSize=0;
-	int overallLength=0;
-	byte []rawData, rawData2, stereoRawData;
+	boolean setRangeToMax=true; 
+	boolean relativeAmp=true; 
+	float data[]; 
+	float maxAmp, maxAmp2; 
+	double [] phase; 
+	int minFreq=5; 
+	double octstep=10; 
+	private static final int EXTERNAL_BUFFER_SIZE = 128000; 
+	float [] trig1, trig2; 
+	int [] places1,  places2,  places3,  places4; 
+	int bitTab[][]; 
+	float window[]; 
+	double[] filtl, filtu; 
+	int counter=0; 
+	int counter2=0; 
+	int rangef=0; 
+	int overallSize=0; 
+	int overallLength=0; 
+	byte []rawData, rawData2, stereoRawData; 
 	float [][] out, out1, envelope;
-	int startTime=0;
-	int endTime=0;
-	
+	int startTime=0; 
+	int endTime=0; 
 	int dynEqual=0;
-	double dynRange=40;
-	float dynMax=10;
+	double dynRange=40; 
+	float dynMax=10; 
 	int echoRange=50;
-	//int distinctivenessRange=100;
-	double echoComp=0.4f;
-	
-	int noiseLength1=200;
-	int noiseLength2=15;
-	float noiseRemoval=0f;
-	
-	
+	//int distinctivenessRange=100; 
+	double echoComp=0.4f; 
+	int noiseLength1=200; 
+	int noiseLength2=15; 
+	float noiseRemoval=0f; 
 	float maxDB=0;
-	float maxPossAmp=0;
-	
-	int maxf=0;
+	float maxPossAmp=0; 
+	int maxf=0; 
 	double frameLength=1;
 	double overlap=0;
 	double timeStep=0.5;
 	double frequencyCutOff=150;
-	int windowMethod=1;
-	double dx, dy, step;
-	int nx, ny, anx, frame, framePad, place;
-	int individualID=0;
-	int songID=0;
+	int windowMethod=1; 
+	double dx, dy, step; 
+	int nx, ny, anx, frame, framePad, place; 
+	int individualID=0; 
+	int songID=0; 
 	long tDate=0;
-	String notes=" ";
-	String location=" ";
+	String notes=" "; 
+	String location=" "; 
 	String recordEquipment=" ";
-	String recordist=" ";
-	
-	double fundAdjust=1;
-	double fundJumpSuppression=100;
+	String recordist=" "; 
+	double fundAdjust=1; 
+	double fundJumpSuppression=100; 
 	double minGap=0;
 	double minLength=5;
-	double maxTrillWavelength=20;
-	
+	double maxTrillWavelength=20; 
 	int brushSize=5;
-	int brushType=1;
+	int brushType=1; 
 	int maxBrush=10;
-	int minBrush=0;
-	
-	int playbackDivider=1;
-	
-	double upperLoop=15;
+	int minBrush=0; 
+	int playbackDivider=1; 
+	double upperLoop=15; 
 	double lowerLoop=0;
-	
-	//Sound File parameters
-	boolean bigEnd=true;
+	//Sound File parameters 
+	boolean bigEnd=true; 
 	boolean signed=true;
-	int stereo=1;
-	int ssizeInBits=0;
-	double sampleRate, sampRate;
-	int frameSize=0;
-	
+	int stereo=1; 
+	int ssizeInBits=0; 
+	double sampleRate, sampRate; 
+	int frameSize=0; 
 	String name=" ";
 	String individualName=" ";
-	String population=" ";
+	String population=" "; 
 	String species=" ";
-	String locationX=" ";
+	String locationX=" "; 
 	String locationY=" ";
 	String sx, sy;
 	//Analysis stored data
 	LinkedList<Element> eleList;
 	LinkedList<int[]> syllList;
-	LinkedList<int[][]> phrases;
+	LinkedList<int[][]> phrases; 
 	boolean[] phraseId;
 	SourceDataLine  line = null;
 	AudioFormat af;
+	
+	  
+	 
 	SpectrogramMeasurement sm;
 	
+	/**
+	 * Gets the Song's {@link SpectrogramMeasurement} object
+	 * @return a {@link SpectrogramMeasurement} object
+	 */
 	public SpectrogramMeasurement getMeasurer(){
 		sm=new SpectrogramMeasurement(this);
 		
 		return sm;
 	}
 	
+	/**
+	 * Gets the time step for the spectrogram
+	 * @return a double value (ms) of time step
+	 */
 	public double getTimeStep(){
 		return timeStep;
 	}
 	
+	/**
+	 * Sets the time step for the spectrogram
+	 * @param a double value (ms) of time step
+	 */
+	public void setTimeStep(double a){
+		timeStep=a;
+	}
+
+	/**
+	 * gets the frame length for the spectrogram
+	 * @return a double value (ms) of frame length
+	 */
 	public double getFrameLength(){
 		return frameLength;
 	}
 	
+	/**
+	 * Sets the frame length for the spectrogram
+	 * @param a double value (ms) of frame length
+	 */
+	public void setFrameLength(double a){
+		frameLength=a;
+	}
+
+	/**
+	 * gets the echoComp parameter - the amount of dereverberation.
+	 * @return a double value of echoComp
+	 */
 	public double getEchoComp(){
 		return echoComp;
 	}
 	
+	/**
+	 * Sets the echoComp parameter - the amount of dereverberation.
+	 * @param a double value of echoComp
+	 */
+	public void setEchoComp(double a){
+		echoComp=a;
+	}
+
+	/**
+	 * gets the sample rate for the Song
+	 * @return a double value (Hz)
+	 */
 	public double getSampRate(){
 		return sampRate;
 	}
 	
+	/**
+	 * Sets the sample rate for the Song
+	 * @param a double value (Hz)
+	 */
+	public void setSampRate(double a){
+		sampRate=a;
+	}
+
+	/**
+	 * gets the dynamic range for the spectrogram
+	 * @return a double value for dynamic range (dB)
+	 */
 	public double getDynRange(){
 		return dynRange;
 	}
 	
+	/**
+	 * Sets the dynamic range for the spectrogram
+	 * @param a double value for dynamic range (dB)
+	 */
+	public void setDynRange(double a){
+		dynRange=a;
+	}
+
+	/**
+	 * gets the dx parameter for the spectrogram - the number of ms between neighbouring
+	 * columns of the spectrogram
+	 * @return a double (ms) value for dx
+	 */
 	public double getDx(){
 		return dx;
 	}
 	
+	/**
+	 * Sets the dx parameter for the spectrogram - the number of ms between neighbouring
+	 * columns of the spectrogram
+	 * @param a double (ms) value for dx
+	 */
+	public void setDx(double a){
+		dx=a;
+	}
+
+	/**
+	 * gets the dy parameter for the spectrogram - the frequency differences between
+	 * neighbouring rows for the spectrogram
+	 * @return a double (Hz) value for dy
+	 */
 	public double getDy(){
 		return dy;
 	}
 	
+	/**
+	 * Sets the dy parameter for the spectrogram - the frequency differences between
+	 * neighbouring rows for the spectrogram
+	 * @param a double (Hz) value for dy
+	 */
+	public void setDy(double a){
+		dy=a;
+	}
+
+	/**
+	 * gets the fundAdjust parameter - a user-set value that adjusts the model of fundamental
+	 * frequency estimation
+	 * @return a double value for fundAdjust
+	 */
 	public double getFundAdjust(){
 		return fundAdjust;
 	}
 	
+	/**
+	 * Sets the fundAdjust parameter - a user-set value that adjusts the model of fundamental
+	 * frequency estimation
+	 * @param a double value for fundAdjust
+	 */
+	public void setFundAdjust(double a){
+		fundAdjust=a;
+	}
+
+	/**
+	 * gets the minLength parameter - a user-set value that sets the minimum length of an 
+	 * element. If a smaller element is detected, it is not added to the Element list.
+	 * @return a double (ms) for minLength
+	 */
 	public double getMinLength(){
 		return minLength;
 	}
 	
+	/**
+	 * Sets the minLength parameter - a user-set value that sets the minimum length of an 
+	 * element. If a smaller element is detected, it is not added to the Element list.
+	 * @param a double (ms) for minLength
+	 */
+	public void setMinLength(double a){
+		minLength=a;
+	}
+
+	/**
+	 * gets the minGap parameter - a user-set value that sets the minimum gap allowed between 
+	 * neighbouring elements (detected from the same user drawn blob). If two detected elements
+	 * are closer together than this, Song will attempt to join them together.
+	 * @return a double (ms) value for minGap
+	 */
 	public double getMinGap(){
 		return minGap;
 	}
 	
+	/**
+	 * Sets the minGap parameter - a user-set value that sets the minimum gap allowed between 
+	 * neighbouring elements (detected from the same user drawn blob). If two detected elements
+	 * are closer together than this, Song will attempt to join them together.
+	 * @param a double (ms) value for minGap
+	 */
+	public void setMinGap(double a){
+		minGap=a;
+	}
+
+	/**
+	 * gets the Frame size of the spectrogram - an int value of the length of the FFT buffer
+	 * @return an int value (number of samples) for frame size
+	 */
 	public int getFrameSize(){
 		return frameSize;
 	}
 	
+	/**
+	 * Sets the Frame size of the spectrogram - an int value of the length of the FFT buffer
+	 * @param a int value (number of samples) for frame size
+	 */
+	public void setFrameSize(int a){
+		frameSize=a;
+	}
+
+	/**
+	 * gets the dynMax parameter. This sets the black-point of the spectrogram - intensity values 
+	 * above this are set to black 
+	 * @return a float value for dynMax
+	 */
 	public float getDynMax(){
 		return dynMax;
 	}
 	
+	/**
+	 * Sets the dynMax parameter. This sets the black-point of the spectrogram - intensity values 
+	 * above this are set to black 
+	 * @param a float value for dynMax
+	 */
+	public void setDynMax(float a){
+		dynMax=a;
+	}
+
+	/**
+	 * gets the maxf parameter. This sets the maximum frequency in the plotted spectrogram, and
+	 * is scaled as the number of rows in the spectrogram
+	 * @return an int value for the number of rows in the spectrogram
+	 */
 	public int getMaxF(){
 		return maxf;
 	}
 	
+	/**
+	 * Sets the maxf parameter. This sets the maximum frequency in the plotted spectrogram, and
+	 * is scaled as the number of rows in the spectrogram
+	 * @param a int value for the number of rows in the spectrogram
+	 */
+	public void setMaxF(int a){
+		maxf=a;
+	}
+
+	/**
+	 * gets the dynEqual dynamic equalization parameter. This parameter specifies a window
+	 * within which the highest intensity point is redrawn as black. If it is set to 0,
+	 * this equalization is not used.
+	 * @return an int value (ms) for the dynEqual parameter.
+	 */
 	public int getDynEqual(){
 		return dynEqual;
 	}
 	
+	/**
+	 * Sets the dynEqual dynamic equalization parameter. This parameter specifies a window
+	 * within which the highest intensity point is redrawn as black. If it is set to 0,
+	 * this equalization is not used.
+	 * @param a int value (ms) for the dynEqual parameter.
+	 */
+	public void setDynEqual(int a){
+		dynEqual=a;
+	}
+
+	/**
+	 * gets the echoRange parameter - the window length for the dereverberation algorithm
+	 * @return an int value (ms) for the echoRange parameter.
+	 */
 	public int getEchoRange(){
 		return echoRange;
 	}
 	
+	/**
+	 * Sets the echoRange parameter - the window length for the dereverberation algorithm
+	 * @param a int value (ms) for the echoRange parameter.
+	 */
+	public void setEchoRange(int a){
+		echoRange=a;
+	}
+
+	/**
+	 * gets the overall length of the plotted spectrogram
+	 * @return an int value (ms?) for the overallLength parameter
+	 */
 	public int getOverallLength(){
 		return overallLength;
 	}
 	
+	/**
+	 * gets the overall length of the plotted spectrogram
+	 * @param a int value (ms?) for the overallLength parameter
+	 */
+	public void setOverallLength(int a){
+		overallLength=a;
+	}
+
+	/**
+	 * gets the nx parameter - the number of columns in the plotted spectrogram
+	 * @return an int value for nx
+	 */
 	public int getNx(){
 		return nx;
 	}
 	
+	/**
+	 * gets the nx parameter - the number of columns in the plotted spectrogram
+	 * @param a int value for nx
+	 */
+	public void setNx(int a){
+		nx=a;
+	}
+
+	/**
+	 * gets the ny parameter - the number of rows in the plotted spectrogram. 
+	 * IS THIS EVER DIFFERENT FROM maxf???
+	 * @return an int value for ny
+	 */
 	public int getNy(){
 		return ny;
 	}
 	
+	/**
+	 * gets the ny parameter - the number of rows in the plotted spectrogram. 
+	 * IS THIS EVER DIFFERENT FROM maxf???
+	 * @param a int value for ny
+	 */
+	public void setNy(int a){
+		ny=a;
+	}
+
+	/**
+	 * gets the brushType parameter - an int index for different types of brush for
+	 * measuring elements
+	 * @return an int for the brushType parameter
+	 */
 	public int getBrushType(){
 		return brushType;
 	}
 	
+	/**
+	 * gets the brushType parameter - an int index for different types of brush for
+	 * measuring elements
+	 * @param a int for the brushType parameter
+	 */
+	public void setBrushType(int a){
+		brushType=a;
+	}
+
+	/**
+	 * gets the brushSize parameter - the number of spectrogram rows that the measurement
+	 * brush is wide
+	 * @return an int (spectrogram rows) for the brush size parameter.
+	 */
 	public int getBrushSize(){
 		return brushSize;
 	}
 	
+	/**
+	 * gets the brushSize parameter - the number of spectrogram rows that the measurement
+	 * brush is wide
+	 * @param a int (spectrogram rows) for the brush size parameter.
+	 */
+	public void setBrushSize(int a){
+		brushSize=a;
+	}
+
+	/**
+	 * gets the maxBrush parameter - when a frequency range is set for spectrogram measurement,
+	 * this is the maximum frequency.
+	 * @return an int value for maxBrush
+	 */
 	public int getMaxBrush(){
 		return maxBrush;
 	}
 	
+	/**
+	 * gets the maxBrush parameter - when a frequency range is set for spectrogram measurement,
+	 * this is the maximum frequency.
+	 * @param a int value for maxBrush
+	 */
+	public void setMaxBrush(int a){
+		maxBrush=a;
+	}
+
+	/**
+	 * gets the minBrush parameter - when a frequency range is set for spectrogram measurement,
+	 * this is the minimum frequency.
+	 * @return an int value for minBrush
+	 */
 	public int getMinBrush(){
 		return minBrush;
 	}
 	
+	/**
+	 * gets the minBrush parameter - when a frequency range is set for spectrogram measurement,
+	 * this is the minimum frequency.
+	 * @param a int value for minBrush
+	 */
+	public void setMinBrush(int a){
+		minBrush=a;
+	}
+
+	/**
+	 * gets the noiseRemoval parameter - a value for the intensity of noise removal
+	 * @return a float value for noiseRemoval
+	 */
 	public float getNoiseRemoval(){
 		return noiseRemoval;
 	}
 	
+	/**
+	 * gets the noiseRemoval parameter - a value for the intensity of noise removal
+	 * @param a float value for noiseRemoval
+	 */
+	public void setNoiseRemoval(float a){
+		noiseRemoval=a;
+	}
+
+	/**
+	 * gets the frequency cut off of the high-pass filter
+	 * @return value of frequencyCutOff
+	 */
+	public double getFrequencyCutOff(){
+		return frequencyCutOff;
+	}
+
+	/**
+	 * sets the frequency cut off of the high-pass filter
+	 * @param a value for frequencyCutOff
+	 */
+	public void setFrequencyCutOff(double a){
+		frequencyCutOff=a;
+	}
+
+	/**
+	 * gets the FFT window method index
+	 * @return value of windowMethod
+	 */
+	public int getWindowMethod(){
+		return windowMethod;
+	}
+
+	/**
+	 * sets the FFT window method index
+	 * @param a value for windowMethod
+	 */
+	public void setWindowMethod(int a){
+		windowMethod=a;
+	}
+
+	/**
+	 * Gets the first noise removal length parameter
+	 * @return value of noiseLength1
+	 */
+	public int getNoiseLength1(){
+		return noiseLength1;
+	}
+
+	/**
+	 * Sets the first noise removal length parameter
+	 * @param a value for noiseLength1
+	 */
+	public void setNoiseLength1(int a){
+		noiseLength1=a;
+	}
+
+	/**
+	 * Gets the second noise removal length parameter
+	 * @return value of noiseLength2
+	 */
+	public int getNoiseLength2(){
+		return noiseLength2;
+	}
+
+	/**
+	 * Sets the second noise removal length parameter
+	 * @param a value for noiseLength2
+	 */
+	public void setNoiseLength2(int a){
+		noiseLength2=a;
+	}
+
+	/**
+	 * sets the fundamental frequency jump suppression parameter (stops algorithm from 
+	 * jumping between octaves, mostly)
+	 * @return the fundJumpSuppression parameter
+	 */
+	public double getFundJumpSuppression(){
+		return fundJumpSuppression;
+	}
+
+	/**
+	 * gets the fundamental frequency jump suppression parameter (stops algorithm from 
+	 * jumping between octaves, mostly)
+	 * @param a the jump suppression parameter
+	 */
+	public void setFundJumpSuppression(double a){
+		fundJumpSuppression=a;
+	}
+
+	/**
+	 * gets the upper hysteresis loop for element measurement
+	 * @return a double value for the upper loop value
+	 */
+	public double getUpperLoop(){
+		return upperLoop;
+	}
+
+	/**
+	 * sets the upper hysteresis loop for element measurement
+	 * @param a double value for the upper loop value
+	 */
+	public void setUpperLoop(double a){
+		upperLoop=a;
+	}
+
+	/**
+	 * gets the lower hysteresis loop for element measurement
+	 * @return a double value for the lower loop value
+	 */
+	public double getLowerLoop(){
+		return lowerLoop;
+	}
+
+	/**
+	 * sets the lower hysteresis loop for element measurement
+	 * @param a double value for the lower loop value
+	 */
+	public void setLowerLoop(double a){
+		lowerLoop=a;
+	}
+
+	/**
+	 * gets the setRangeToMax parameter. If true (default), the black-point in the
+	 * spectrogram is set to the most intense point. If not, it can be set lower.
+	 * @return setRangeToMax
+	 */
+	public boolean getSetRangeToMax(){
+		return setRangeToMax;
+	}
+
+	/**
+	 * sets the setRangeToMax parameter. If true (default), the black-point in the
+	 * spectrogram is set to the most intense point. If not, it can be set lower.
+	 * @param a value for setRangeToMax
+	 */
+	public void setSetRangeToMax(boolean a){
+		setRangeToMax=a;
+	}
+
+	/**
+	 * gets the overlap parameter for spectrogram calculation.
+	 * @return the overlap parameter
+	 */
+	public double getOverlap(){
+		return overlap;
+	}
+
+	/**
+	 * sets the overlap parameter for spectrogram calculation. Don't change this without changing
+	 * timeStep
+	 * @param a overlap
+	 */
+	public void setOverlap(double a){
+		overlap=a;
+	}
+
+	/**
+	 * gets the spectrogram
+	 * @return a float[][] array, frequency x time, with intensity indicated in the cells.
+	 */
 	public float[][] getOut(){
 		return out;
 	}
 	
+	/**
+	 * sets the spectrogram
+	 * @param a float[][] array, frequency x time, with intensity indicated in the cells.
+	 */
+	public void setOut(float[][] a){
+		out=a;
+	}
+
+	/**
+	 * gets the envelope float[][] an array with max and min ampitude values for each spectrogram bin
+	 * @return a float[][] for the envelope parameter
+	 */
 	public float[][] getEnvelope(){
 		return envelope;
 	}
 	
-	public int getNumPhrases(){
-		if (phrases==null){
-			interpretSyllables();
-			if (phrases==null){
-				return 0;
-			}
-		}
-		return phrases.size();
-	}
-	
-	public int[][] getPhrase(int a){
-		//System.out.println("getting phrase "+a+" out of "+phrases.size());
-		if (phrases==null){
-			System.out.println("WARNING NULL PHRASES");
-			interpretSyllables();
-		}
-		return phrases.get(a);
-	}
-	
-	public void setPhrases(LinkedList<int[][]> a){
-		phrases=a;
-	}
-	
-	public void setSyllList(LinkedList<int[]> a){
-		syllList=a;
-	}
-	
-	//This is a legacy function to update syllable measurements for old versions of the db.
-	public void updateSyllableList(){
-		System.out.println("UPDATING!!!");
-		for(int i=0; i<syllList.size(); i++){
-			int[] s=syllList.get(i);
-			int[]t=new int[2];
-			t[0]=(int)Math.round(s[0]*dx);
-			t[1]=(int)Math.round(s[1]*dx);
-			syllList.remove(i);
-			syllList.add(t);
-		}
-	}
-	
-	public int[] getSyllable(int a){
-		if (a>=syllList.size()){
-			return null;
-		}
-		return syllList.get(a);
-	}
-	
-	public int getNumSyllables(){
-		if (syllList==null){
-			return 0;
-		}
-		return syllList.size();
-	}
-	
-	public void removeSyllable(int a){
-		if (a<syllList.size()){
-			syllList.remove(a);
-		}
-	}
-	
-	public void addSyllable(int a, int[] syl){
-		syllList.add(a, syl);
-	}
-	
-	public void addSyllable(int[] syl){
-		syllList.add(syl);
-	}
-	
-	public void clearSyllables(){
-		syllList.clear();
-	}
-	
-	public void setEleList(LinkedList<Element> a){
-		eleList=a;
-	}
-	
-	public Element getElement(int a){
-		if (a>=eleList.size()){
-			return null;
-		}
-		return eleList.get(a);
-	}
-	
-	public int getNumElements(){
-		if (eleList==null){
-			return 0;
-		}
-		return eleList.size();
-	}
-	
-	public void removeElement(int a){
-		if (a<eleList.size()){
-			eleList.remove(a);
-		}
-	}
-	
-	public void addElement(int a, Element ele){
-		eleList.add(a, ele);
-	}
-	
-	public void addElement(Element ele){
-		eleList.add(ele);
-	}
-	
-	public void clearElements(){
-		eleList.clear();
-	}
-	
-	public void setTimeStep(double a){
-		timeStep=a;
-	}
-	
-	public void setFrameLength(double a){
-		frameLength=a;
-	}
-	
-	public void setEchoComp(double a){
-		echoComp=a;
-	}
-	
-	public void setSampRate(double a){
-		sampRate=a;
-	}
-	
-	public void setDynRange(double a){
-		dynRange=a;
-	}
-	
-	public void setDx(double a){
-		dx=a;
-	}
-	
-	public void setDy(double a){
-		dy=a;
-	}
-	
-	public void setFundAdjust(double a){
-		fundAdjust=a;
-	}
-	
-	public void setMinLength(double a){
-		minLength=a;
-	}
-	
-	public void setMinGap(double a){
-		minGap=a;
-	}
-	
-	public void setFrameSize(int a){
-		frameSize=a;
-	}
-	
-	public void setDynMax(float a){
-		dynMax=a;
-	}
-	
-	public void setMaxF(int a){
-		maxf=a;
-	}
-	
-	public void setDynEqual(int a){
-		dynEqual=a;
-	}
-	
-	public void setEchoRange(int a){
-		echoRange=a;
-	}
-	
-	public void setOverallLength(int a){
-		overallLength=a;
-	}
-	
-	public void setNx(int a){
-		nx=a;
-	}
-	
-	public void setNy(int a){
-		ny=a;
-	}
-	
-	public void setBrushType(int a){
-		brushType=a;
-	}
-	
-	public void setBrushSize(int a){
-		brushSize=a;
-	}
-	
-	public void setMaxBrush(int a){
-		maxBrush=a;
-	}
-	
-	public void setMinBrush(int a){
-		minBrush=a;
-	}
-	
-	public void setNoiseRemoval(float a){
-		noiseRemoval=a;
-	}
-	
-	public void setOut(float[][] a){
-		out=a;
-	}
-	
+	/**
+	 * Sets the envelope float[][] an array with max and min ampitude values for each spectrogram bin
+	 * @param a float[][] for the envelope parameter
+	 */
 	public void setEnvelope(float[][]a){
 		envelope=a;
 	}
-	
+
+	/**
+	 * Gets the ID for this song
+	 * @return value for songID
+	 */
 	public int getSongID(){
 		return songID;
 	}
 	
-	public int getIndividualID(){
-		return individualID;
-	}
-	
-	public String getIndividualName(){
-		return individualName;
-	}
-	
-	public String getLocationX(){
-		return locationX;
-	}
-	
-	public String getLocationY(){
-		return locationY;
-	}
-	
-	public String getSpecies(){
-		return species;
-	}
-	
-	public String getName(){
-		return name;
-	}
-	
-	public String getPopulation(){
-		return population;
-	}
-	
+	/**
+	 * Sets the ID for this song
+	 * @param a value for songID
+	 */
 	public void setSongID(int a){
 		songID=a;
 	}
-	
-	public void setIndividualID(int a){
-		individualID=a;
+
+	/**
+	 * Gets the name of this song
+	 * @return String value of the name parameter
+	 */
+	public String getName(){
+		return name;
 	}
-	
-	public void setIndividualName(String a){
-		individualName=a;
-	}
-	
-	public void setLocationX(String a){
-		locationX=a;
-	}
-	
-	public void setLocationY(String a){
-		locationY=a;
-	}
-	
-	public void setSpecies(String a){
-		species=a;
-		if (species==null){species=" ";}
-	}
-	
-	public void setPopulation(String a){
-		population=a;
-		if (population==null){population=" ";}
-	}
-	
+
+	/**
+	 * Sets the name of this song
+	 * @param a String value of the name parameter
+	 */
 	public void setName(String a){
 		name=a;
 		if (name==null){name=" ";}
 	}
+
+	/**
+	 * Gets the individual ID for this song
+	 * @return value for individualID
+	 * @see Individual
+	 */
+	public int getIndividualID(){
+		return individualID;
+	}
 	
+	/**
+	 * Sets the individual ID for this song
+	 * @param a value for individualID
+	 * @see Individual
+	 */
+	public void setIndividualID(int a){
+		individualID=a;
+	}
+
+	/**
+	 * Gets the location for this song in the longitude dimension
+	 * @return String value for locationX
+	 * @see Individual
+	 */
+	public String getLocationX(){
+		return locationX;
+	}
+	
+	/**
+	 * Sets the location for this song in the longitude dimension
+	 * @param a String value for locationX
+	 * @see Individual
+	 */
+	public void setLocationX(String a){
+		locationX=a;
+	}
+
+	/**
+	 * Gets the location for this song in the latitude dimension
+	 * @return String value for locationY
+	 * @see Individual
+	 */
+	public String getLocationY(){
+		return locationY;
+	}
+	
+	/**
+	 * Sets the location for this song in the latitude dimension
+	 * @param a String value for locationY
+	 * @see Individual
+	 */
+	public void setLocationY(String a){
+		locationY=a;
+	}
+
+	/**
+	 * get a location parameter. Check whether this is really needed.
+	 * @return a String location parameter
+	 */
+	public String getSx(){
+		return sx;
+	}
+
+	/**
+	 * set a location parameter. Check whether this is really needed.
+	 * @param a a String location parameter
+	 */
+	public void setSx(String a){
+		sx=a;
+	}
+
+	/**
+	 * get a location parameter. Check whether this is really needed.
+	 * @return a String location parameter
+	 */
+	public String getSy(){
+		return sy;
+	}
+
+	/**
+	 * set a location parameter. Check whether this is really needed.
+	 * @param a a String location parameter
+	 */
+	public void setSy(String a){
+		sy=a;
+	}
+
+	/**
+	 * Gets the individual name for this Song
+	 * @return String value for individualName
+	 * @see Individual
+	 */
+	public String getIndividualName(){
+		return individualName;
+	}
+
+	/**
+	 * Sets the individual name for this Song
+	 * @param a String value for individualName
+	 * @see Individual
+	 */
+	public void setIndividualName(String a){
+		individualName=a;
+	}
+
+	/**
+	 * Gets the species name for this song
+	 * @return String value of the species parameter
+	 * @see Individual
+	 */
+	public String getSpecies(){
+		return species;
+	}
+	
+	/**
+	 * Sets the species name for this song
+	 * @param a String value of the species parameter
+	 * @see Individual
+	 */
+	public void setSpecies(String a){
+		species=a;
+		if (species==null){species=" ";}
+	}
+
+	/**
+	 * Gets the population name for this song
+	 * @return a String value of the population parameter
+	 * @see Individual
+	 */
+	public String getPopulation(){
+		return population;
+	}
+	
+	/**
+	 * Sets the population name for this song
+	 * @param a String value for the population parameter
+	 * @see Individual
+	 */
+	public void setPopulation(String a){
+		population=a;
+		if (population==null){population=" ";}
+	}
+
+	/**
+	 * gets the time and date of the recording
+	 * @return value of tDate
+	 */
+	public long getTDate(){
+		return tDate;
+	}
+
+	/**
+	 * sets the time and date of the recording
+	 * @param a value for tDate
+	 */
+	public void setTDate(long a){
+		tDate=a;
+	}
+
+	/**
+	 * sets the metadata for verbal description of recording location
+	 * @return String value for location
+	 */
+	public String getLocation(){
+		return location;
+	}
+
+	/**
+	 * gets the metadata for verbal description of recording location
+	 * @param a String value for location
+	 */
+	public void setLocation(String a){
+		location=a;
+	}
+
+	/**
+	 * gets the metadata for notes about the song
+	 * @return String value for notes
+	 */
+	public String getNotes(){
+		return notes;
+	}
+
+	/**
+	 * sets the metadata for notes about the song
+	 * @param a String value for notes
+	 */
+	public void setNotes(String a){
+		notes=a;
+	}
+
+	/**
+	 * gets the metadata for recording equipment
+	 * @return String value for recordEquipment
+	 */
+	public String getRecordEquipment(){
+		return recordEquipment;
+	}
+
+	/**
+	 * sets the metadata for recording equipment
+	 * @param a String value for recordEquipment
+	 */
+	public void setRecordEquipment(String a){
+		recordEquipment=a;
+	}
+
+	/**
+	 * gets the metadata for the recordist
+	 * @return String value for recordist
+	 */
+	public String getRecordist(){
+		return recordist;
+	}
+
+	/**
+	 * sets the metadata for the recordist
+	 * @param a String value for recordist
+	 */
+	public void setRecordist(String a){
+		recordist=a;
+	}
+
+	/**
+	 * gets the constructed AudioFormat object for Song
+	 * @return af, an AudioFormat object
+	 */
 	public AudioFormat getAf(){
 		return af;
 	}
 	
-	public int getRDLength(){
-		return rawData.length;
-	}
-	
+	/**
+	 * gets whether or not the audio data has been loaded from the database
+	 * (Sometimes it is not to save time/memory during analysis)
+	 * @return value of the loaded parameter
+	 */
 	public boolean getLoaded(){
 		return loaded;
 	}
 	
+	/**
+	 * sets whether or not the audio data has been loaded from the database
+	 * (Sometimes it is not to save time/memory during analysis)
+	 * @param a value for the loaded parameter
+	 */
 	public void setLoaded(boolean a){
 		loaded=a;
 	}
 	
+	/**
+	 * Gets the number of channels
+	 * @return value of stereo
+	 */
 	public int getStereo(){
 		return stereo;
 	}
 	
+	/**
+	 * Sets the number of channels (max 2)
+	 * @param a int value for stereo
+	 */
+	public void setStereo(int a){
+		stereo=a;
+	}
+
+	/**
+	 * gets whether or not the audio format is big-ended
+	 * @return value of bigEnd
+	 */
 	public boolean getBigEnd(){
 		return bigEnd;
 	}
 
+	/**
+	 * sets whether or not the audio format is big-ended
+	 * @param a value for bigEnd
+	 */
+	public void setBigEnd(boolean a){
+		bigEnd=a;
+	}
+
+	/**
+	 * gets the boolean value for whether the audio format is signed
+	 * @return value of signed
+	 */
+	public boolean getSigned(){
+		return signed;
+	}
+
+	/**
+	 * sets the boolean value for whether the audio format is signed
+	 * @param a value for signed
+	 */
+	public void setSigned(boolean a){
+		signed=a;
+	}
+
+	/**
+	 * gets the sample rate in Hz
+	 * @return value of sampleRate
+	 */
 	public double getSampleRate(){
 		return sampleRate;
 	}
 	
+	/**
+	 * sets the sample rate in Hz
+	 * @param a value for sampleRate
+	 */
+	public void setSampleRate(double a){
+		sampleRate=a;
+	}
+
+	/**
+	 * gets the sample size in bits of the sound format
+	 * @return value of ssizeInBits
+	 */
+	public int getSizeInBits(){
+		return ssizeInBits;
+	}
+
+	/**
+	 * sets the sample size in bits of the sound format
+	 * @param a value for ssizeInBits
+	 */
+	public void setSizeInBits(int a){
+		ssizeInBits=a;
+	}
+
+	/**
+	 * gets the length of the raw byte array data
+	 * @return length of the rawData array
+	 */
+	public int getRDLength(){
+		return rawData.length;
+	}
+
+	/**
+	 * gets the raw data - byte array of audio data
+	 * @return byte array of audio data
+	 */
 	public byte[] getRawData(){
 		return rawData;
 	}
 	
-	public int getSizeInBits(){
-		return ssizeInBits;
-	}
-	
-	public long getTDate(){
-		return tDate;
-	}
-	
-	public boolean getSigned(){
-		return signed;
-	}
-	
-	public void setStereo(int a){
-		stereo=a;
-	}
-	
-	public void setBigEnd(boolean a){
-		bigEnd=a;
-	}
-	
-	public void setSampleRate(double a){
-		sampleRate=a;
-	}
-	
+	/**
+	 * sets the raw data - byte array of audio data
+	 * @param a byte array of audio data
+	 */
 	public void setRawData(byte[] a){
 		rawData=a;
 	}
-	
-	public void setSizeInBits(int a){
-		ssizeInBits=a;
+
+	/**
+	 * gets the maximum amplitude in the spectrogram
+	 * @return a float value of the maximum amplitude
+	 */
+	public float getMaxDB(){
+		return maxDB;
 	}
-	
-	public void setTDate(long a){
-		tDate=a;
-	}
-	
-	public void setSigned(boolean a){
-		signed=a;
-	}
-	
-	public double getFrequencyCutOff(){
-		return frequencyCutOff;
-	}
-	
-	public int getWindowMethod(){
-		return windowMethod;
-	}
-	
-	public int getNoiseLength1(){
-		return noiseLength1;
-	}
-	
-	public int getNoiseLength2(){
-		return noiseLength2;
-	}
-	
-	public void setFrequencyCutOff(double a){
-		frequencyCutOff=a;
-	}
-	
-	public void setWindowMethod(int a){
-		windowMethod=a;
-	}
-	
-	public void setNoiseLength1(int a){
-		noiseLength1=a;
-	}
-	
-	public void setNoiseLength2(int a){
-		noiseLength2=a;
-	}
-	
-	public String getLocation(){
-		return location;
-	}
-	
-	public void setLocation(String a){
-		location=a;
-	}
-	
-	public String getNotes(){
-		return notes;
-	}
-	
-	public void setNotes(String a){
-		notes=a;
-	}
-	
-	public String getRecordEquipment(){
-		return recordEquipment;
-	}
-	
-	public void setRecordEquipment(String a){
-		recordEquipment=a;
-	}
-	
-	public String getRecordist(){
-		return recordist;
-	}
-	
-	public void setRecordist(String a){
-		recordist=a;
-	}
-	
+
+	/**
+	 * get the start point for the spectrogram. Used in the guidePanel
+	 * @return an int value for startTime
+	 */
 	public int getStartTime(){
 		return startTime;
 	}
-	
+
+	/**
+	 * get the end point for the spectrogram. Used in the guidePanel.
+	 * @return an int value for endTime
+	 */
 	public int getEndTime(){
 		return endTime;
 	}
-	
-	public String getSx(){
-		return sx;
-	}
-	
-	public void setSx(String a){
-		sx=a;
-	}
-	
-	public String getSy(){
-		return sy;
-	}
-	
-	public void setSy(String a){
-		sy=a;
-	}
-	
-	public boolean getSetRangeToMax(){
-		return setRangeToMax;
-	}
-	
-	public void setSetRangeToMax(boolean a){
-		setRangeToMax=a;
-	}
-	
-	public double getOverlap(){
-		return overlap;
-	}
-	
-	public void setOverlap(double a){
-		overlap=a;
-	}
-	
+
+	/**
+	 * gets the frame parameter - the frame size if the spectrogram in sample units
+	 * @return frame size
+	 */
 	public int getFrame(){
 		return frame;
 	}
-	
+
+	/**
+	 * sets the frame parameter - the frame size if the spectrogram in sample units
+	 * @param a frame size
+	 */
 	public void setFrame(int a){
 		frame=a;
 	}
-	
-	public double getFundJumpSuppression(){
-		return fundJumpSuppression;
+
+	/**
+	 * sets the overall size of the sound, in terms of the number of samples
+	 */
+	public void setOverallSize(){
+		if (frameSize==0){frameSize++;}
+		overallSize=rawData.length/frameSize;
 	}
-	
-	public void setFundJumpSuppression(double a){
-		fundJumpSuppression=a;
+
+	/**
+	 * gets the overall size of the sound - the number of samples
+	 * @return an int value of the number of samples in the sound
+	 */
+	public int getOverallSize(){
+		return overallSize;
 	}
-	
-	public double getUpperLoop(){
-		return upperLoop;
-	}
-	
-	public void setUpperLoop(double a){
-		upperLoop=a;
-	}
-	
-	public double getLowerLoop(){
-		return lowerLoop;
-	}
-	
-	public void setLowerLoop(double a){
-		lowerLoop=a;
-	}
-	
+
+	/**
+	 * This gets the playbackDivider parameter, which determines the speed of playback. Should
+	 * be 1,2,4 or 8
+	 * @return an int showing how much to slow down playback
+	 */
 	public int getPlaybackDivider(){
 		return playbackDivider;
 	}
 	
+	/**
+	 * 
+	 * @param a
+	 */
 	public void setPlaybackDivider(int a){
 		playbackDivider=a;
 	}
 	
+	/**
+	 * gets the length of the raw (byte) audio data
+	 * @return an int with the length of the byte array
+	 */
 	public int getRawDataLength(){
 		return rawData.length;
 	}
 	
-	public float getMaxDB(){
-		return maxDB;
-	}
-	
-	
-	//Convenience get Method to build a complex SQL line to write data into database...
+	/**
+	 * Convenience get Method to build a complex SQL line to write data into database...
+	 * @param b separator in SQL syntax
+	 * @return a String in part-formed SQL with a complex list of parameters
+	 */
 	public String getDetails(String b){
 		int sa=(int)sampleRate;
 		String details="echocomp="+echoComp+b+"echorange="+echoRange+b+"noise1="+noiseRemoval+b+"noise2="+
@@ -736,19 +1185,206 @@ public class Song {
 	
 	
 	
-	public void setOverallSize(){
-		if (frameSize==0){frameSize++;}
-		overallSize=rawData.length/frameSize;
-	}
-	
-	public int getOverallSize(){
-		return overallSize;
-	}
-	
+	/**
+	 * Gets a boolean array indicating which syllables are actually phrases. interpretSyllables
+	 * needs to be run first!
+	 * @return a boolean array, 'true' values represent syllables that are phrase markers
+	 */
 	public boolean[] getPhraseID(){
 		return phraseId;
 	}
 	
+	/**
+	 * gets the number of phrases in the song
+	 * @return number of phrases
+	 */
+	public int getNumPhrases(){
+		if (phrases==null){
+			interpretSyllables();
+			if (phrases==null){
+				return 0;
+			}
+		}
+		return phrases.size();
+	}
+
+	/**
+	 * gets a specified phrase
+	 * @param a index of the phrase to get from the phrase list
+	 * @return an int[][] specifying the elements in a particular phrase
+	 */
+	public int[][] getPhrase(int a){
+		//System.out.println("getting phrase "+a+" out of "+phrases.size());
+		if (phrases==null){
+			System.out.println("WARNING NULL PHRASES");
+			interpretSyllables();
+		}
+		return phrases.get(a);
+	}
+
+	/**
+	 * sets the whole set of phrases for this Song
+	 * @param a an int[][] object specifiying phrase structure
+	 */
+	public void setPhrases(LinkedList<int[][]> a){
+		phrases=a;
+	}
+
+	/**
+	 * Sets the whole syllList to an external list of syllables
+	 * @param a a LinkedList of int[]s specifying syllables
+	 */
+	public void setSyllList(LinkedList<int[]> a){
+		syllList=a;
+	}
+
+	/**
+	 * This is a legacy function to update syllable measurements for old versions of the db.
+	 */
+	public void updateSyllableList(){
+		System.out.println("UPDATING!!!");
+		for(int i=0; i<syllList.size(); i++){
+			int[] s=syllList.get(i);
+			int[]t=new int[2];
+			t[0]=(int)Math.round(s[0]*dx);
+			t[1]=(int)Math.round(s[1]*dx);
+			syllList.remove(i);
+			syllList.add(t);
+		}
+	}
+
+	/**
+	 * get a specified syllable
+	 * @param a index of the syllable to get
+	 * @return an int[] specifying a syllable
+	 */
+	public int[] getSyllable(int a){
+		if (a>=syllList.size()){
+			return null;
+		}
+		return syllList.get(a);
+	}
+
+	/**
+	 * get the number of syllables in the syllList
+	 * @return the size of syllList
+	 */
+	public int getNumSyllables(){
+		if (syllList==null){
+			return 0;
+		}
+		return syllList.size();
+	}
+
+	/**
+	 * removes a specified syllable from the syllList
+	 * @param a location of the syllable to be removed from the syllList
+	 */
+	public void removeSyllable(int a){
+		if (a<syllList.size()){
+			syllList.remove(a);
+		}
+	}
+
+	/**
+	 * adds a new syllable at a specific location in the syllList
+	 * @param a location to add the new syllable
+	 * @param syl an int[] specifying a syllable
+	 */
+	public void addSyllable(int a, int[] syl){
+		syllList.add(a, syl);
+	}
+
+	/**
+	 * adds a new syllable to the end of the syllList
+	 * @param syl an int[] specifying a syllable
+	 */
+	public void addSyllable(int[] syl){
+		syllList.add(syl);
+	}
+
+	/**
+	 * Empties the whole list of syllables
+	 */
+	public void clearSyllables(){
+		syllList.clear();
+	}
+
+	/**
+	 * Sets the whole eleList to an external LinkedList
+	 * @param a a LinkedList of Elements
+	 * @see Element
+	 */
+	public void setEleList(LinkedList<Element> a){
+		eleList=a;
+	}
+
+	/**
+	 * Gets a specified Element from the eleList
+	 * @param a index of Element to get
+	 * @return an {@link Element}
+	 */
+	public Element getElement(int a){
+		if (a>=eleList.size()){
+			return null;
+		}
+		return eleList.get(a);
+	}
+
+	/**
+	 * Gets the number of elements in this Song object
+	 * @return the number of Elements
+	 * @see Element
+	 */
+	public int getNumElements(){
+		if (eleList==null){
+			return 0;
+		}
+		return eleList.size();
+	}
+
+	/**
+	 * Removes a specified element from eleList
+	 * @param a index of Element to remove
+	 * @see Element
+	 */
+	public void removeElement(int a){
+		if (a<eleList.size()){
+			eleList.remove(a);
+		}
+	}
+
+	/**
+	 * Adds an element to the eleList, at a specific location
+	 * @param a location to add a new Element
+	 * @param ele an Element to add
+	 * @see Element
+	 */
+	public void addElement(int a, Element ele){
+		eleList.add(a, ele);
+	}
+
+	/**
+	 * Adds an element to the eleList, at the end
+	 * @param ele an Element to add
+	 * @see Element
+	 */
+	public void addElement(Element ele){
+		eleList.add(ele);
+	}
+
+	/**
+	 * Empties the linked list of elements
+	 * @see Element
+	 */
+	public void clearElements(){
+		eleList.clear();
+	}
+
+	/**
+	 * Helps clear up a Song object when closed. Not sure whether this helps garbage collection 
+	 * or not...
+	 */
 	public void clearUp(){
 		rawData=null;
 		rawData2=null;
@@ -776,14 +1412,19 @@ public class Song {
 		
 	}
 	
-	public void tidyUp(){
+	/*
+	public void tidyUpX(){
 		out=null;
 		out1=null;
 		data=null;
 		eleList=null;
 	}
+	*/
 	
 	
+	/**
+	 * This is another effort to turn audio data into a float[] array. This is deprecated
+	 */
 	void parseSound2(){
 		float[][]look=new float[256][frameSize];
 		float divider=(float)(0.5*Math.pow(256, frameSize));
@@ -838,6 +1479,11 @@ public class Song {
 		}
 	}
 	
+	/**
+	 * This is an effort to take binary data and transform it into a float[] representation of the sound
+	 * @param start beginning point in the sound
+	 * @param end end point in the sound.
+	 */
 	private void parseSound(int start, int end){
 		int frameSizeC=frameSize/stereo;
 		float[][]look=new float[256][frameSizeC];
@@ -892,6 +1538,11 @@ public class Song {
 		}
 	}
 	
+	/**
+	 * This organizes calculation of the spectrogram, breaking the sound into chunks
+	 * that will not overwhelm the memory limits of java
+	 * @param chunks number of chunks
+	 */
 	void chunkyFFT(double chunks){
 		place=0;
 		int eTime, sTime;
@@ -932,6 +1583,11 @@ public class Song {
 	}
 
 	
+	/**
+	 * This organizes the calculation of a spectrographic representation of the sound
+	 * @param startTime time to start calculating
+	 * @param endTime time to finish
+	 */
 	public void makeMyFFT(int startTime, int endTime){
 		this.startTime=startTime;
 		this.endTime=endTime;
@@ -1029,6 +1685,12 @@ public class Song {
 		equalize();	
 	}
 	
+	/**
+	 * This organizes the calculation of a wave form representation of the sound
+	 * @param startTime
+	 * @param endTime
+	 * @param steps
+	 */
 	public void makeAmplitude(int startTime, int endTime, int steps){
 		int s=(int)Math.round(startTime*step);
 		int e=(int)Math.round(endTime*step);
@@ -1075,6 +1737,10 @@ public class Song {
 		}	
 	}
 	
+	/**
+	 * This was the beginning of an attempt to reconstitute sounds from a spectrogram. It didn't
+	 * work!
+	 */
 	void reconstitute(){
 		float[]row=new float[anx];
 		float freq=0;
@@ -1096,6 +1762,10 @@ public class Song {
 		}
 	}
 	
+	/**
+	 * First of several preparatory steps for making an FFT. This calculates basic parameters
+	 * of the spectrogram and calculates various look up tables etc.
+	 */
 	public void setFFTParameters(){
 		//if (frameSize==1){frameSize=2;}
 		sampRate=sampleRate;
@@ -1134,6 +1804,11 @@ public class Song {
 		System.out.println("Spect params: "+nx+" "+overallSize+" "+overallLength+" "+stereo+" "+frameSize+" "+sampRate+" "+step+" "+frame+" "+dy+" "+ny+" "+framePad);
 	}
 	
+	/**
+	 * Second preparatory step for the FFT. This creates the float[][] that the spectrogram
+	 * will be stored in
+	 * @param dist a measure of length
+	 */
 	public void  setFFTParameters2(int dist){
 		double start=0;
 		anx=0;
@@ -1145,6 +1820,11 @@ public class Song {
 		System.out.println("out dims: "+ny+" "+anx);
 	}
 	
+	/**
+	 * A third preparatory step for the FFT. This is no longer used- - deprecated
+	 * @param newny
+	 * @return an int containing ny
+	 */
 	public int setFFTParameters3(int newny){
 		sampRate=sampleRate;
 		dy=maxf/(newny+0.0);
@@ -1164,10 +1844,17 @@ public class Song {
 		return ny;
 	}
 	
+	/**
+	 * This creates a new AudioFormat object based on details of the format of the stored
+	 * sound
+	 */
 	public void makeAudioFormat(){
 		af=new AudioFormat((float)sampleRate, ssizeInBits, stereo, signed, bigEnd);
 	}	
 	
+	/**
+	 * This is a crude method to try to make a stereo copy of a sound. Is not used.
+	 */
 	void makeStereoCopy(){
 		
 		stereoRawData=new byte[rawData.length*2];
@@ -1177,6 +1864,13 @@ public class Song {
 		}
 	}
 	
+	/**
+	 * This method makes a stereo copy of a mono sound file. It is used on playback of a mono file
+	 * @param ssizeInBits sample size in bits
+	 * @param channel number of channels
+	 * @param signed is the sound format signed?
+	 * @param resample should it resample the sound?
+	 */
 	void makeStereoCopy(int ssizeInBits, int channel, boolean signed, boolean resample){
 		
 		int q=ssizeInBits/8;
@@ -1216,6 +1910,9 @@ public class Song {
 		
 		
 	
+	/**
+	 * This sets up the sound system for playback
+	 */
 	public void setUpPlayback(){
 		try{
 			//af=new AudioFormat((float)sampleRate, ssizeInBits, stereo, signed, bigEnd);
@@ -1266,6 +1963,10 @@ public class Song {
 		}//
 	}
 	
+	/**
+	 * This prepares the java sound system for playback
+	 * @param mixer a Mixer object
+	 */
 	public void setUpPlayback(Mixer mixer){
 		try{
 			af=new AudioFormat((float)sampleRate, ssizeInBits, stereo, signed, bigEnd);
@@ -1274,35 +1975,36 @@ public class Song {
 			Mixer.Info minfo=mixer.getMixerInfo();
 			
 			line=AudioSystem.getSourceDataLine(af, minfo);
-			
-			
-			
 			line.open(af);
 			//line.start();
 			
 			
 		} 
 		catch (Exception e) {
-			System.out.println("Here's the problem!");
 			System.out.println(e);
 			//System.exit(0);
 		}//
 	}
 	
+	/**
+	 * This shuts down playback on quitting.
+	 */
 	public void shutDownPlayback(){
 		try{
-			System.out.println("here1");
 			if (line.isOpen()){
 				line.flush();
-				System.out.println("here2");
 				//line.stop();
 				line.close();
-				System.out.println("here3");
 			}
 		}
 		catch(Exception e){}
 	}
 	
+	/**
+	 * This method is called to arrange which parts of the song need to be played back
+	 * @param syll
+	 * @return a double[] with the transformed start and stopped locations.
+	 */
 	public double[] prepPlayback(int[] syll){
 		
 		int a=0;
@@ -1330,6 +2032,12 @@ public class Song {
 		
 	
 		
+	/**
+	 * This method organizes playback of the song. It creates a PlaySound instance to actually
+	 * carry out the playbacl.
+	 * @param a
+	 * @param b
+	 */
 	public void playSound (int a, int b){
 		try{
 			//af=new AudioFormat((float)sampleRate, ssizeInBits, stereo, signed, bigEnd);
@@ -1353,6 +2061,11 @@ public class Song {
 		}//
 	}
 	
+	/**
+	 * This internal class plays the sound file encoded by the Song.
+	 * @author Rob
+	 *
+	 */
 	class PlaySound extends Thread{
 		
 		int start, end;
@@ -1393,6 +2106,9 @@ public class Song {
 		}
 	}
 	
+	/**
+	 * This is a method to stop playback of the sound 
+	 */
 	public void stopSound(){
 		try{
 			if (line.isOpen()){
@@ -1402,50 +2118,16 @@ public class Song {
 			}
 		}
 		catch (Exception e) {
-			System.out.println("OWWW too");
+			System.out.println("Stop playback error");
 		}
 	}
 	
-	public void sortSyllsEles(){
-		int num=syllList.size();
-		int [] dat;
-		while (num>0){
-			int min=10000000;
-			int loc=0;
-			for (int i=0; i<num; i++){
-				dat=syllList.get(i);
-				if (dat[0]<min){
-					loc=i;
-					min=dat[0];
-				}
-			}
-			
-			dat=syllList.get(loc);
-			syllList.remove(loc);
-			syllList.addLast(dat);
-			num--;
-		}
-		num=eleList.size();
-		while (num>0){
-			double min=10000000;
-			int loc=0;
-			for (int i=0; i<num; i++){
-				Element ele=eleList.get(i);
-				double j=ele.signal[0][0]+0.5*(ele.signal[ele.signal.length-1][0]-ele.signal[0][0]);
-				if (j<min){
-					loc=i;
-					min=j;
-				}
-			}
-		
-			Element ele=eleList.get(loc);
-			eleList.remove(loc);
-			eleList.addLast(ele);
-			num--;
-		}
-		dat=null;
-	}
-	
+	/**
+	 * Another part of the filter function. This calls fir up to twice: once
+	 * a low-pass for aliases, then optionally a high-pass for frequency cut-off
+	 * @param startd start point of signal
+	 * @param endd end point of signal
+	 */
 	private void filter(int startd, int endd){
 		float[] data1=fir(startd, endd, filtu, data);
 		if (frequencyCutOff>0){
@@ -1462,6 +2144,14 @@ public class Song {
 		}		
 	}
 
+	/**
+	 * Carries out simple convolution-based filtering
+	 * @param startd start point in signal
+	 * @param endd end point in signal
+	 * @param filt filter bank (?terminology)
+	 * @param d signal to be filtered
+	 * @return a float[] of filtered signal
+	 */
 	private float[] fir(int startd, int endd, double[] filt, float[] d){
 		///System.out.println(startd+" "+endd+" "+frequencyCutOff+" "+data.length);
 		int i, j, k;
@@ -1477,15 +2167,21 @@ public class Song {
 		return data2;
 	}
 	
+	/**
+	 * This method makes filter banks for high/low-pass filters
+	 * @param fco frequency cut-off
+	 * @param type 1=high-pass, 0=low-pass
+	 * @return a double[] containing the calculated filter bank
+	 */
 	double[] makeFilterBank(double fco, int type){
 		int m=300;
 		double M=m;
 		rangef=m+1;
 		double M2=m/2;
-		int m2=(int)M2;
-		double K=0;
+		//int m2=(int)M2;
+		//double K=0;
 		double fc=fco/sampRate;
-		System.out.println(fco+" "+fc+" "+sampRate);
+		//System.out.println(fco+" "+fc+" "+sampRate);
 		double one, two;
 		double[] filt=new double[rangef];
 		int i;
@@ -1511,6 +2207,10 @@ public class Song {
 		return filt;
 	}
 	
+	/**
+	 * This is the FFT method
+	 * @param L indicates where in the signal to start from
+	 */
 	private void calculateFFT(int L){
 		int L2=data.length;
 		float[] dat=new float[2*framePad];
@@ -1573,7 +2273,11 @@ public class Song {
 		dat=null;
 	}
 
-	private void calculateSampleFFT(){		//Makes a tonal signal of maximum amplitude to set a reference amplitude value
+	/**
+	 * Makes a tonal signal of maximum amplitude to set a reference amplitude value in
+	 * the spectrogram
+	 */
+	private void calculateSampleFFT(){		
 		float[] dat=new float[2*framePad];
 		
 		int i=0;
@@ -1619,7 +2323,12 @@ public class Song {
 		dat=null;
 	}
 
-	private void makeTrigTables(int val){				//This method produces look-up tables for the production of the spectrograms
+	/**
+	 * This method produces look-up tables for the production of the spectrograms,
+	 * optimizing slightly
+	 * @param val
+	 */
+	private void makeTrigTables(int val){			
 		val=val*2;
 		double om2=2.0*Math.PI;
 		int amt=2;
@@ -1695,7 +2404,12 @@ public class Song {
 		counter=count;
 	}
 	
-	private void makeBitShiftTables(int N){			//This method produces look-up tables for figuring out how to do the bit-shifting
+	/**
+	 * This method produces look-up tables for figuring out how to do the bit-shifting in the
+	 * FFT - optimizes FFT slightly
+	 * @param N
+	 */
+	private void makeBitShiftTables(int N){			
 		int i,j,k,tot;
 		counter2=0;
 		j=0;
@@ -1729,6 +2443,10 @@ public class Song {
 	}
 	
 
+	/**
+	 * This method creates windowFunctions for the FFT
+	 * @param N the index of the window
+	 */
 	private void makeWindow(int N){			//produces various windowing functions
 		window=new float[N];
 		if (windowMethod==3){
@@ -1746,6 +2464,10 @@ public class Song {
 		//}
 	}
 	
+	/**
+	 * This method carries out a process of dynamic equalization, making each window of
+	 * a certain length have at least one black point
+	 */
 	private void dynamicEqualizer(){			//a dynamic equalizer; key parameter (dynEqual) varies time-range over which spectrogram is normalized
 		int dynEqual2=(int)(dynEqual/dx);
 		if (dynEqual2>anx){dynEqual2=anx;}
@@ -1773,6 +2495,10 @@ public class Song {
 		tops=null;
 	}
 	
+	/**
+	 * This function adjusts spectrogram for dynamic range, leaving values that are to be
+	 * coloured white in the spectrogram <0
+	 */
 	private void dynamicRange(){		//converts power spectrum into logarithmic, decibel scale (relative to maxPossAmp).
 		//System.out.print("a");
 		double logd=10/(Math.log(10));
@@ -1801,461 +2527,17 @@ public class Song {
 	
 	
 	
-	void findBlobs(float[][] edges){
-
-		int x=out.length; 
-		int y=out[0].length;
-		float[][] out3=new float[x][y];
-		int[] xd={-1, -1, -1, 0, 0, 1, 1, 1};
-		int[] yd={-1, 0, 1, -1, 1, -1, 0, 1};
-		
-		for (int i=0; i<x; i++){
-			for (int j=0; j<y; j++){
-				float r=-1000f;
-				float p=edges[i][j];
-				float p1=out[i][j];
-				for (int k=0; k<8; k++){
-					
-					for (int g=1; g<10; g++){
-						int xq=i+g*xd[k];
-						int yq=j+g*yd[k];
-							
-						if ((xq>=0)&&(yq>=0)&&(xq<x)&&(yq<y)){
-							float q=edges[xq][yq];
-							float q1=out[xq][yq];
-							if (q1<0){q1=0;}
-							xq=i-g*xd[k];
-							yq=j-g*yd[k];
-							if ((xq>=0)&&(yq>=0)&&(xq<x)&&(yq<y)){
-								float s=edges[xq][yq];
-								float s1=out[xq][yq];
-								if (s1<0){s1=0;}
-								q=Math.min(s,q)-p;
-								
-								q+=p1-Math.min(s1,q1);
-								if(q>r){
-									r=q;
-								}
-							}
-						}
-					}	
-				}	
-				out3[i][j]=0.5f*(r+out[i][j]);
-
-			}
-		}
-		out=out3;	
-	}
 	
 	
-
-	void medianFilterNoiseRemoval(){
-		
-		int kr=10;
-		
-		int x=out.length;
-		int y=out[0].length;
-		
-		float[][] filtered=new float[x][y];
-		
-		float[] buffer=new float[(2*kr+1)*(2*kr+1)];
-		
-		int a1, a2, b1, b2, w;
-		double summer=0;	
-		for (int a=0; a<x; a++){
-			a1=a-kr;
-			if (a1<0){a1=0;}
-			a2=a+kr;
-			if (a2>=x){a2=x-1;}
-			
-			for (int b=0; b<y; b++){
-				
-				b1=b-kr;
-				if (b1<0){b1=0;}
-				b2=b+kr;
-				if (b2>=y){b2=y-1;}
-				
-				w=0;
-				for (int c=a1; c<=a2; c++){
-					for (int d=b1; d<=b2; d++){
-						buffer[w]=out[c][d];
-						w++;
-					}
-				}
-				if (w<=buffer.length){
-					for (int c=w-1; c<buffer.length; c++){
-						buffer[c]=0;
-					}
-				}
-				Arrays.sort(buffer);
-				filtered[a][b]=buffer[buffer.length/2];
-				summer+=filtered[a][b];
-			}
-		}
-		summer/=x*y*1.0;
-		for (int i=0; i<x; i++){
-			for (int j=0; j<y; j++){
-				out[i][j]-=(float)(0.5*(filtered[i][j]-summer));
-			}
-		}
-		//out=filtered;
-	}	
-	
-	
-	private float[][] blobAccentuator2(){
-		
-		//out=gaussianBlur(2);
-		int x=out.length;
-		int y=out[0].length;
-		float[][] out2=new float[x][y];
-		
-		int[] xd={-1, -1, -1, 0, 0, 1, 1, 1};
-		int[] yd={-1, 0, 1, -1, 1, -1, 0, 1};
-		
-		for (int i=0; i<x; i++){
-			for (int j=0; j<y; j++){
-				
-				int xp=i;
-				int yp=j;
-				float p=out[i][j];
-				float q=0;
-				boolean cont=true;
-				while (cont){
-					cont=false;
-					int kc=-1;
-					for (int k=0; k<8; k++){
-						int xq=xp+xd[k];
-						int yq=yp+yd[k];
-						if ((xq>=0)&&(yq>=0)&&(xq<x)&&(yq<y)&&(out[xq][yq]>p)){
-							p=out[xq][yq];
-							cont=true;
-							kc=k;
-						}
-					}
-					if (cont){
-						float r=out[xp][yp]-p;
-						if (r>q){q=r;}
-						xp+=xd[kc];
-						yp+=yd[kc];
-					}
-				}
-				p-=q;
-				if (p>10){p=10;}
-				out2[i][j]=out[i][j]+p;	
-			}
-		}
-		
-		return out2;
-	}
-	
-	/*
-	
-	void blobAccentuator(){
-		int repeats=3;
-		int rad1=2;
-		int kw=2*rad1+1;
-		float[][] out2=gaussianBlur(rad1);
-		float[][] kernel=makeGaussianKernel(rad1);
-		
-		int x=out2.length;
-		int y=out2[0].length;
-		
-		int[][] top=new int[x][y];
-		int[][] sec=new int[x][y];
-		float[][] out3=new float[x][y];
-		
-		int[] xs={-kw, -kw, -kw, 0, kw, kw, kw, 0};
-		int[] ys={-kw, 0, kw, kw, kw, 0, -kw, -kw};
-		for (int i=0; i<x; i++){
-			for (int j=0; j<y; j++){
-				//if(out[i][j]>0){
-					float first=-10000;
-					float second=-10000;
-					int locf=-1;
-					int locs=-1;
-					for (int k=0; k<8; k++){
-						int ii=i+xs[k];
-						if ((ii>=0)&&(ii<x)){
-							int jj=j+ys[k];
-							if ((jj>=0)&&(jj<y)){
-								float p=out2[ii][jj];
-								if (p>first){
-									second=first;
-									locs=locf;
-									first=p;
-									locf=k;
-								}
-								else if (p>second){
-									second=p;
-									locs=k;
-								}
-							}
-						}
-					}
-					top[i][j]=locf;
-					sec[i][j]=locs;
-				//}
-			}
-		}
-		for (int i=0; i<x; i++){
-			for (int j=0; j<y; j++){
-				out2[i][j]=out[i][j];
-				out3[i][j]=out[i][j];
-			}
-		}
-		for (int r=0; r<repeats; r++){
-			float[][] counter=new float[x][y];
-			for (int i=0; i<x; i++){
-				for (int j=0; j<y; j++){
-					if(out[i][j]>0){
-						int e=top[i][j];
-						/*
-						for (int f=xs[e]-rad1; f<=xs[e]+rad1; f++){
-							int ff=f+i;
-							if((ff>=0)&&(ff<x)){
-								for (int g=ys[e]-rad1; g<=ys[e]+rad1; g++){
-									int gg=g+j;
-									if((gg>=0)&&(gg<y)&&(out3[ff][gg]<out[i][j])){
-										out3[ff][gg]+=out[i][j]*kernel[f-xs[e]+rad1][g-ys[e]+rad1];
-										if (out3[ff][gg]>out[i][j]){out3[ff][gg]=out[i][j];}
-										counter[ff][gg]+=kernel[f-xs[e]+rad1][g-ys[e]+rad1];
-									}
-								}
-							}
-						}
-						
-						e=sec[i][j];
-						for (int f=xs[e]-rad1; f<=xs[e]+rad1; f++){
-							int ff=f+i;
-							if((ff>=0)&&(ff<x)){
-								for (int g=ys[e]-rad1; g<=ys[e]+rad1; g++){
-									int gg=g+j;
-									if((gg>=0)&&(gg<y)&&(out3[ff][gg]<out[i][j])){
-										out3[ff][gg]+=out[i][j]*kernel[f-xs[e]+rad1][g-ys[e]+rad1];
-										//if (out3[ff][gg]>out[i][j]){out3[ff][gg]=out[i][j];}
-										counter[ff][gg]+=kernel[f-xs[e]+rad1][g-ys[e]+rad1];
-									}
-								}
-							}
-						}
-					}
-					
-				}
-			}
-			for (int i=0; i<x; i++){
-				for (int j=0; j<y; j++){
-					//out[i][j]=out3[i][j]/(1+counter[i][j]);
-					out[i][j]=out3[i][j];
-					out3[i][j]=out[i][j];
-				}
-			}
-		}	
-		for (int i=0; i<x; i++){
-			for (int j=0; j<y; j++){
-				//out[i][j]=out[i][j]+out2[i][j];
-			}
-		}
-	}
-	
-	void blobAccentuator3(float[][] out2){
-		//float[][] out2=medianFilterXY(10, 0.45f);
-		//float[][] out2=out;
-		int x=out.length; 
-		int y=out[0].length;
-		float[][] out3=new float[x][y];
-		int[] xd={-1, -1, -1, 0, 0, 1, 1, 1};
-		int[] yd={-1, 0, 1, -1, 1, -1, 0, 1};
-		
-		for (int i=0; i<x; i++){
-			for (int j=0; j<y; j++){
-				float r=-1000f;
-				float p=out2[i][j];
-				for (int k=0; k<8; k++){
-					
-					for (int g=1; g<10; g++){
-						int xq=i+g*xd[k];
-						int yq=j+g*yd[k];
-							
-						if ((xq>=0)&&(yq>=0)&&(xq<x)&&(yq<y)){
-							float q=out2[xq][yq];
-							//if (q<0){q=0;}
-							xq=i-g*xd[k];
-							yq=j-g*yd[k];
-							if ((xq>=0)&&(yq>=0)&&(xq<x)&&(yq<y)){
-								float s=out2[xq][yq];
-								//if(s<0){s=0;}
-								q=p-(0.5f)*(s+q);
-								if(q>r){
-									r=q;
-								}
-							}
-						}
-					}	
-				}	
-				out3[i][j]=r;
-				if (out[i][j]<out3[i][j]){out3[i][j]=out[i][j];}
-				out3[i][j]+=out[i][j];
-			}
-		}
-		out=out2;	
-	}
-	
-void blobAccentuator4(){
-		
-		int x=out.length; 
-		int y=out[0].length;
-		float[][] out2=new float[x][y];
-		int[] xd={-1, -1, -1, 0, 0, 1, 1, 1};
-		int[] yd={-1, 0, 1, -1, 1, -1, 0, 1};
-		
-		for (int i=0; i<x; i++){
-			for (int j=0; j<y; j++){
-				
-				if (out[i][j]>0){
-					
-					float p=out[i][j];
-					
-					int xp=i;
-					int yp=j;
-					int kk=0;
-					while (kk>=0){
-						if (out[i][j]>out2[xp][yp]){
-							out2[xp][yp]=out[i][j];
-						}
-						float r=0;
-						kk=-1;
-						for (int k=0; k<8; k++){
-							int xq=xp+xd[k];
-							int yq=yp+yd[k];
-							
-							if ((xq>=0)&&(yq>=0)&&(xq<x)&&(yq<y)){
-								float q=out[xq][yq];
-								if((q>r)&&(q<p)){
-									r=q;
-									kk=k;
-								}
-							}
-						}
-						if (kk>=0){
-							xp=xp+xd[kk];
-							yp=yp+yd[kk];
-							p=r;
-						}
-					}	
-				}	
-			}
-		}
-		out=out2;	
-	}
-	*/
-	/*
-	void lineAccentuator(){
-		
-		//this method carries out a simple line detection convolution
-		
-		int rad1=5;
-		int diam=2*rad1+1;
-		float inv=(float)(1/(diam+0.0));
-		
-		int[][] k=makeKernels(rad1);		
-		
-		int x=out.length;
-		int y=out[0].length;
-		
-		int[][] filtered=new int[x][y];
-		float[] medf=new float[diam];
-		
-		for (int a=0; a<x; a++){			
-			for (int b=0; b<y; b++){
-				double bestsc=-10000;
-				double worstsc=10000;
-				int loc=0;
-				for (int c=0; c<k.length; c++){
-					double sc=0;
-					for (int d=0; d<diam; d++){
-						int aa=a+k[c][d];
-						if ((aa>=0)&&(aa<x)){
-							int bb=b+k[c][d+diam];
-							if ((bb>=0)&&(bb<y)){
-								if(out[aa][bb]<out[a][b]){sc+=(out[aa][bb]-out[a][b])*(out[aa][bb]-out[a][b]);}
-								//sc+=out[aa][bb];
-							}
-						}
-					}
-					
-					if (sc>bestsc){bestsc=sc;}
-					if (sc<worstsc){worstsc=sc;  filtered[a][b]=c;}
-				}
-			}
-		}
-		double sum=0;
-		for (int a=0; a<x; a++){
-			for (int b=0; b<y; b++){
-				//out[a][b]=filtered[a][b];
-				
-				sum+=out[a][b];
-				//out[a][b]+=100;
-			}
-		}
-		
-		sum/=x*y*1.0;
-		//float out2[][]=new float[x][y];
-		for (int repeat=0; repeat<1; repeat++){
-			for (int a=0; a<x; a++){
-				for (int b=0; b<y; b++){
-					int loc=filtered[a][b];
-					double sc=0;
-					double co=0;
-					for (int d=a-1; d<=a+1; d++){
-						if ((d>=0)&&(d<x)){
-							for (int e=b-1; e<b+1; e++){
-								if ((e>=0)&&(e<y)){
-								//if (out[a][b]>out[aa][bb]){
-									int di=Math.abs(loc-filtered[d][e]);
-									if (di>rad1){di=diam-di;}
-									sc+=di;
-									co++;
-									//out2[aa][bb]=(0.25f*out[a][b]+out[aa][bb]);
-								}
-							}
-						}
-					}
-					sc/=(co*rad1);
-					out[a][b]+=(float)(10*(1-sc));
-				}
-			}
-			//for (int a=0; a<x; a++){
-			//	for (int b=0; b<y; b++){
-			//		out[a][b]=out2[a][b];
-			//	}
-			//}
-		}
-		double sum2=0;
-		for (int a=0; a<x; a++){
-			for (int b=0; b<y; b++){
-				sum2+=out[a][b];
-			}
-		}
-		sum2/=x*y*1.0;
-		System.out.println(sum+" "+sum2);
-		float adj=(float)(sum-sum2);
-		for (int a=0; a<x; a++){
-			for (int b=0; b<y; b++){
-				//out[a][b]+=adj;
-			}
-		}
-		
-	}
-	
-	
-	
-	*/
 	
 
 	
 	
-	
-	private void echoAverager(){		//Echo removal algorithm. Algorithm looks for maximum in previous echorange time-steps. 
+	/**
+	 * This is a dereverberation algorithm and represents my first version at such an algorith.
+	 * Algorithm looks for maximum in previous echorange time-steps. 
+	 */
+	void echoAverager(){		//Echo removal algorithm. 
 		float[][] out2=out;
 		//float[][] out2=gaussianBlur(20);
 		
@@ -2289,7 +2571,12 @@ void blobAccentuator4(){
 		}
 	}
 	
-	private float[][] echoAverager2(){		//Echo removal algorithm. Algorithm looks for maximum in previous echorange time-steps. 
+	/**
+	 * This is an algorithm for dereverberation in a spectrogram.
+	 * Algorithm looks for maximum in previous echorange time-steps. 
+	 * @return a float[][] of same size as out that has reduced reverberation.
+	 */
+	private float[][] echoAverager2(){		//Echo removal algorithm. 
 		float[][] out2=out;
 
 		int echoRange2=(int)(echoRange/dx);
@@ -2341,8 +2628,13 @@ void blobAccentuator4(){
 		return t;
 	}
 	
+	/**
+	 * this method takes the median regression through each point, along the x-axis of the spectrogram
+	 * It could be used to assist with dereverberation, but it isn't at present
+	 * @return a double[] indicating the degree of attentuation at each point after a signal
+	 */
 	public double[] sampleEchoDecays(){
-		//this method takes the median regression through each point, along the x-axis of the spectrogram
+		//
 		
 		int windowSize=(int)(0.5*echoRange/dx);
 		//int windowSize=50;
@@ -2385,221 +2677,12 @@ void blobAccentuator4(){
 	}
 		
 		
-	public float[][] enhanceDistinctiveness(double wei, int p1, int p2, float maxCh){
-		
-		int rad1=p1;
-		int rad2=p2;
-		
-		int er1=2*rad1+1;
-		int er2=2*rad2+1;
-				
-		if (er1>anx){er1=anx;}
-		if (er2>anx){er2=anx;}
-		
-		float ec=(float)(wei);
-		
-		float[][] t=new float[ny][anx];
-		float[] buffer1=new float[er1];
-		float[] buffer2=new float[er2];
-
-		float[] maxout=new float[ny];
-		float[] maxt=new float[ny];
-		for (int i=0; i<ny; i++){
-			maxout[i]=Float.NEGATIVE_INFINITY;
-			maxt[i]=Float.NEGATIVE_INFINITY;
-		}
-		
-		for (int i=0; i<ny; i++){
-			
-			
-			for (int j=0; j<er1; j++){
-				buffer1[j]=out[i][j];
-			}
-			Arrays.sort(buffer1);
-			
-			for (int j=0; j<er2; j++){
-				buffer2[j]=out[i][j];
-			}
-			Arrays.sort(buffer2);
-			
-			int place1=0-rad1;
-			int place2=0-rad2;
-			
-			for (int j=0; j<anx; j++){
-				if(out[i][j]>maxout[i]){maxout[i]=out[i][j];}
-			}
-			for (int j=0; j<anx; j++){
-				//The following code continually adjusts the the frame, keeping its ascending order by substituting out one and adding one.
-				if ((place1>0)&&(place1<anx-er1)){
-					int kk=0;
-					float p=out[i][place1-1];
-					boolean found=false;
-					for (int k=0; k<er1-1; k++){
-						if ((!found)&&(buffer1[k]==p)){
-							kk++;
-							found=true;
-						}
-						buffer1[k]=buffer1[kk];
-						kk++;
-					}
-					p=out[i][place1+er1];
-					for (int k=er1-2; k>=0; k--){
-						if (buffer1[k]<=p){
-							buffer1[k+1]=p;
-							k=-1;
-						}
-						else{
-							buffer1[k+1]=buffer1[k];
-						}
-					}
-					if (p<buffer1[0]){buffer1[0]=p;}
-				}
-				
-				if ((place2>0)&&(place2<anx-er2)){
-					int kk=0;
-					float p=out[i][place2-1];
-					boolean found=false;
-					for (int k=0; k<er2-1; k++){
-						if ((!found)&&(buffer2[k]==p)){
-							kk++;
-							found=true;
-						}
-						buffer2[k]=buffer2[kk];
-						kk++;
-					}
-					p=out[i][place2+er2];
-					for (int k=er2-2; k>=0; k--){
-						if (buffer2[k]<=p){
-							buffer2[k+1]=p;
-							k=-1;
-						}
-						else{
-							buffer2[k+1]=buffer2[k];
-						}
-					}
-					if (p<buffer2[0]){buffer2[0]=p;}
-				}
-				
-				t[i][j]=out[i][j];
-				
-				float res1=out[i][j]-buffer1[rad1];
-				float res2=out[i][j]-buffer2[rad2];
-				
-				
-				//if(res1>0){
-				//	res1=(res1/40f)*(maxout[i]-out[i][j]);
-				//}
-				//if(res2>0){
-				//	res2=(res2/40f)*(maxout[i]-out[i][j]);
-				//}
-				
-				
-				if ((res1)>(res2)){
-					if(res1>maxCh){res1=maxCh;}
-					t[i][j]+=ec*res1;
-				}
-				else{
-					if (res2>maxCh){res2=maxCh;}
-					t[i][j]+=ec*res2;
-				}
-				if(t[i][j]>maxout[i]+20){t[i][j]=maxout[i]+20;}
-				
-				
-				//t[i][j]+=ec*(out[i][j]-buffer1[medLoc1]);
-
-				
-				if(t[i][j]>maxt[i]){maxt[i]=t[i][j];}
-				
-				place1++;
-				place2++;
-				
-			}
-		}	
-		
-		for (int i=0; i<ny; i++){
-			float adj=(maxout[i]-maxt[i]);
-			for (int j=0; j<anx; j++){
-				//t[i][j]+=adj;
-			}
-		}
-		return t;
-	}
-	
-	public void enhanceDistinctivenessFreq(double wei){
-		
-		int er=ny;
-		float ec=(float)(wei);
-		
-		float[][] t=new float[ny][anx];
-		float[] buffer=new float[er];
-		int medLoc=er/2;
-		float avout=0;
-		float avt=0;
-		for (int i=0; i<anx; i++){
-			
-			
-			for (int j=0; j<er; j++){
-				buffer[j]=out[j][i];
-			}
-			Arrays.sort(buffer);
-
-			for (int j=0; j<ny; j++){
-				t[j][i]=out[j][i]-ec*buffer[medLoc];
-				avout+=out[j][i];
-				avt+=t[j][i];				
-			}
-		}		
-		float adj=(avout-avt)/(ny*anx*1f);
-		for (int i=0; i<ny; i++){
-			for (int j=0; j<anx; j++){
-				out[i][j]=t[i][j];
-			}
-		}
-	}
 	
 	
 	
-	
-	
-	void denoiser(){
-		int sampleLength=100;
-		double[] means=new double[ny];
-		for (int i=0; i<ny; i++){
-			for (int j=0; j<sampleLength; j++){
-				means[i]+=out[i][j];
-			}
-		}
-		for (int i=0; i<ny; i++){
-			means[i]/=sampleLength+0.0;
-		}
-		double[] sds=new double[ny];
-		for (int i=0; i<ny; i++){
-			for (int j=0; j<sampleLength; j++){
-				double p=out[i][j]-means[i];
-				sds[i]+=p*p;
-			}
-		}
-		for (int i=0; i<ny; i++){
-			sds[i]/=sampleLength+0.0;
-			sds[i]=Math.sqrt(i);
-		}
-		float cutOffs[]=new float[ny];
-		for (int i=0; i<ny; i++){
-			double p=means[i];
-			if (p>0){
-				cutOffs[i]=(float)p;
-			}
-			
-		}
-		for (int i=0; i<ny; i++){
-			for (int j=0; j<anx; j++){
-				out[i][j]-=cutOffs[i];
-			}
-		}
-
-	}
-	
-	
+	/**
+	 * This method carries out a process of dynamic equalization. 
+	 */
 	private void equalize(){
 		maxDB=-10000;
 		int i,j;
@@ -2616,6 +2699,9 @@ void blobAccentuator4(){
 		//System.out.println("Done");
 	}
 	
+	/**
+	 * This method calculates gaps before and after elements in eleList
+	 */
 	public void calculateGaps(){
 		float gapbefore=0f;
 		float gapafter=0f;
@@ -2633,6 +2719,59 @@ void blobAccentuator4(){
 	}
 	
 	
+	/**
+	 * This method sorts syllables and elements into chronological order
+	 */
+	public void sortSyllsEles(){
+		int num=syllList.size();
+		int [] dat;
+		while (num>0){
+			int min=10000000;
+			int loc=0;
+			for (int i=0; i<num; i++){
+				dat=syllList.get(i);
+				if (dat[0]<min){
+					loc=i;
+					min=dat[0];
+				}
+			}
+			
+			dat=syllList.get(loc);
+			syllList.remove(loc);
+			syllList.addLast(dat);
+			num--;
+		}
+		num=eleList.size();
+		while (num>0){
+			double min=10000000;
+			int loc=0;
+			for (int i=0; i<num; i++){
+				Element ele=eleList.get(i);
+				double j=ele.signal[0][0]+0.5*(ele.signal[ele.signal.length-1][0]-ele.signal[0][0]);
+				if (j<min){
+					loc=i;
+					min=j;
+				}
+			}
+		
+			Element ele=eleList.get(loc);
+			eleList.remove(loc);
+			eleList.addLast(ele);
+			num--;
+		}
+		dat=null;
+	}
+
+	/**
+	 * This method takes a set of syllables, and parses them into phrases.
+	 * It searches for syllables that encompass other syllables, and makes them markers
+	 * of phrases. It produces a linked list of phrases. Each item if this is an int[][].
+	 * The first index represents the number of repeats of a syllable within a phrase, and the second indicates 
+	 * which elements from eleList belong to that syllable.
+	 * 
+	 * This method imposes quite strict limits on patterns of hierarchical organization in song. It is
+	 * used extensively by analysis methods, but it would be better to revise it to be more flexible.
+	 */
 	public void interpretSyllables(){
 		phrases=new LinkedList<int[][]>();
 		
@@ -2750,14 +2889,30 @@ void blobAccentuator4(){
 		}
 	}
 	
+	/**
+	 * gets a phase matrix, indicating the support of a given input frequency for a 
+	 * hypothesized pitch. i.e. integer multiples of fundamental frequencies are given 
+	 * a large weight.
+	 * @return a double[] representing phase
+	 */
 	public double[] getPhase(){
 		return phase;
 	}
 	
+	/**
+	 * gets the minFreq parameter. This limits the minimum detectable frequency for pitch
+	 * calculations
+	 * @return an int (number of spectrogram rows) representation of minFreq
+	 */
 	public int getMinFreq(){
 		return minFreq;
 	}
 	
+	/**
+	 * This method calculates the double[] phase object which is used in pitch calculation - both
+	 * for pitch representation and for fundamental frequency estimation.
+	 * This should only be called once upon initiation of a new spectrogram.
+	 */
 	public void makePhase(){
 		
 		double log2Adj=1/Math.log(2);
@@ -2787,6 +2942,14 @@ void blobAccentuator4(){
 		}
 	}
 	
+	/**
+	 * This method calculates the pitch representation. Specifically, it calculates the
+	 * number of available cores and creates instances of PitchCalculator to do the
+	 * calculation
+	 * @param unx the number of columns in the spectrogram. Not obvious why this needs to 
+	 * be sent to the method.
+	 * @return a float[][] pitch representation of the sound.
+	 */
 	public float[][] runPitchCalculator(int unx){
 		int ncores=Runtime.getRuntime().availableProcessors();
 		
@@ -2836,6 +2999,12 @@ void blobAccentuator4(){
 		return pout;
 	}
 	
+	/**
+	 * This internal class calculates the 'pitch' representation of sounds. By making
+	 * it an internal class, it makes it possible to use multiple threads/cores
+	 * @author Rob
+	 *
+	 */
 	public class PitchCalculator extends Thread{
 		
 		int start, end;

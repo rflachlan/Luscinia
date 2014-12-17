@@ -648,14 +648,6 @@ public class DatabaseView extends TabType implements ActionListener {
 						dbc2.writeToDataBase(s2);
 					}
 				}
-				
-				
-				
-				
-				
-				
-				
-				
 				luscinia.loggedOut();
 			}
 		}
@@ -731,7 +723,7 @@ public class DatabaseView extends TabType implements ActionListener {
 		}
 		
 	}
-	
+	/*
 	public void updateMeasurements(){
 		
 		
@@ -773,7 +765,7 @@ public class DatabaseView extends TabType implements ActionListener {
 			
 			System.out.println("updating: "+song.getName());
 			
-			song.getMeasurer().updateTrillMeasures();
+			song.getMeasurer().updateTrillMeasuresX();
 			dbc.writeSongMeasurements(song);
 			
 			
@@ -788,7 +780,7 @@ public class DatabaseView extends TabType implements ActionListener {
 			
 		}
 	}
-	
+	*/
 	
 	
 	public void cleanUp(){

@@ -1,13 +1,19 @@
 package lusc.net.github;
 
-import java.awt.image.BufferedImage;
+//import java.awt.image.BufferedImage;
 import java.util.Arrays;
 import java.util.LinkedList;
 
 import lusc.net.github.analysis.BasicStatistics;
-import lusc.net.github.ui.*;
+//import lusc.net.github.ui.*;
 import lusc.net.github.ui.spectrogram.SpectrPane;
 
+/**
+ * This Class measures elements within spectrograms - measuring a range of acoustic parameters
+ * It interacts closely with the {@link Song} class.
+ * @author Rob
+ *
+ */
 public class SpectrogramMeasurement {
 
 	Song song;
@@ -17,6 +23,10 @@ public class SpectrogramMeasurement {
 	int minFreq=5;
 	double octstep=10;
 	
+	/**
+	 * This constructor builds from a {@link Song} object
+	 * @param song
+	 */
 	public SpectrogramMeasurement(Song song){
 		this.song=song;
 		this.dy=song.dy;
@@ -24,6 +34,11 @@ public class SpectrogramMeasurement {
 		this.ny=song.ny;
 	}
 	
+	/**
+	 * This is a deprecated method that carries out a Gaussian blur. It should be moved
+	 * to Matrix2DOperations, if it is to be kept.
+	 * @param data
+	 */
 	void gaussianBlur(double[][] data){
 		double vari=2;
 		float[][] kernel=new float[5][5];
@@ -80,6 +95,14 @@ public class SpectrogramMeasurement {
 	
 	
 	
+	/**
+	 * This method uses a hysteresis loop method to search for a signal within a highlighted
+	 * region of a spectrogram
+	 * @param pointList a highlighted region of the spectrogram. Lists min and max freqs
+	 * for a range of times
+	 * @param unx length of the spectrogram (shouldn't be necessary!)
+	 * @return a LinkedList of int[][] containing signal locations
+	 */
 	public LinkedList<int[][]> getSignal(int[][] pointList, int unx){						
 		nout=song.getOut();
 		//This method identifies which parts of the highlighted sound are loud enough to be "signal"
@@ -301,6 +324,13 @@ public class SpectrogramMeasurement {
 		return tList;	
 	}
 	
+	/**
+	 * This method attempts to merge two measured elements into one - based on a user decision
+	 * to do so. This is currently a bit buggy, and needs some investigation
+	 * @param p the index of the first element to merge in the eleList
+	 * @param sp the {@link lusc.net.github.ui.spectrogram.SpectrPane} object that called merge
+	 * @param currentMinX current minimum time on the spectrogram
+	 */
 	public void merge(int p, SpectrPane sp, int currentMinX){
 		Element ele1=(Element)song.getElement(p);
 		Element ele2=(Element)song.getElement(p+1);
@@ -421,6 +451,14 @@ public class SpectrogramMeasurement {
 		}
 	}
 
+	/**
+	 * This is the organizing method for measuring acoustic parameters of new elements, and
+	 * constructing new Element objects from the measurements.
+	 * @param signals a list of new elements, described by their locations on the spectrograms
+	 * @param sp the {@link lusc.net.github.ui.spectrogram.SpectrPane} object that called this
+	 * @param currentMinX current minimum time value of the spectrogram.
+	 * @return an int containing the number of added elements
+	 */
 	public int measureAndAddElements(LinkedList<int[][]> signals, SpectrPane sp, int currentMinX){
 		LinkedList<double[][]> freqList=new LinkedList<double[][]>();
 		LinkedList<double[][]> freqChangeList=new LinkedList<double[][]>();
@@ -473,7 +511,7 @@ public class SpectrogramMeasurement {
 		wienerList=null;
 		ampList=null;
 		bandwidthList=null;
-		fixTimes(signals, currentMinX);
+		fixTimesAndFreqs(signals, currentMinX);
 		int numberElementsAddedLastTime=signals.size();
 		
 		
@@ -504,7 +542,12 @@ public class SpectrogramMeasurement {
 		return numberElementsAddedLastTime;
 	}
 	
-	private void getSignalLoc(LinkedList<int[][]> tList, LinkedList<boolean[][]> sigList){
+	/**
+	 * Deprecated
+	 * @param tList
+	 * @param sigList
+	 */
+	void getSignalLoc(LinkedList<int[][]> tList, LinkedList<boolean[][]> sigList){
 		int elNum=tList.size();
 		for (int i=0; i<elNum; i++){
 			int[][]data=tList.get(i);
@@ -514,9 +557,9 @@ public class SpectrogramMeasurement {
 				for (int k=0; k<ny; k++){sig[j][k]=false;}
 				int chunkNum=data[j].length;
 				int time=data[j][0];
-				float peakF=-100000;
-				float sumF=0;
-				int peakFLoc=0;
+				//float peakF=-100000;
+				//float sumF=0;
+				//int peakFLoc=0;
 				for (int k=1; k<chunkNum; k+=2){
 					for (int a=data[j][k]; a<data[j][k+1]; a++){
 						if (nout[a][time]>0){
@@ -532,7 +575,13 @@ public class SpectrogramMeasurement {
 
 
 
-	private void fixTimes(LinkedList<int[][]> signals, int currentMinX){
+	/**
+	 * This method fixes the times of measured elements from ones relative to the spectrogram
+	 * to ones relative to the whole song. Similarly it fixes frequency measures
+	 * @param signals input signal location
+	 * @param currentMinX current minimum time of the spectrogram
+	 */
+	private void fixTimesAndFreqs(LinkedList<int[][]> signals, int currentMinX){
 
 		int elNum=signals.size();
 
@@ -552,6 +601,11 @@ public class SpectrogramMeasurement {
 	}
 
 
+	/**
+	 * This method calculates a pseudo-power spectrum by summing spectrogram values for an element
+	 * @param signal location of an element
+	 * @param results LinkedList into which to insert the results
+	 */
 	public void calculatePowerSpectrum(LinkedList<int[][]> signal, LinkedList<double[]> results){
 
 		//this method measures the power spectrum of a discovered element.
@@ -585,6 +639,14 @@ public class SpectrogramMeasurement {
 		}
 	}
 
+	/**
+	 * An algorithm to attempt to smooth fundamental frequency measures - preventing
+	 * ff values from jumping octaves.
+	 * @param score input frequency measures
+	 * @param amps amplitudes along the trajectory
+	 * @param harmlim a parameter related to jump suppression 
+	 * @return an int[] of smoothed pitch trajectory
+	 */
 	int[] smoothPitch(double[][] score, double[]amps, int harmlim){
 
 		int y=score[0].length;
@@ -652,7 +714,14 @@ public class SpectrogramMeasurement {
 	}
 
 
-	private int[] smoothPitch(double[][] score, int[]rpitch, double[]amps){
+	/**
+	 * Deprecated
+	 * @param score
+	 * @param rpitch
+	 * @param amps
+	 * @return an int[] of smoothed pitch
+	 */
+	int[] smoothPitch(double[][] score, int[]rpitch, double[]amps){
 
 		int size=rpitch.length;
 		//int corramt=(int)Math.round(20/dx);
@@ -739,6 +808,11 @@ public class SpectrogramMeasurement {
 	
 	
 	
+	/**
+	 * Method to measure four frequency trajectories of an element
+	 * @param tList list (int[][]) of input signal locations
+	 * @param freqList output list (double[][]) of measured frequency trajectories
+	 */
 	private void measureFrequencies(LinkedList<int[][]> tList, LinkedList<double[][]> freqList){
 		
 		double[] phase=song.getPhase();
@@ -868,6 +942,14 @@ public class SpectrogramMeasurement {
 		}
 	}
 	
+	/**
+	 * Deprecated!
+	 * Method to measure trajectories of frequency change, defined as arctan transforms of 
+	 * frequency slopes
+	 * @param tList input signal locations
+	 * @param freqList input frequency trajectories
+	 * @param freqChangeList output frequency change trajectories
+	 */
 	void measureFrequencyChange(LinkedList<int[][]> tList, LinkedList<double[][]> freqList, LinkedList<double[][]> freqChangeList){
 		
 		int elNum=tList.size();
@@ -969,7 +1051,12 @@ public class SpectrogramMeasurement {
 		}
 	}
 	
-private void measureFrequencyChange2a(LinkedList<double[][]> freqList, LinkedList<double[][]> freqChangeList){
+/**
+ * Deprecated
+ * @param freqList
+ * @param freqChangeList
+ */
+void measureFrequencyChange2a(LinkedList<double[][]> freqList, LinkedList<double[][]> freqChangeList){
 		
 		int elNum=freqList.size();
 		for (int i=0; i<elNum; i++){
@@ -1032,6 +1119,13 @@ private void measureFrequencyChange2a(LinkedList<double[][]> freqList, LinkedLis
 		}
 	}
 
+	/**
+	 * Method to measure trajectories of frequency change, defined as arctan transforms of 
+	 * frequency slopes
+	 * @param tList input signal locations
+	 * @param freqList input frequency trajectories
+	 * @param freqChangeList output frequency change trajectories
+	 */
 	private void measureFrequencyChange4(LinkedList<int[][]> tList, LinkedList<double[][]> freqList, LinkedList<double[][]> freqChangeList){
 	
 		double[] logs=new double[ny];
@@ -1051,8 +1145,8 @@ private void measureFrequencyChange2a(LinkedList<double[][]> freqList, LinkedLis
 			int boxSize=(int)Math.round(8/dxx);
 		
 			if (boxSize>=eleLength/2){boxSize=(eleLength/2)-1;}
-			int x, y;
-			double sxy, sx2, tot, ylog, sx, sy, cx;
+			int x;
+			double sxy, sx2, tot, sx, sy, cx;
 			
 			double[][] fa=new double[eleLength][ny];
 			for (int j=0; j<eleLength; j++){
@@ -1153,7 +1247,12 @@ private void measureFrequencyChange2a(LinkedList<double[][]> freqList, LinkedLis
 		}
 	}
 
-	private void measureFrequencyChange2(LinkedList<double[][]> freqList, LinkedList<double[][]> freqChangeList){
+	/**
+	 * Deprecated
+	 * @param freqList
+	 * @param freqChangeList
+	 */
+	void measureFrequencyChange2(LinkedList<double[][]> freqList, LinkedList<double[][]> freqChangeList){
 		
 		int elNum=freqList.size();
 		for (int i=0; i<elNum; i++){
@@ -1165,7 +1264,7 @@ private void measureFrequencyChange2a(LinkedList<double[][]> freqList, LinkedLis
 			int boxSize=(int)Math.round(4/dxx);
 			
 			//if (boxSize>=eleLength/2){boxSize=eleLength/2;}
-			int x, y;
+			int x;
 			double sxy, sx2, tot, ylog, sx, sy, cx;
 			
 			double dat[][]=new double[eleLength][4];
@@ -1216,7 +1315,13 @@ private void measureFrequencyChange2a(LinkedList<double[][]> freqList, LinkedLis
 		}
 	}
 
-	private void measureFrequencyChange3(LinkedList<int[][]> tList, LinkedList<boolean[][]> sigList, LinkedList<double[][]> freqChangeList2){
+	/**
+	 * Deprecated
+	 * @param tList
+	 * @param sigList
+	 * @param freqChangeList2
+	 */
+	void measureFrequencyChange3(LinkedList<int[][]> tList, LinkedList<boolean[][]> sigList, LinkedList<double[][]> freqChangeList2){
 		
 		int elNum=sigList.size();
 		
@@ -1296,6 +1401,10 @@ private void measureFrequencyChange2a(LinkedList<double[][]> freqList, LinkedLis
 		}
 	}
 	
+	/**
+	 * Deprecated
+	 * @param song
+	 */
 	public void redodiffs(Song song){
 	
 		
@@ -1321,9 +1430,6 @@ private void measureFrequencyChange2a(LinkedList<double[][]> freqList, LinkedLis
 						min=p;
 					}
 				}
-				
-				
-			
 			}
 		}
 	}
@@ -1334,6 +1440,13 @@ private void measureFrequencyChange2a(LinkedList<double[][]> freqList, LinkedLis
 	
 
 	
+	/**
+	 * Measure harmonicity trajectories for the element - based on measured fundamental
+	 * frequency estimate trajectories
+	 * @param tList input signal locations
+	 * @param freqList input frequency trajectories
+	 * @param harmList output harmonicity trajectories
+	 */
 	private void measureHarmonicity(LinkedList<int[][]> tList, LinkedList<double[][]> freqList, LinkedList<double[]> harmList){ 
 		int elNum=tList.size();
 		int x;
@@ -1402,6 +1515,11 @@ private void measureFrequencyChange2a(LinkedList<double[][]> freqList, LinkedLis
 	}
 
 	
+	/**
+	 * Method to measure Wiener Entropy
+	 * @param tList input signal location
+	 * @param results output WE trajectories
+	 */
 	private void measureWienerEntropy(LinkedList<int[][]> tList, LinkedList<double[]> results){
 	
 		//Calculates the Wiener Entropy (ratio of Geometric:Arithmetic means of the power spectrum).
@@ -1459,6 +1577,11 @@ private void measureFrequencyChange2a(LinkedList<double[][]> freqList, LinkedLis
 		}
 	}
 	
+	/**
+	 * Method to measure basic frequency bandwidth parameter
+	 * @param tList input signal locations
+	 * @param results output bandwidth trajectories
+	 */
 	private void measureBandwidth(LinkedList<int[][]> tList, LinkedList<int[]> results){
 		int elNum=tList.size();
 
@@ -1490,6 +1613,12 @@ private void measureFrequencyChange2a(LinkedList<double[][]> freqList, LinkedLis
 		}
 	}
 	
+	/**
+	 * Method to measure spectrogram(!) amplitudes of elements
+	 * @param tList input signal locations
+	 * @param uList transformed signal locations(?)
+	 * @param results output amplitude trajectories
+	 */
 	private void measureAmplitude(LinkedList<double[][]> tList, LinkedList<int[][]> uList, LinkedList<double[]> results){
 		int elNum=tList.size();
 		int v;		
@@ -1507,6 +1636,11 @@ private void measureFrequencyChange2a(LinkedList<double[][]> freqList, LinkedLis
 		}
 	}
 	
+	/**
+	 * Method to measure an estimate of reverberation. Deprecated
+	 * @param tList
+	 * @param results
+	 */
 	void measureReverberation(LinkedList<int[][]> tList, LinkedList<double[]> results){
 		
 		int elNum=tList.size();
@@ -1562,7 +1696,12 @@ private void measureFrequencyChange2a(LinkedList<double[][]> freqList, LinkedLis
 		}
 	}
 
-	private void measureReverberationRegression(LinkedList<int[][]> tList, LinkedList<double[]> results){
+	/**
+	 * Deprecated
+	 * @param tList
+	 * @param results
+	 */
+	void measureReverberationRegression(LinkedList<int[][]> tList, LinkedList<double[]> results){
 		
 		int elNum=tList.size();
 		double timeAmpEquivalence=0.01*song.timeStep;
@@ -1612,8 +1751,13 @@ private void measureFrequencyChange2a(LinkedList<double[][]> freqList, LinkedLis
 		}
 	}
 	
-	//public void measureTrills(LinkedList tList, LinkedList freqs, LinkedList trills){
-	public void measureTrills(LinkedList<double[][]> freqs, LinkedList<double[][]> trills){
+	/**
+	 * Method to measure vibrato/trill/periodic frequency modulation quality of elements
+	 * This is quite complex, and this method just sends on to calculateTrill5
+	 * @param freqs input frequency trajectories
+	 * @param trills output trill measure trajectories
+	 */
+	private void measureTrills(LinkedList<double[][]> freqs, LinkedList<double[][]> trills){
 		for (int i=0; i<freqs.size(); i++){
 			double[][] freqMeasures=freqs.get(i);
 				
@@ -1680,6 +1824,191 @@ private void measureFrequencyChange2a(LinkedList<double[][]> freqList, LinkedLis
 	}
 	
 	
+	/**
+	 * Method to measure vibrato characteristics of a set of frequency trajectories
+	 * @param contours input trajectories
+	 * @param max a parameter specifying the maximum wavelength of detected vibrato
+	 * @return a double[][] containing trill parameters trajectory
+	 */
+	public double[][] calculateTrill5(double[] contours, double max){
+		
+		
+		double thresh=0;
+		double threshwav=max/song.timeStep;
+		double threshasym=0.5;
+		
+		double threshold2=0.25;
+		
+		double threshold=contours.length*0.2;
+		
+		double minJump=2;
+		
+		LinkedList<int[]> peaks=new LinkedList<int[]>();
+		
+		int n=contours.length;
+		
+		boolean up=true;
+		if (contours[1]>contours[0]){
+			up=true;
+		}
+		else if (contours[1]<contours[0]){
+			up=false;
+		}
+		else{
+			for (int i=0; i<n; i++){
+				if (contours[i]!=contours[0]){
+					if (contours[i]>contours[0]){
+						up=true;
+					}
+					else{
+						up=false;
+					}
+					i=n;
+				}
+			}
+		}
+		//System.out.println(contours[0]+" "+contours[1]+" "+up);
+		int loccont=0;
+		
+		for (int i=1; i<n; i++){
+			//System.out.println(contours[i]);
+			if (up){
+				if(contours[i]<contours[loccont]-minJump){
+					int[] q={i-1, 0};
+					peaks.add(q);
+					up=false;
+					loccont=i;
+					//System.out.println(q[0]+" "+q[1]+" "+contours[i-1]);
+				}
+				else if (contours[i]>contours[loccont]){
+					loccont=i;
+				}
+			}
+			if (!up){
+				if(contours[i]>contours[loccont]+minJump){
+					int[] q={i-1, 1};
+					peaks.add(q);
+					up=true;
+					//System.out.println(q[0]+" "+q[1]+" "+contours[i-1]);
+					loccont=i;
+				}
+				else if (contours[i]<contours[loccont]){
+					loccont=i;
+				}
+			}
+		}
+		
+		double[][] results=new double[n][3];
+		int m=peaks.size();
+		//System.out.println("peaks detected: "+m);
+		
+		if (m>5){
+			double[]wavelengths=new double[m-2];
+			double[]amps=new double[m-2];
+			double[]asym=new double[m-2];
+			int[] locs=new int[m-2];
+		
+			for (int i=1; i<m-1; i++){
+				int[] pm1=peaks.get(i-1);
+				int[] p=peaks.get(i);
+				int[] pp1=peaks.get(i+1);
+				wavelengths[i-1]=pp1[0]-pm1[0];
+				//wavelengths[i-1]=Math.min(pp1[0]-p[0], p[0]-pm1[0]);
+				//System.out.println(wavelengths[i-1]);
+				double s=Math.abs(contours[p[0]]-contours[pm1[0]]);
+				double t=Math.abs(contours[p[0]]-contours[pp1[0]]);
+			
+				//amps[i-1]=100*Math.abs(0.5*(s+t))/contours[p[0]];
+				amps[i-1]=100*Math.min(s,t)/contours[p[0]];
+				if (p[1]==0){
+					asym[i-1]=(p[0]-pm1[0])/wavelengths[i-1];
+				}
+				else{
+					asym[i-1]=(pp1[0]-p[0])/wavelengths[i-1];
+				}
+				locs[i-1]=p[0];
+				//System.out.println(locs[i-1]+" "+amps[i-1]+" "+wavelengths[i-1]+" "+asym[i-1]);
+			}
+			
+			double[] sumsq=new double[m-2];
+			
+			for (int i=0; i<m-2; i++){
+				double ss1=0;
+				for (int j=1; j<4; j++){
+					double jj=locs[i]+j*wavelengths[i];
+					double mindi=1000000;
+					for (int k=i+j; k<locs.length; k++){
+						if (Math.abs(wavelengths[i]-wavelengths[k])/Math.min(wavelengths[i], wavelengths[k])<1.5){
+							double di=(locs[k]-jj)*(locs[k]-jj);
+							if (di<mindi){mindi=di;}
+						}
+					}
+					ss1+=mindi;
+				}
+				
+				double ss2=0;
+				for (int j=1; j<4; j++){
+					double jj=locs[i]-j*wavelengths[i];
+					double mindi=1000000;
+					for (int k=0; k<i; k++){
+						double di=(locs[k]-jj)*(locs[k]-jj);
+						if (di<mindi){mindi=di;}
+					}
+					ss2+=mindi;
+				}
+				sumsq[i]=Math.sqrt(Math.min(ss1, ss2));
+				if (wavelengths[i]>8){
+					sumsq[i]/=wavelengths[i];
+				}
+				else{
+					sumsq[i]/=8;
+				}
+				//System.out.println(wavelengths[i]+" "+sumsq[i]);
+			}
+		
+		
+			for (int i=0; i<n; i++){
+				int loc=-1;
+				double score=1000000;
+				double bestscore=1000000;
+				for (int j=0; j<m-2; j++){
+					score=Math.abs(locs[j]-i);
+					//if ((score<bestscore)&&(score<wavelengths[j])&&(sumsq[j]<threshold)){							//only consider local peaks that are within 1 wavelength of focal point
+					if ((score<bestscore)&&(score<wavelengths[j])&&(wavelengths[j]<threshold)&&(sumsq[j]<threshold2)){	
+						bestscore=score;
+						loc=j;
+					}
+				}
+				if(loc>=0){
+					results[i][0]=amps[loc]*song.dy;
+					//results[i][0]=amps[loc];
+				}
+				if (results[i][0]>thresh){
+					results[i][1]=wavelengths[loc]*song.timeStep;
+					results[i][2]=asym[loc];
+				}
+				else{
+					results[i][1]=threshwav;
+					results[i][2]=threshasym;
+				}
+				//System.out.println(song.dy+" "+i+" "+results[i][0]+" "+results[i][1]+" "+results[i][2]);
+			}
+		}
+		else{
+			for (int i=0; i<n; i++){
+				results[i][1]=threshwav;
+				results[i][2]=threshasym;
+			}
+		}
+			
+		return results;
+	}
+
+	/**
+	 * Deprecated
+	 * @param periods
+	 * @return a double[][]
+	 */
 	public double[][] calculateSinWaves(double[] periods){
 		int n=periods.length;
 		
@@ -1702,6 +2031,13 @@ private void measureFrequencyChange2a(LinkedList<double[][]> freqList, LinkedLis
 	}
 	
 	
+	/**
+	 * Deprecated?
+	 * @param da
+	 * @param startpoint
+	 * @param endpoint
+	 * @return a double[]
+	 */
 	public double[] regress(double[] da, int startpoint, int endpoint){
 		
 		double sumxy=0;
@@ -1740,6 +2076,14 @@ private void measureFrequencyChange2a(LinkedList<double[][]> freqList, LinkedLis
 		return results;
 	}
 	
+	/**
+	 * Deprecated
+	 * @param a
+	 * @param b
+	 * @param x
+	 * @param y
+	 * @return a double
+	 */
 	public double pointToLine(double a, double b, double x, double y){
 		
 		
@@ -1756,6 +2100,14 @@ private void measureFrequencyChange2a(LinkedList<double[][]> freqList, LinkedLis
 		return r;
 	}
 	
+	/**
+	 * Deprecated
+	 * @param a
+	 * @param b
+	 * @param x
+	 * @param y
+	 * @return a double
+	 */
 	public double verticalPointToLine(double a, double b, double x, double y){
 		
 		double expectedY=a*x+b;
@@ -1768,6 +2120,356 @@ private void measureFrequencyChange2a(LinkedList<double[][]> freqList, LinkedLis
 	
 	
 	
+	/**
+	 * Deprecated
+	 * @param data
+	 * @return a double[][]
+	 */
+	public double[][] calculateTrill(double[] data){
+		int n=data.length;
+		BasicStatistics bs=new BasicStatistics();
+		double mean=bs.calculateMean(data);
+		
+		for (int i=0; i<n; i++){
+			data[i]-=mean;
+		}
+		
+		int nfreqs=50;
+		int minPeriod=2;
+		int maxPeriod=64;
+		
+		double[][] compTable=new double[n][nfreqs];
+		double[][] corrTable=new double[n][nfreqs];
+	
+		double[] frame=new double[nfreqs];
+		int [] frame2=new int[nfreqs];
+		double adj2=1/Math.log(2);
+		
+		double minLog=Math.log(minPeriod)*adj2;
+		double maxLog=Math.log(maxPeriod)*adj2;
+		double gapP=(maxLog-minLog)/(nfreqs-1.0);
+		
+		for (int i=0; i<nfreqs; i++){
+			double p=(i*gapP)+minLog;
+			frame2[i]=(int)Math.round(Math.pow(2, p));
+			frame[i]=Math.pow(2, p);
+			//System.out.println("FRAME: "+frame[i]);
+		}
+		
+		
+		
+		double[][] sines=calculateSinWaves(frame);
+		int loca, locb, kk;
+		double sumxy, sumx, sumy, sumxx, sumyy, regb, rega, adjy, den;
+		for (int i=0; i<n; i++){
+			for (int j=2; j<nfreqs; j++){
+				int m=sines[j].length;
+				if (n<=m*2){
+					corrTable[i][j]=-1;
+				}
+				else{
+				
+					int p=m/2;
+					loca=i-p;
+					if (loca<0){
+						loca=0;
+					}
+					locb=loca+m;
+					if (locb>=n){
+						locb=n-1;
+						loca=locb-m;
+					}
+					
+					sumxy=0;
+					sumx=0;
+					sumy=0;
+					sumxx=0;
+					den=m+0.0;
+					for (int k=0; k<m; k++){
+						kk=k+loca;
+						sumxy+=k*data[kk];
+						sumx+=k;
+						sumy+=data[kk];
+						sumxx+=k*k;
+					}
+					regb=(sumxy-(sumx*sumy/den))/(sumxx-(sumx*sumx/den));
+					rega=(sumy/den)-regb*(sumx/den);
+										
+					sumxy=0;
+					sumx=0;
+					sumy=0;
+					sumxx=0;
+					sumyy=0;
+					for (int k=0; k<m; k++){
+						adjy=data[loca+k]-rega-regb*k;
+						//adjy=data[loca+k];
+						sumxy+=adjy*sines[j][k];
+						sumx+=sines[j][k];
+						sumy+=adjy;
+						sumxx+=sines[j][k]*sines[j][k];
+						sumyy+=adjy*adjy;
+						//compTable[i][j]+=adjy*sines[j][k];
+					}
+					//compTable[i][j]/=den;
+					
+					//corrTable[i][j]=sumxy;
+					sumxy=sumxy-((sumx*sumy)/den);
+					sumxx=sumxx-(sumx*sumx/den);
+					sumyy=sumyy-(sumy*sumy/den);
+					if (sumyy==0){sumyy=1;}
+					compTable[i][j]=(sumxy/sumxx);
+					corrTable[i][j]=(sumxy/Math.sqrt(sumxx*sumyy));
+					
+				}
+			}
+		}
+		
+		double[][] results=new double[n][2];
+		
+		double score;
+		int offset=-1;
+		int freq=0;
+		for (int i=0; i<n; i++){
+			for (int j=0; j<nfreqs; j++){
+				//System.out.println(n+" "+j+" "+sines[j].length);
+				if (n>=sines[j].length*4){
+					int aa=i-frame2[j];
+					if (aa<0){aa=0;}
+					int bb=i+frame2[j];
+					if (bb>=n){bb=n-1;}
+					//System.out.println(j+" "+sines[j].length+" "+aa+" "+bb);
+					for (int k=aa; k<=bb; k++){
+					
+				//loca=i-frame2[j];
+				//if (loca<0){loca=0;}
+				//locb=i+frame2[j];
+				//if (locb>=n){locb=n-1;}
+				//score=0;
+				//for (int k=loca; k<=locb; k++){
+				//	score+=corrTable[k][j];
+				//}
+						//score=corrTable[i][j]*Math.sqrt(compTable[i][j]);
+						score=corrTable[k][j];
+				//score/=(locb-loca+1.0);
+						if (score>results[i][0]){
+					
+							results[i][0]=score;
+							results[i][1]=j;
+							offset=k;
+							freq=j;
+						}
+					}
+				}
+			}
+			
+			if (offset>=0){
+				//System.out.println(offset+" "+freq+" "+results[i][0]);
+			
+				int m=sines[freq].length;
+				int p=m/2;
+				loca=offset-p;
+				if (loca<0){
+					loca=0;
+				}
+				locb=loca+m;
+				if (locb>=n){
+					locb=n-1;
+					loca=locb-m;
+				}
+					
+				sumxy=0;
+				sumx=0;
+				sumy=0;
+				sumxx=0;
+				den=m+0.0;
+				for (int k=0; k<m; k++){
+					kk=k+loca;
+					sumxy+=k*data[kk];
+					sumx+=k;
+					sumy+=data[kk];
+					sumxx+=k*k;
+				}
+				regb=(sumxy-(sumx*sumy/den))/(sumxx-(sumx*sumx/den));
+				rega=(sumy/den)-regb*(sumx/den);
+				double bestA=100000;
+				int ampVal=0;
+				int maxAmp=50;
+				for (int w=0; w<maxAmp; w++){
+					sumx=0;
+					for (int k=0; k<m; k++){
+						adjy=data[loca+k]-rega-regb*k;
+						sumx+=(adjy-(sines[freq][k]*(frame[w]-minPeriod)))*(adjy-(sines[freq][k]*(frame[w]-minPeriod)));
+					}
+					sumx=Math.sqrt(sumx/den);
+					if (sumx<bestA){
+						bestA=sumx;
+						ampVal=w;
+					}
+				}
+				results[i][0]=frame[ampVal]-minPeriod;
+			//System.out.println(n+" "+sines[5].length);
+				//System.out.println(results[i][0]+" "+results[i][1]);
+			
+			}
+		}
+		return results;
+	}
+
+	/**
+	 * Deprecated
+	 * @param data
+	 * @param data2
+	 * @return a double[][]
+	 */
+	public double[][] calculateTrill2(double[] data, int[][] data2){
+		
+		
+		double dampenFactor=0.1;
+		int minPeriod=2;
+		int maxPeriod=20;
+		int rep=2;
+		int et=data.length;
+		int fc=nout.length;
+		
+		float[][] tempel=new float[et][fc];
+		double[][]results=new double[et][2];
+		double[] bestScores=new double[et];
+		
+		float c=(float)(1/(song.dynMax*song.dynRange));
+		
+		for (int i=0; i<et; i++){
+			
+			float tot=0;
+			int d=data2[i][0];
+			for (int j=1; j<data2[i].length; j+=2){
+				for (int k=data2[i][j]; k<data2[i][j+1]; k++){
+					tempel[i][k]=nout[k][d]*c;
+					if (tempel[i][k]<0){tempel[i][k]=0;}
+					tot=tot+tempel[i][k];
+				}
+			}
+			for (int j=0; j<tempel[i].length; j++){
+				tempel[i][j]/=tot;
+				//System.out.print(tempel[i][j]+" ");
+			}
+			//System.out.println();
+		}
+		
+		int[] mean=new int[et];
+		double[] diffs=new double[et];
+		for (int i=minPeriod; i<maxPeriod; i++){
+			for (int j=0; j<et; j++){
+			
+				int a=j-i;
+				if (a<0){a=0;}
+				int b=j+j-a;
+				//int b=j+i;
+				if (b>=et){
+					b=et-1;
+					a=j+j-b;
+				}
+				
+				double sum=0;
+				double tot=0;
+				for (int k=a; k<=b; k++){
+					sum+=data[k];
+					tot++;
+				}
+				sum/=tot;
+				mean[j]=(int)Math.round(sum);
+				diffs[j]=Math.abs(sum-data[j]);
+				//System.out.println(i+" "+j+" "+mean[j]+" "+data[j]+" "+sum+" "+diffs[j]);
+			}
+			double[]s=new double[et];
+					
+			for (int j=0; j<et; j++){
+				int k=j+rep*i;
+				if (k<et){
+					int diff=mean[k]-mean[j];
+					for (int a=0; a<fc; a++){
+						int b=a+diff;
+						if ((b>=0)&&(b<fc)){
+							s[j]+=tempel[j][b]*tempel[k][a];
+						}
+					}
+					double self=0;
+					for (int a=0; a<fc; a++){
+						self+=tempel[j][a]*tempel[j][a];
+					}	
+					s[j]/=self;
+				}
+				else{
+					s[j]=-1;
+				}
+	
+			}
+			for (int j=0; j<et; j++){
+				int k=j-rep*i;
+				if (k<0){k=0;}
+				double score=0;
+				double tot=0;
+				for (int a=k; a<=j; a++){
+					if (s[a]>=0){
+						score+=s[a];
+						tot++;
+					}
+				}
+				if (tot>0){
+					score/=tot;
+				}
+				//System.out.println(score+" "+tot);
+				//score/=Math.log(i);
+				
+				score/=1+dampenFactor*i;
+				
+				if (score>bestScores[j]){
+					bestScores[j]=score;
+					results[j][1]=i/dx;
+					
+					double b=0;
+					double t=0;
+					
+					int aa=j-rep*i;
+					if (aa<0){aa=0;}
+					int ab=j+rep*i;
+					if (ab>=et){ab=et-1;}
+					
+					double[] temp=new double[ab-aa+1];
+					for (int a=aa; a<=ab; a++){
+						b+=diffs[a];
+						temp[a-aa]=diffs[a];
+						//System.out.print(diffs[a]+" ");
+						t++;
+					}
+					//System.out.println();
+					if (t>0){
+						results[j][0]=b/t;
+						Arrays.sort(temp);
+						results[j][0]=temp[temp.length/2];
+					}				
+				
+				}				
+				
+			}
+		}
+		for (int j=0; j<et; j++){
+			if (bestScores[j]<0.2){
+				results[j][1]=0;
+				results[j][0]=0;
+			}
+			//System.out.println(j+" "+bestScores[j]+" "+results[j][1]+" "+results[j][0]);
+			
+		}
+		return results;
+	}
+
+	/**
+	 * Deprecated
+	 * @param contours
+	 * @param data
+	 * @param windowLength
+	 * @return a double[][]
+	 */
 	public double[][] calculateTrill3(double[] contours, int[][] data, int windowLength){
 		
 		if (contours.length<windowLength*2){
@@ -1959,6 +2661,13 @@ private void measureFrequencyChange2a(LinkedList<double[][]> freqList, LinkedLis
 		return results;
 	}
 	
+	/**
+	 * Deprecated
+	 * @param contours
+	 * @param data
+	 * @param windowLength
+	 * @return a double[][]
+	 */
 	public double[][] calculateTrill3a(double[] contours, int[][] data, int windowLength){
 		
 		if (contours.length<windowLength*2){
@@ -2084,181 +2793,12 @@ private void measureFrequencyChange2a(LinkedList<double[][]> freqList, LinkedLis
 	}
 	
 	
-	public double[][] calculateTrill5(double[] contours, double max){
-		
-		
-		double thresh=0;
-		double threshwav=max/song.timeStep;
-		double threshasym=0.5;
-		
-		double threshold2=0.25;
-		
-		double threshold=contours.length*0.2;
-		
-		double minJump=2;
-		
-		LinkedList<int[]> peaks=new LinkedList<int[]>();
-		
-		int n=contours.length;
-		
-		boolean up=true;
-		if (contours[1]>contours[0]){
-			up=true;
-		}
-		else if (contours[1]<contours[0]){
-			up=false;
-		}
-		else{
-			for (int i=0; i<n; i++){
-				if (contours[i]!=contours[0]){
-					if (contours[i]>contours[0]){
-						up=true;
-					}
-					else{
-						up=false;
-					}
-					i=n;
-				}
-			}
-		}
-		//System.out.println(contours[0]+" "+contours[1]+" "+up);
-		int loccont=0;
-		
-		for (int i=1; i<n; i++){
-			//System.out.println(contours[i]);
-			if (up){
-				if(contours[i]<contours[loccont]-minJump){
-					int[] q={i-1, 0};
-					peaks.add(q);
-					up=false;
-					loccont=i;
-					//System.out.println(q[0]+" "+q[1]+" "+contours[i-1]);
-				}
-				else if (contours[i]>contours[loccont]){
-					loccont=i;
-				}
-			}
-			if (!up){
-				if(contours[i]>contours[loccont]+minJump){
-					int[] q={i-1, 1};
-					peaks.add(q);
-					up=true;
-					//System.out.println(q[0]+" "+q[1]+" "+contours[i-1]);
-					loccont=i;
-				}
-				else if (contours[i]<contours[loccont]){
-					loccont=i;
-				}
-			}
-		}
-		
-		double[][] results=new double[n][3];
-		int m=peaks.size();
-		//System.out.println("peaks detected: "+m);
-		
-		if (m>5){
-			double[]wavelengths=new double[m-2];
-			double[]amps=new double[m-2];
-			double[]asym=new double[m-2];
-			int[] locs=new int[m-2];
-		
-			for (int i=1; i<m-1; i++){
-				int[] pm1=peaks.get(i-1);
-				int[] p=peaks.get(i);
-				int[] pp1=peaks.get(i+1);
-				wavelengths[i-1]=pp1[0]-pm1[0];
-				//wavelengths[i-1]=Math.min(pp1[0]-p[0], p[0]-pm1[0]);
-				//System.out.println(wavelengths[i-1]);
-				double s=Math.abs(contours[p[0]]-contours[pm1[0]]);
-				double t=Math.abs(contours[p[0]]-contours[pp1[0]]);
-			
-				//amps[i-1]=100*Math.abs(0.5*(s+t))/contours[p[0]];
-				amps[i-1]=100*Math.min(s,t)/contours[p[0]];
-				if (p[1]==0){
-					asym[i-1]=(p[0]-pm1[0])/wavelengths[i-1];
-				}
-				else{
-					asym[i-1]=(pp1[0]-p[0])/wavelengths[i-1];
-				}
-				locs[i-1]=p[0];
-				//System.out.println(locs[i-1]+" "+amps[i-1]+" "+wavelengths[i-1]+" "+asym[i-1]);
-			}
-			
-			double[] sumsq=new double[m-2];
-			
-			for (int i=0; i<m-2; i++){
-				double ss1=0;
-				for (int j=1; j<4; j++){
-					double jj=locs[i]+j*wavelengths[i];
-					double mindi=1000000;
-					for (int k=i+j; k<locs.length; k++){
-						if (Math.abs(wavelengths[i]-wavelengths[k])/Math.min(wavelengths[i], wavelengths[k])<1.5){
-							double di=(locs[k]-jj)*(locs[k]-jj);
-							if (di<mindi){mindi=di;}
-						}
-					}
-					ss1+=mindi;
-				}
-				
-				double ss2=0;
-				for (int j=1; j<4; j++){
-					double jj=locs[i]-j*wavelengths[i];
-					double mindi=1000000;
-					for (int k=0; k<i; k++){
-						double di=(locs[k]-jj)*(locs[k]-jj);
-						if (di<mindi){mindi=di;}
-					}
-					ss2+=mindi;
-				}
-				sumsq[i]=Math.sqrt(Math.min(ss1, ss2));
-				if (wavelengths[i]>8){
-					sumsq[i]/=wavelengths[i];
-				}
-				else{
-					sumsq[i]/=8;
-				}
-				//System.out.println(wavelengths[i]+" "+sumsq[i]);
-			}
-		
-		
-			for (int i=0; i<n; i++){
-				int loc=-1;
-				double score=1000000;
-				double bestscore=1000000;
-				for (int j=0; j<m-2; j++){
-					score=Math.abs(locs[j]-i);
-					//if ((score<bestscore)&&(score<wavelengths[j])&&(sumsq[j]<threshold)){							//only consider local peaks that are within 1 wavelength of focal point
-					if ((score<bestscore)&&(score<wavelengths[j])&&(wavelengths[j]<threshold)&&(sumsq[j]<threshold2)){	
-						bestscore=score;
-						loc=j;
-					}
-				}
-				if(loc>=0){
-					results[i][0]=amps[loc]*song.dy;
-					//results[i][0]=amps[loc];
-				}
-				if (results[i][0]>thresh){
-					results[i][1]=wavelengths[loc]*song.timeStep;
-					results[i][2]=asym[loc];
-				}
-				else{
-					results[i][1]=threshwav;
-					results[i][2]=threshasym;
-				}
-				//System.out.println(song.dy+" "+i+" "+results[i][0]+" "+results[i][1]+" "+results[i][2]);
-			}
-		}
-		else{
-			for (int i=0; i<n; i++){
-				results[i][1]=threshwav;
-				results[i][2]=threshasym;
-			}
-		}
-			
-		return results;
-	}
-
-	
+	/**
+	 * Deprecated
+	 * @param contours
+	 * @param windowLength
+	 * @return a double[][]
+	 */
 	public double[][] calculateTrill4(double[] contours, int windowLength){
 		
 		
@@ -2317,340 +2857,10 @@ private void measureFrequencyChange2a(LinkedList<double[][]> freqList, LinkedLis
 	}
 	
 	
-	public double[][] calculateTrill2(double[] data, int[][] data2){
-		
-		
-		double dampenFactor=0.1;
-		int minPeriod=2;
-		int maxPeriod=20;
-		int rep=2;
-		int et=data.length;
-		int fc=nout.length;
-		
-		float[][] tempel=new float[et][fc];
-		double[][]results=new double[et][2];
-		double[] bestScores=new double[et];
-		
-		float c=(float)(1/(song.dynMax*song.dynRange));
-		
-		for (int i=0; i<et; i++){
-			
-			float tot=0;
-			int d=data2[i][0];
-			for (int j=1; j<data2[i].length; j+=2){
-				for (int k=data2[i][j]; k<data2[i][j+1]; k++){
-					tempel[i][k]=nout[k][d]*c;
-					if (tempel[i][k]<0){tempel[i][k]=0;}
-					tot=tot+tempel[i][k];
-				}
-			}
-			for (int j=0; j<tempel[i].length; j++){
-				tempel[i][j]/=tot;
-				//System.out.print(tempel[i][j]+" ");
-			}
-			//System.out.println();
-		}
-		
-		int[] mean=new int[et];
-		double[] diffs=new double[et];
-		for (int i=minPeriod; i<maxPeriod; i++){
-			for (int j=0; j<et; j++){
-			
-				int a=j-i;
-				if (a<0){a=0;}
-				int b=j+j-a;
-				//int b=j+i;
-				if (b>=et){
-					b=et-1;
-					a=j+j-b;
-				}
-				
-				double sum=0;
-				double tot=0;
-				for (int k=a; k<=b; k++){
-					sum+=data[k];
-					tot++;
-				}
-				sum/=tot;
-				mean[j]=(int)Math.round(sum);
-				diffs[j]=Math.abs(sum-data[j]);
-				//System.out.println(i+" "+j+" "+mean[j]+" "+data[j]+" "+sum+" "+diffs[j]);
-			}
-			double[]s=new double[et];
-					
-			for (int j=0; j<et; j++){
-				int k=j+rep*i;
-				if (k<et){
-					int diff=mean[k]-mean[j];
-					for (int a=0; a<fc; a++){
-						int b=a+diff;
-						if ((b>=0)&&(b<fc)){
-							s[j]+=tempel[j][b]*tempel[k][a];
-						}
-					}
-					double self=0;
-					for (int a=0; a<fc; a++){
-						self+=tempel[j][a]*tempel[j][a];
-					}	
-					s[j]/=self;
-				}
-				else{
-					s[j]=-1;
-				}
-
-			}
-			for (int j=0; j<et; j++){
-				int k=j-rep*i;
-				if (k<0){k=0;}
-				double score=0;
-				double tot=0;
-				for (int a=k; a<=j; a++){
-					if (s[a]>=0){
-						score+=s[a];
-						tot++;
-					}
-				}
-				if (tot>0){
-					score/=tot;
-				}
-				//System.out.println(score+" "+tot);
-				//score/=Math.log(i);
-				
-				score/=1+dampenFactor*i;
-				
-				if (score>bestScores[j]){
-					bestScores[j]=score;
-					results[j][1]=i/dx;
-					
-					double b=0;
-					double t=0;
-					
-					int aa=j-rep*i;
-					if (aa<0){aa=0;}
-					int ab=j+rep*i;
-					if (ab>=et){ab=et-1;}
-					
-					double[] temp=new double[ab-aa+1];
-					for (int a=aa; a<=ab; a++){
-						b+=diffs[a];
-						temp[a-aa]=diffs[a];
-						//System.out.print(diffs[a]+" ");
-						t++;
-					}
-					//System.out.println();
-					if (t>0){
-						results[j][0]=b/t;
-						Arrays.sort(temp);
-						results[j][0]=temp[temp.length/2];
-					}				
-				
-				}				
-				
-			}
-		}
-		for (int j=0; j<et; j++){
-			if (bestScores[j]<0.2){
-				results[j][1]=0;
-				results[j][0]=0;
-			}
-			//System.out.println(j+" "+bestScores[j]+" "+results[j][1]+" "+results[j][0]);
-			
-		}
-		return results;
-	}
-	
-	
-	public double[][] calculateTrill(double[] data){
-		int n=data.length;
-		BasicStatistics bs=new BasicStatistics();
-		double mean=bs.calculateMean(data);
-		
-		for (int i=0; i<n; i++){
-			data[i]-=mean;
-		}
-		
-		int nfreqs=50;
-		int minPeriod=2;
-		int maxPeriod=64;
-		
-		double[][] compTable=new double[n][nfreqs];
-		double[][] corrTable=new double[n][nfreqs];
-	
-		double[] frame=new double[nfreqs];
-		int [] frame2=new int[nfreqs];
-		double adj2=1/Math.log(2);
-		
-		double minLog=Math.log(minPeriod)*adj2;
-		double maxLog=Math.log(maxPeriod)*adj2;
-		double gapP=(maxLog-minLog)/(nfreqs-1.0);
-		
-		for (int i=0; i<nfreqs; i++){
-			double p=(i*gapP)+minLog;
-			frame2[i]=(int)Math.round(Math.pow(2, p));
-			frame[i]=Math.pow(2, p);
-			//System.out.println("FRAME: "+frame[i]);
-		}
-		
-		
-		
-		double[][] sines=calculateSinWaves(frame);
-		int loca, locb, kk;
-		double sumxy, sumx, sumy, sumxx, sumyy, regb, rega, adjy, den;
-		for (int i=0; i<n; i++){
-			for (int j=2; j<nfreqs; j++){
-				int m=sines[j].length;
-				if (n<=m*2){
-					corrTable[i][j]=-1;
-				}
-				else{
-				
-					int p=m/2;
-					loca=i-p;
-					if (loca<0){
-						loca=0;
-					}
-					locb=loca+m;
-					if (locb>=n){
-						locb=n-1;
-						loca=locb-m;
-					}
-					
-					sumxy=0;
-					sumx=0;
-					sumy=0;
-					sumxx=0;
-					den=m+0.0;
-					for (int k=0; k<m; k++){
-						kk=k+loca;
-						sumxy+=k*data[kk];
-						sumx+=k;
-						sumy+=data[kk];
-						sumxx+=k*k;
-					}
-					regb=(sumxy-(sumx*sumy/den))/(sumxx-(sumx*sumx/den));
-					rega=(sumy/den)-regb*(sumx/den);
-										
-					sumxy=0;
-					sumx=0;
-					sumy=0;
-					sumxx=0;
-					sumyy=0;
-					for (int k=0; k<m; k++){
-						adjy=data[loca+k]-rega-regb*k;
-						//adjy=data[loca+k];
-						sumxy+=adjy*sines[j][k];
-						sumx+=sines[j][k];
-						sumy+=adjy;
-						sumxx+=sines[j][k]*sines[j][k];
-						sumyy+=adjy*adjy;
-						//compTable[i][j]+=adjy*sines[j][k];
-					}
-					//compTable[i][j]/=den;
-					
-					//corrTable[i][j]=sumxy;
-					sumxy=sumxy-((sumx*sumy)/den);
-					sumxx=sumxx-(sumx*sumx/den);
-					sumyy=sumyy-(sumy*sumy/den);
-					if (sumyy==0){sumyy=1;}
-					compTable[i][j]=(sumxy/sumxx);
-					corrTable[i][j]=(sumxy/Math.sqrt(sumxx*sumyy));
-					
-				}
-			}
-		}
-		
-		double[][] results=new double[n][2];
-		
-		double score;
-		int offset=-1;
-		int freq=0;
-		for (int i=0; i<n; i++){
-			for (int j=0; j<nfreqs; j++){
-				//System.out.println(n+" "+j+" "+sines[j].length);
-				if (n>=sines[j].length*4){
-					int aa=i-frame2[j];
-					if (aa<0){aa=0;}
-					int bb=i+frame2[j];
-					if (bb>=n){bb=n-1;}
-					//System.out.println(j+" "+sines[j].length+" "+aa+" "+bb);
-					for (int k=aa; k<=bb; k++){
-					
-				//loca=i-frame2[j];
-				//if (loca<0){loca=0;}
-				//locb=i+frame2[j];
-				//if (locb>=n){locb=n-1;}
-				//score=0;
-				//for (int k=loca; k<=locb; k++){
-				//	score+=corrTable[k][j];
-				//}
-						//score=corrTable[i][j]*Math.sqrt(compTable[i][j]);
-						score=corrTable[k][j];
-				//score/=(locb-loca+1.0);
-						if (score>results[i][0]){
-					
-							results[i][0]=score;
-							results[i][1]=j;
-							offset=k;
-							freq=j;
-						}
-					}
-				}
-			}
-			
-			if (offset>=0){
-				//System.out.println(offset+" "+freq+" "+results[i][0]);
-			
-				int m=sines[freq].length;
-				int p=m/2;
-				loca=offset-p;
-				if (loca<0){
-					loca=0;
-				}
-				locb=loca+m;
-				if (locb>=n){
-					locb=n-1;
-					loca=locb-m;
-				}
-					
-				sumxy=0;
-				sumx=0;
-				sumy=0;
-				sumxx=0;
-				den=m+0.0;
-				for (int k=0; k<m; k++){
-					kk=k+loca;
-					sumxy+=k*data[kk];
-					sumx+=k;
-					sumy+=data[kk];
-					sumxx+=k*k;
-				}
-				regb=(sumxy-(sumx*sumy/den))/(sumxx-(sumx*sumx/den));
-				rega=(sumy/den)-regb*(sumx/den);
-				double bestA=100000;
-				int ampVal=0;
-				int maxAmp=50;
-				for (int w=0; w<maxAmp; w++){
-					sumx=0;
-					for (int k=0; k<m; k++){
-						adjy=data[loca+k]-rega-regb*k;
-						sumx+=(adjy-(sines[freq][k]*(frame[w]-minPeriod)))*(adjy-(sines[freq][k]*(frame[w]-minPeriod)));
-					}
-					sumx=Math.sqrt(sumx/den);
-					if (sumx<bestA){
-						bestA=sumx;
-						ampVal=w;
-					}
-				}
-				results[i][0]=frame[ampVal]-minPeriod;
-			//System.out.println(n+" "+sines[5].length);
-				//System.out.println(results[i][0]+" "+results[i][1]);
-			
-			}
-		}
-		return results;
-	}
-	
-public void updateEleStartTimes(){
+	/**
+	 * Deprecated method to update element start times
+	 */
+	public void updateEleStartTimesX(){
 		
 		for (int i=0; i<song.eleList.size(); i++){
 			Element ele=(Element)song.eleList.get(i);
@@ -2663,7 +2873,10 @@ public void updateEleStartTimes(){
 		}
 	}
 	
-	public void updateHarmonicity(){
+	/**
+	 * Deprecated method to update harmonicity measures
+	 */
+	public void updateHarmonicityX(){
 		LinkedList<Element> eleList=new LinkedList<Element>();
 		for (int i=0; i<song.eleList.size(); i++){
 			//System.out.println("Q "+i);
@@ -2721,7 +2934,10 @@ public void updateEleStartTimes(){
 	}
 		
 	
-	public void updateTrillMeasures(){
+	/**
+	 * Deprecated method to update trill measures
+	 */
+	public void updateTrillMeasuresX(){
 		//System.out.print(song.eleList.size()+" P ");
 		LinkedList<Element> eleList=new LinkedList<Element>();
 		for (int i=0; i<song.eleList.size(); i++){
@@ -2762,7 +2978,10 @@ public void updateEleStartTimes(){
 		song.eleList=eleList;
 	}
 	
-	public void updateChangeMeasures(){
+	/**
+	 * Deprecated method to update frequency change measures
+	 */
+	public void updateChangeMeasuresX(){
 		//System.out.print(song.eleList.size()+" P ");
 		LinkedList<Element> eleList=new LinkedList<Element>();
 		for (int i=0; i<song.eleList.size(); i++){
@@ -2825,7 +3044,10 @@ public void updateEleStartTimes(){
 		song.eleList=eleList;
 	}
 	
-	public void updateWienerEntropy(){
+	/**
+	 * Deprecated method to update Wiener Entropy measures.
+	 */
+	public void updateWienerEntropyX(){
 		//System.out.print(song.eleList.size()+" P ");
 		LinkedList<Element> eleList=new LinkedList<Element>();
 		for (int i=0; i<song.eleList.size(); i++){

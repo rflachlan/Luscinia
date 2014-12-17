@@ -319,7 +319,7 @@ public class SimpleVisualComparison extends JPanel implements PropertyChangeList
 		listener=false;
 		cycle=0;
 		LinkedList holder=new LinkedList();
-		song2.tidyUp();
+		song2.clearUp();
 		holder.add(song2);
 		repertoireList.add(holder);
 		song2=null;

@@ -17,15 +17,15 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
-import java.beans.PropertyChangeListener;
-import java.beans.PropertyChangeEvent;
+//import java.beans.PropertyChangeListener;
+//import java.beans.PropertyChangeEvent;
 
 import javax.swing.BorderFactory; 
-import javax.swing.border.Border;
+//import javax.swing.border.Border;
 import javax.swing.event.*;
 
-import java.awt.event.*;
-import java.lang.reflect.*;
+//import java.awt.event.*;
+//import java.lang.reflect.*;
 
 import lusc.net.github.db.*;
 import lusc.net.github.ui.AboutBox;
@@ -33,9 +33,15 @@ import lusc.net.github.ui.TabType;
 import lusc.net.github.ui.db.DatabaseView;
 import lusc.net.github.ui.db.SdLogin;
 
-import com.apple.eawt.event.*;
+//import com.apple.eawt.event.*;
 import com.apple.eawt.*;
 
+/**
+ * This is the main class for the application, and contains the main method entry point.
+ * It also contains various listeners for shutdowns, and an important list of database connections
+ * @author Rob
+ *
+ */
 public class Luscinia implements WindowListener, ActionListener, ChangeListener, OpenFilesHandler {
 
 	//protected ResourceBundle rsc;
@@ -45,8 +51,8 @@ public class Luscinia implements WindowListener, ActionListener, ChangeListener,
 	DataBaseController dbc=null;
 	DbConnection mdb;
 
-	LinkedList connections=new LinkedList();
-	LinkedList logins=new LinkedList();
+	LinkedList<DbConnection> connections=new LinkedList<DbConnection>();
+	//LinkedList logins=new LinkedList();
 	JTabbedPane tabbedPane=new JTabbedPane();
 	JButton addButton=new JButton("+");
 	JButton removeButton=new JButton("-");
@@ -54,28 +60,43 @@ public class Luscinia implements WindowListener, ActionListener, ChangeListener,
 	private static String ADD_TAB = "add tab";
 	private static String REMOVE_TAB = "remove tab";
 	
-	String lversion="1.1.12.12.02";
-	String dversion="1.1.12.12.02";
+	String lversion="1.17.12.14.02";
+	String dversion="1.17.12.14.02";
 	
 	
 	
 	public static boolean MAC_OS_X = (System.getProperty("os.name").toLowerCase().startsWith("mac os x"));
 	JFrame frame;
-	
-	
+
+	/**
+	 * This method gets the DataBaseController object used by this Luscinia instance.
+	 * @return a DataBaseController object
+	 * @see lusc.net.github.db.DataBaseController
+	 */
 	public DataBaseController getDBController(){
 		return dbc;
 	}
 	
+	/**
+	 * This method gets the version of Luscinia being used
+	 * @return a String value of Luscinia version
+	 */
 	public String getLVersion(){
 		return lversion;
 	}
 	
+	/**
+	 * This method gets the version of the Database being used
+	 * @return a String value of database version
+	 */
 	public String getDVersion(){
 		return dversion;
 	}
 	
-	
+	/**
+	 * This method constructs the top level frame of the login window.
+	 * {@link lusc.net.github.ui.db.SdLogin} objects fit within tabs in this window
+	 */
 	
 	private void buildUI() {
 
@@ -104,7 +125,7 @@ public class Luscinia implements WindowListener, ActionListener, ChangeListener,
 		JMenuItem about=new JMenuItem("About Luscinia");
 		about.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e){
-				AboutBox ab=new AboutBox(lversion);
+				new AboutBox(lversion);
 			}
 		});
 
@@ -114,7 +135,7 @@ public class Luscinia implements WindowListener, ActionListener, ChangeListener,
 		//rsc=ResourceBundle.getBundle ("resources", Locale.getDefault());
         container.setLayout(new BorderLayout());
 		defaults=new Defaults();
-		defaults.lnf=UIManager.getLookAndFeel();
+		//defaults.lnf=UIManager.getLookAndFeel();
 		container.setPreferredSize(new Dimension(800, 600));
 		//tabbedPane.setPreferredSize(new Dimension(800, 550));
 		container.add(tabbedPane, BorderLayout.CENTER);
@@ -143,19 +164,23 @@ public class Luscinia implements WindowListener, ActionListener, ChangeListener,
         tabbedPane.addTab("Log In", login);
         login.setAlignmentX(Component.LEFT_ALIGNMENT);
 		*/
-		String osName=System.getProperty("os.name");
+		//String osName=System.getProperty("os.name");
 		//if (osName.startsWith("Mac")){
 			//MacOSAppAdapter moaa=new MacOSAppAdapter(frame, this);
 			//moaa.register();
 		//}
 		
-		registerForMacOSXEvents();
+		//registerForMacOSXEvents();
 		
 		frame.setJMenuBar(menuBar);
         frame.pack();
         frame.setVisible(true);
     }
 	
+	/**
+	 * This method is called when the user wants to add a new database connection
+	 * It creates a {@link lusc.net.github.ui.db.SdLogin} object and adds it to the toplevel tabbed pane
+	 */
 	public void addNewTab(){
 		SdLogin login=new SdLogin(this, true, defaults);
 		login.setPreferredSize(new Dimension(800, 550));
@@ -163,11 +188,20 @@ public class Luscinia implements WindowListener, ActionListener, ChangeListener,
 		tabbedPane.setSelectedComponent(login);
 	}
 	
+	/**
+	 * This method removes a database tabbed pane ({@link lusc.net.github.ui.db.SdLogin} object)
+	 */
 	public void removeTab(){
 		int p=tabbedPane.getSelectedIndex();
 		tabbedPane.removeTabAt(p);
 	}
 	
+	/**
+	 * This method is called when the user successfully logs in. It is called from 
+	 * {@link lusc.net.github.ui.db}.SdLogin
+	 * @param sd an  @link lusc.net.github.ui.db.SdLogin object
+	 * @param db a @link lusc.net.github.db.DBConnection object
+	 */
 	public void loggedIn(SdLogin sd, DbConnection db){
 		int p=tabbedPane.indexOfComponent(sd);
 		tabbedPane.remove(sd);
@@ -179,11 +213,20 @@ public class Luscinia implements WindowListener, ActionListener, ChangeListener,
 		tabbedPane.setSelectedIndex(p);
 	}
 	
+	/**
+	 * I think this method may be unused.
+	 * @param db a {@link lusc.net.github.db.DbConnection} object
+	 */
 	public void loggedInNoTab(DbConnection db){
 		mdb=db;
 		dbc=new DataBaseController(db);
 	}
 	
+	/**
+	 * This method is called when the user logs out of a database, from a
+	 * {@link lusc.net.github.ui.db.SdLogin} object
+	 * @param dv a {@link lusc.net.github.ui.db.DatabaseView} object
+	 */
 	public void loggedOut(DatabaseView dv){
 		DataBaseController dbc=dv.getDBController();
 		DbConnection db=dbc.getConnection();
@@ -201,12 +244,20 @@ public class Luscinia implements WindowListener, ActionListener, ChangeListener,
 		tabbedPane.setSelectedIndex(p);
 	}
 	
+	/**
+	 * This method is called at the end of copying a database, from a
+	 * {@link lusc.net.github.ui.db.DatabaseView} object
+	 */
 	public void loggedOut(){
 		mdb.clearUp();
 		mdb=null;
 	}
 		
 		
+	/**
+	 * This method may be redundant
+	 * @param db
+	 */
 	public void addNewConnection(DbConnection db){
 		DataBaseController dbc=new DataBaseController(db);
 		DatabaseView dv=new DatabaseView(dbc, defaults, this);
@@ -214,7 +265,11 @@ public class Luscinia implements WindowListener, ActionListener, ChangeListener,
 		connections.add(db);
 	}
 	
-	public void removeConnection(DatabaseView dv){
+	/**
+	 * This method is called from the {@link #closer()} method during shutdown.
+	 * @param dv
+	 */
+	void removeConnection(DatabaseView dv){
 		DataBaseController dbc=dv.getDBController();
 		DbConnection db=dbc.getConnection();
 		connections.remove(db);
@@ -230,6 +285,9 @@ public class Luscinia implements WindowListener, ActionListener, ChangeListener,
     // Checks the platform, then attempts to register with the Apple EAWT
     // See OSXAdapter.java to see how this is done without directly referencing any Apple APIs
     
+	/**
+	 * Currently unused, this method was added to implement Mac OS specific behaviour.
+	 */
 	public void registerForMacOSXEvents() {
         if (MAC_OS_X) {
 			//System.out.println("HERE I AM");
@@ -248,16 +306,26 @@ public class Luscinia implements WindowListener, ActionListener, ChangeListener,
         }
     }
 	
+    /**
+     *Holder in place for an about box?
+     */
     public void about() {
 
     }
 	
+    /**
+     * Holder in place for a preferences pane 
+     */
     public void preferences() {
 
     }
 	
+	/**
+	 * This is a method to ask for user feedback if he/she tries to quite the program.
+	 * I haven't got it to work yet, so it is not used. But it would be nice...
+	 * @return a boolean informing whether user consents to quite the program
+	 */
 	public boolean quit() {  
-		System.out.println("QUIT SENT");
         int option = JOptionPane.showConfirmDialog(frame, "Are you sure you want to quit?", "Quit?", JOptionPane.YES_NO_OPTION);
         boolean isquit=(option == JOptionPane.YES_OPTION);
         if (isquit){
@@ -271,6 +339,9 @@ public class Luscinia implements WindowListener, ActionListener, ChangeListener,
         return isquit;
     }
 	
+	/**
+	 * 
+	 */
 	public void quit2() {  
 		System.out.println("QUIT SENT");
         for (int i=0; i<connections.size(); i++){
@@ -279,18 +350,42 @@ public class Luscinia implements WindowListener, ActionListener, ChangeListener,
         }
     }
 		
+	/* (non-Javadoc)
+	 * @see java.awt.event.WindowListener#windowClosing(java.awt.event.WindowEvent)
+	 */
 	public void windowClosing(WindowEvent e){
 		closer();
 	}
+	/* (non-Javadoc)
+	 * @see java.awt.event.WindowListener#windowClosed(java.awt.event.WindowEvent)
+	 */
 	public void windowClosed(WindowEvent e){
 		closer();
 	}
+	/* (non-Javadoc)
+	 * @see java.awt.event.WindowListener#windowActivated(java.awt.event.WindowEvent)
+	 */
 	public void windowActivated(WindowEvent e){}
+	/* (non-Javadoc)
+	 * @see java.awt.event.WindowListener#windowDeactivated(java.awt.event.WindowEvent)
+	 */
 	public void windowDeactivated(WindowEvent e){}
+	/* (non-Javadoc)
+	 * @see java.awt.event.WindowListener#windowIconified(java.awt.event.WindowEvent)
+	 */
 	public void windowIconified(WindowEvent e){}
+	/* (non-Javadoc)
+	 * @see java.awt.event.WindowListener#windowDeiconified(java.awt.event.WindowEvent)
+	 */
 	public void windowDeiconified(WindowEvent e){}
+	/* (non-Javadoc)
+	 * @see java.awt.event.WindowListener#windowOpened(java.awt.event.WindowEvent)
+	 */
 	public void windowOpened(WindowEvent e){}
 	
+	/* (non-Javadoc)
+	 * @see com.apple.eawt.OpenFilesHandler#openFiles(com.apple.eawt.AppEvent.OpenFilesEvent)
+	 */
 	public void openFiles(AppEvent.OpenFilesEvent e) {
 		List<File> files=e.getFiles();
 		File f=files.get(0);
@@ -318,6 +413,9 @@ public class Luscinia implements WindowListener, ActionListener, ChangeListener,
 		
 	}
 	
+	/* (non-Javadoc)
+	 * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+	 */
 	public void actionPerformed(ActionEvent evt) {
 		String command = evt.getActionCommand();
 		if (REMOVE_TAB.equals(command)){
@@ -328,6 +426,9 @@ public class Luscinia implements WindowListener, ActionListener, ChangeListener,
 		}
 	}
 	
+	/* (non-Javadoc)
+	 * @see javax.swing.event.ChangeListener#stateChanged(javax.swing.event.ChangeEvent)
+	 */
 	public void stateChanged(ChangeEvent e) {
 		TabType comp=(TabType)tabbedPane.getSelectedComponent();
 		if (comp!=null){
@@ -346,6 +447,10 @@ public class Luscinia implements WindowListener, ActionListener, ChangeListener,
 	
 	
 	
+	/**
+	 * Method that coordinates closing down Luscinia, shutting down each connection and 
+	 * exiting.
+	 */
 	public void closer(){		
 		for (int i=1; i<tabbedPane.getTabCount(); i++){
 			DatabaseView dv=(DatabaseView)tabbedPane.getComponentAt(1);
@@ -356,10 +461,14 @@ public class Luscinia implements WindowListener, ActionListener, ChangeListener,
 		System.exit(0);
 	}
 
+    /**
+     * main method for the Luscinia app
+     * @param args
+     */
     public static void main (String args[]) {
 		try{
 			
-			String osName=System.getProperty("os.name");
+			//String osName=System.getProperty("os.name");
 			
 			
 			try { 
