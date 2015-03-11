@@ -107,6 +107,14 @@ public class DatabaseView extends TabType implements ActionListener {
     public DataBaseController getDBController(){
     	return dbc;
     }
+    
+    public void refreshTree(){
+    	this.remove(treePanel);
+    	treePanel = new DatabaseTree(this, dbc.getDBName());
+    	populateTree(treePanel);
+    	this.add(treePanel, BorderLayout.CENTER);
+    	this.revalidate();
+    }
 		
 	public void buildButtonSideBar(){
         addIndButton = new JButton("Add Individual");
@@ -261,6 +269,7 @@ public class DatabaseView extends TabType implements ActionListener {
 		ustore=new LinkedList();
 		query="SELECT name, id, IndividualID FROM songdata";
 		ustore.addAll(dbc.readFromDataBase(query, sonq));
+		System.out.println("NUM SONGS: "+ustore.size());
 		
 	}
 	
@@ -350,7 +359,7 @@ public class DatabaseView extends TabType implements ActionListener {
 		}
 		chile.dex=maxind;
 	}
-	
+
 	public void showInformationIndividual(){
 		IndividualEdit i=new IndividualEdit(treePanel, dbc, treePanel.selnode[0].dex, defaults);
 		informationPanel.removeAll();
@@ -695,12 +704,17 @@ public class DatabaseView extends TabType implements ActionListener {
 				String lcdefn=defName.toLowerCase();
 				
 				if ((lcdefn.endsWith(".wav"))||(lcdefn.endsWith(".aiff"))||(lcdefn.endsWith(".aif"))||(lcdefn.endsWith(".mp3"))){
-					myNode ch=treePanel.addObject(parentNode, child, true);
-					addNewSong(ch, parentNode);
-					treePanel.selnode[i]=ch;				
-					treePanel.selnode[i].setUserObject(defName);
-					renameSong(treePanel.selnode[i]);
-					dbc.writeSongIntoDatabase(defName, treePanel.selnode[i].dex, file[i]);
+					//myNode ch=treePanel.addObject(parentNode, child, true);
+					//addNewSong(ch, parentNode);
+					//treePanel.selnode[i]=ch;				
+					//treePanel.selnode[i].setUserObject(defName);
+					//renameSong(treePanel.selnode[i]);
+					
+					Song song=new Song(file[i], parentNode.dex);
+					MainPanel mp=new MainPanel(dbc, song, defaults, spectrogramList, this);
+					mp.startDrawing();
+					spectrogramList.add(mp);
+					//dbc.writeSongIntoDatabase(defName, treePanel.selnode[i].dex, file[i]);
 				}
 			}
 			file=null;
@@ -711,7 +725,7 @@ public class DatabaseView extends TabType implements ActionListener {
 	public void openSpectrogram(){
 		if (treePanel.selnode!=null){
 			for (int i=0; i<treePanel.selnode.length; i++){
-				MainPanel mp=new MainPanel(dbc, treePanel.selnode[i].dex, defaults, spectrogramList);
+				MainPanel mp=new MainPanel(dbc, treePanel.selnode[i].dex, defaults, spectrogramList, this);
 				if (!mp.getSong().getLoaded()){
 					//openWav();
 					//if the song is not present in the database, then some error message should present itself here

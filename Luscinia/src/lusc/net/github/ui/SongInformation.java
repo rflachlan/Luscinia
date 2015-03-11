@@ -30,6 +30,7 @@ public class SongInformation extends JPanel implements ActionListener{
 	private static String SAVE_COMMAND = "save";
 	private static String SAVE_SOUND_COMMAND = "save sound";
 	private static String USE_LAST_COMMAND = "use last";
+	//private static String ARCHIVE_COMMAND = "use last";
 	
 	DataBaseController dbc;
 	DatabaseTree treePanel;
@@ -47,7 +48,7 @@ public class SongInformation extends JPanel implements ActionListener{
 	JLabel notesL=new JLabel("Notes: ");
 	JLabel dateL=new JLabel("  Recording date (dd:mm:yyyy): ");
 	JLabel timeL=new JLabel("Recording time (hh:mm:ss:mmm): ");
-	
+	//JCheckBox typeL=new JCheckBox("Archive recording");
 	JLabel eleNumber, sylNumber;
 	
 	JTextField nameT,eleNumberT, sylNumberT, recordEquipmentT, recordistT, locationT;
@@ -110,6 +111,9 @@ public class SongInformation extends JPanel implements ActionListener{
 		
 		useLast.setActionCommand(USE_LAST_COMMAND);
 		useLast.addActionListener(this);
+		
+		//typeL.setActionCommand(ARCHIVE_COMMAND);
+		//typeL.addActionListener(this);
 	
 		//contentPane.setLayout(new GridLayout(0,2));
 		
@@ -182,6 +186,7 @@ public class SongInformation extends JPanel implements ActionListener{
 		contentPane.add(recEqPane);
 		contentPane.add(recPane);
 		contentPane.add(notesPane);
+		//contentPane.add(typeL);
 		contentPane.add(useLast);
 		contentPane.add(saveSound);
 		contentPane.add(save);
@@ -257,6 +262,13 @@ public class SongInformation extends JPanel implements ActionListener{
 		song.setRecordEquipment(recordEquipmentT.getText());
 		song.setRecordist(recordistT.getText());
 		song.setLocation(locationT.getText());
+		//if (typeL.isSelected()){
+			//song.setArchived(0);
+		//}
+		//else{
+			//song.setArchived(1);
+		//}
+		//System.out.println("CHECKARCHIVE: "+song.getArchived());
 		defaults.setSongDetails(song);
 		dbc.writeSongInfo(song);
 	}

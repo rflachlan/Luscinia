@@ -201,6 +201,9 @@ public class DbConnection {
 			updateDB1();
 			updateDB2();
 		}
+		if (!dversionD.equals(version[1])){
+			updateDB3();
+		}
 		if ((!version[0].equals(lversionD))||(!version[1].equals(dversionD))){
 			writeToDataBase("INSERT INTO dbdetails (version, luscvers) VALUES ('"+version[0]+"' , '"+version[1]+"')");
 		}
@@ -765,6 +768,37 @@ public class DbConnection {
 			} 
 		}		
 	}
+	
+	public void updateDB3(){
+		resetCompTable();
+		Statement stmt = null; 
+		ResultSet rs = null; 
+		try {
+			
+			String query1="ALTER TABLE songdata ADD COLUMN (Archived INT)";
+			
+			if (DBMODE!=1){
+				query1="ALTER TABLE songdata ADD COLUMN Archived INT";
+			}
+			
+			//String queryc="ALTER TABLE songdata ADD COLUMN (echocomp float, echorange int, dyncomp float, dynrange float)";
+			stmt = con.createStatement(); 
+			stmt.executeUpdate(query1);
+		} 
+		catch (Exception e){
+			e.printStackTrace();
+		}
+		finally { 
+			if (rs != null) { 
+				try {rs.close();} catch (SQLException sqlEx) {} 
+				rs = null; 
+			}
+			if (stmt != null) { 
+				try { stmt.close();} catch (SQLException sqlEx) {} 
+				stmt = null; 
+			} 
+		}		
+	}
 
 
 	public LinkedList<int[]> loadSyllablesFromDatabase(int id){
@@ -840,6 +874,7 @@ public class DbConnection {
 		String query4="SELECT call_context FROM songdata WHERE id = "+id;
 		String query5="SELECT RecordingEquipment FROM songdata WHERE id = "+id;
 		String query6="SELECT Recorder FROM songdata WHERE id = "+id;
+		String query7="SELECT Archived FROM songdata WHERE id = "+id;
 		
 		PreparedStatement stmt = null; 
 		ResultSet rs = null; 
@@ -938,6 +973,15 @@ public class DbConnection {
 			}
 			else {
 				song.setRecordist(rs.getString("Recorder"));
+			}
+			
+			stmt = con.prepareStatement(query7);
+			rs = stmt.executeQuery( );
+			if( !rs.next( ) ) {
+				System.out.println("No such file stored. "+id);
+			}
+			else {
+				song.setArchived(rs.getInt("Archived"));
 			}
 			
 		}
@@ -1058,6 +1102,54 @@ public class DbConnection {
 		}
 	}
 	
+	public void writeSongIntoDatabase(Song s){
+		String insertStmt = "INSERT INTO wavs (songid, filename, wav, samplerate, framesize, stereo, bigend, ssizeinbits, time, signed) values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+		System.out.println("trying to read song");
+		PreparedStatement stmt = null; 
+		ResultSet rs = null; 
+		try {
+			
+			double samplerate=s.getSampleRate();
+			int stereo=s.getStereo();
+			int FrameSize=s.getFrameSize();
+			int length=(int)(FrameSize*s.getFrameLength());
+			boolean bd=s.getBigEnd();
+			int bigend=0;
+			if (bd){bigend=1;}
+			boolean sd=s.getSigned();
+			int signed=0;
+			if (sd){signed=1;}
+			int ssizebits=s.getSizeInBits();
+			long mtime=s.getTDate();
+			stmt = con.prepareStatement(insertStmt);
+			stmt.setString(2, s.getName());
+			stmt.setInt(1, s.getSongID());
+			byte[] a=s.getRawData();
+			stmt.setBinaryStream(3, new ByteArrayInputStream(a), a.length);
+			stmt.setDouble(4, samplerate);
+			stmt.setInt(5, FrameSize);
+			stmt.setInt(6, stereo);
+			stmt.setInt(7, bigend);
+			stmt.setInt(8, ssizebits);
+			stmt.setLong(9, mtime);
+			stmt.setInt(10, signed);
+			stmt.executeUpdate();
+		} 
+		catch (Exception e){
+			e.printStackTrace();
+		}
+		finally { 
+			if (rs != null) { 
+				try {rs.close();} catch (SQLException sqlEx) {} 
+				rs = null; 
+			}
+			if (stmt != null) { 
+				try { stmt.close();} catch (SQLException sqlEx) {} 
+				stmt = null; 
+			} 
+		}
+	}
+	
 	public void writeSongMeasurements(Song song){
 		Statement stmt = null; 
 		ResultSet rs = null; 
@@ -1158,6 +1250,8 @@ public class DbConnection {
 		query="UPDATE songdata SET RecordingEquipment='"+song.getRecordEquipment()+"'" +w;
 		writeToDataBase(query);
 		query="UPDATE songdata SET Recorder='"+song.getRecordist()+"'" +w;
+		writeToDataBase(query);
+		query="UPDATE songdata SET Archived='"+song.getArchived()+"'" +w;
 		writeToDataBase(query);
 		query="UPDATE songdata SET Name='"+song.getName()+"'" +w;
 		writeToDataBase(query);

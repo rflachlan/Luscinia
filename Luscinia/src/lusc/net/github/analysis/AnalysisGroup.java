@@ -10,9 +10,15 @@ import lusc.net.github.Element;
 import lusc.net.github.Song;
 import lusc.net.github.db.DataBaseController;
 import lusc.net.github.ui.SpectrogramSideBar;
-import lusc.net.github.ui.compmethods.DTWSwingWorker;
-import lusc.net.github.ui.spectrogram.SpectrPane;
 
+
+/**
+ * AnalysisGroup is a large class that is at the core of comparison-based analysis. At its core are
+ * various float[][] matrices that contain the output of comparisons between sets of elements,
+ * syllables, syllable transitions and songs 
+ * @author Rob
+ *
+ */
 public class AnalysisGroup {
 
 	Song[] songs;
@@ -36,7 +42,14 @@ public class AnalysisGroup {
 	double stitchPunishment=150;
 	double syllableRepetitionWeighting=0;
 
-	
+	/**
+	 * This constructor takes an array of songs, a Defaults objects (to pass to various 
+	 * UI components? And a DataBaseController - which allows the object to load the actual
+	 * song data from a database. 
+	 * @param songs array of {@link lusc.net.github.Song} objects
+	 * @param defaults a {@link lusc.net.github.Defaults} object
+	 * @param dbc a {@link lusc.net.github.db.DataBaseController} object
+	 */
 	public AnalysisGroup(Song[] songs, Defaults defaults, DataBaseController dbc){
 		this.songs=songs;
 		
@@ -48,11 +61,26 @@ public class AnalysisGroup {
 		
 	}
 	
+	/**
+	 * This constructor takes an Array of songs and a Defaults object (almost certainly not needed)
+	 * @param songs array of {@link lusc.net.github.Song} objects
+	 * @param defaults a {@link lusc.net.github.Defaults} object
+	 */
+	
 	public AnalysisGroup(Song[] songs, Defaults defaults){
 		this.songs=songs;
 		this.defaults=defaults;
 		songNumber=songs.length;
 	}
+	
+	/**
+	 * This constructor is for more complex comparison designs, where only certain comparisons
+	 * are required
+	 * @param songs array of {@link lusc.net.github.Song} objects
+	 * @param compScheme a boolean[][] that tells the object which pairs of elements to compare
+	 * @param defaults a {@link lusc.net.github.Defaults} object
+	 * @param dbc a {@link lusc.net.github.db.DataBaseController} object
+	 */
 	
 	public AnalysisGroup(Song[] songs, boolean[][] compScheme, Defaults defaults, DataBaseController dbc){
 		this.songs=songs;
@@ -62,41 +90,95 @@ public class AnalysisGroup {
 		songNumber=songs.length;
 	}
 	
+	/**
+	 * Gets the array of Songs used for the analysis
+	 * @return an array of {@link lusc.net.github.Song} objects
+	 */
+	
 	public Song[] getSongs(){
 		return songs;
 	}
+	
+	/**
+	 * Gets a particular Song used for the analysis
+	 * @param a index of particular Song to get
+	 * @return a {@link lusc.net.github.Song} object
+	 */
 	
 	public Song getSong(int a){
 		return songs[a];
 	}
 	
+	/**
+	 * Gets the comparison scheme used for complex comparisons
+	 * @return a boolean[][] indicating which pairs of songs are to be compared
+	 */
+	
 	public boolean[][] getCompScheme(){
 		return compScheme;
 	}
 	
+	/**
+	 * Gets an array of names for the populations used in the analysis
+	 * @return a String[] containing the names of the populations underlying the songs in the
+	 * comparison
+	 */
 	public String[] getPopulations(){
 		return populations;
 	}
 	
+	/**
+	 * Gets the Defaults object 
+	 * @return a {@link lusc.net.github.Defaults} object
+	 */
 	public Defaults getDefaults(){
 		return defaults;
 	}
 	
+	/**
+	 * gets the DataBaseController object
+	 * @return a {@link lusc.net.github.db.DataBaseController} object
+	 */
 	public DataBaseController getDBC(){
 		return dbc;
 	}
+	
+	/**
+	 * gets the SpectrogramSideBar object - an object containing sketches of subsets of elements
+	 * or songs in the list of Songs
+	 * @return a {@link lusc.net.github.ui.SpecctrogramSideBar} object
+	 */
 	
 	public SpectrogramSideBar getSSB(){
 		return ssb;
 	}
 	
+	/**
+	 * gets the boolean switch compressElements which says whether raw element comparisons should
+	 * be compressed within a phrase
+	 * @return a boolean value
+	 */
+	
 	public boolean getCompressElements(){
 		return compressElements;
 	}
 	
+	/**
+	 * sets the boolean switch compressElements which says whether raw element comparisons should
+	 * be compressed within a phrase
+	 * @param a boolean value
+	 */
+	
 	public void setCompressElements(boolean a){
 		compressElements=a;
 	}
+	
+	/**
+	 * gets the maximum length of various units. 
+	 * @param a an int index that decides whether the user wants element, compressed element, syllable,
+	 * transition or song lengths
+	 * @return an int giving the maximum length of the chosen unit
+	 */
 	
 	public int getMaxLength(int a){
 		int b=0;
@@ -108,25 +190,63 @@ public class AnalysisGroup {
 		return b;
 	}
 	
+	/**
+	 * gets the Element comparison matrix
+	 * @return a float[][] object of the dissimilarity between pairs of {@link lusc.net.github.Element} objects
+	 * @see lusc.net.github.Element
+	 */
+	
 	public float[][] getScoresEle(){
 		return scoresEle;
 	}
+	
+	/**
+	 * gets the Compressed Element comparison matrix
+	 * @return a float[][] object of the dissimilarity between pairs of compressed elements
+	 * @see lusc.net.github.Element
+	 */
 	
 	public float[][] getScoresEleC(){
 		return scoresEleC;
 	}
 	
+	/**
+	 * gets the Syllable comparison matrix
+	 * @return a float[][] object of the dissimilarity between pairs of Syllables
+	 * @see lusc.net.github.Song
+	 */
+	
 	public float[][] getScoresSyll(){
 		return scoresSyll;
 	}
+	
+	/**
+	 * gets the Transition comparison matrix
+	 * @return  a float[][] object of the dissimilarity between pairs of Transitions
+	 * @see lusc.net.github.Song
+	 */
 	
 	public float[][] getScoresTrans(){
 		return scoreTrans;
 	}
 	
+	/**
+	 * gets the Song comparison matrix
+	 * @return a float[][] object of the dissimilarity between pairs of Songs
+	 * @see lusc.net.github.Song
+	 */
+	
 	public float[][] getScoresSong(){
 		return scoresSong;
 	}
+	
+	/**
+	 * gets the number of various types of units
+	 * @param a an integer index that determines which unit to use: 0=element,
+	 * 1=compressed element, 2=transition, 3=song
+	 * @return an integer of the number of the selected type of units there are in the 
+	 * comparison
+	 */
 	
 	public int getLengths(int a){
 		int b=0;
@@ -138,6 +258,13 @@ public class AnalysisGroup {
 		return b;
 	}
 	
+	/**
+	 * gets the lookUp object for various units
+	 * @param a an integer index that determines which unit to use: 0=element,
+	 * 1=compressed element, 2=transition, 3=song
+	 * @return an integer [][] array for the selected lookUp object
+	 */
+	
 	public int[][] getLookUp(int a){
 		int[][] b=null;
 		if (a==0){b=lookUpEls;}
@@ -147,6 +274,14 @@ public class AnalysisGroup {
 		else if (a==4){b=lookUpSongs;}
 		return b;
 	}
+	
+	/**
+	 * gets the id for the relevant song/individual for varioua units
+	 * @param dataType an integer index that determines which unit to use: 0=element,
+	 * 1=compressed element, 2=transition, 3=song
+	 * @param i the index of the particular element etc to get from the array 
+	 * @return an integer [] array containing the song and individual for the selected element
+	 */
 	
 	public int[] getId(int dataType, int i){
 		int[] j=new int[2];
@@ -173,6 +308,14 @@ public class AnalysisGroup {
 		return (j);
 	}
 	
+	/**
+	 * gets an int[][] in which the first index lists individuals in the sample, and the second 
+	 * lists the units that belong to that individual
+	 * @param a an integer index that determines which unit to use: 0=element,
+	 * 1=compressed element, 2=transition, 3=song
+	 * @return an int[][] containing individual lookups
+	 */
+	
 	public int[][] getIndivData(int a){
 		int[][] s=null;
 		if (a==0){s=individualEle;}
@@ -183,32 +326,61 @@ public class AnalysisGroup {
 		return s;
 	}
 	
-	
+	/**
+	 * gets the alignmentCost parameter for comparisons 
+	 * @return a double value of alignmentCost
+	 */
 	public double getAlignmentCost(){
 		return alignmentCost;
 	}
+	
+	/**
+	 * sets the alignmentCost parameter for comparisons 
+	 * @param a double value for alignmentCost
+	 */
 	
 	public void setAlignmentCost(double a){
 		alignmentCost=a;
 	}
 	
+	
+	/**
+	 * gets the stichPunishment parameter for comparisons 
+	 * @return a double value for stitchPunishment
+	 */
 	public double getStitchPunishment(){
 		return stitchPunishment;
 	}
 	
+	/**
+	 * sets the stichPunishment parameter for comparisons 
+	 * @param a double value for stitchPunishment
+	 */
 	public void setStitchPunishment(double a){
 		stitchPunishment=a;
 	}
 	
+	/**
+	 * gets the syllableRepetitionWeighting parameter for comparisons 
+	 * @return a double value for syllableRepetitionWeighting
+	 */
 	public double getSyllableRepetitionWeighting(){
 		return syllableRepetitionWeighting;
 	}
 	
+	/**
+	 * sets the syllableRepetitionWeighting parameter for comparisons 
+	 * @param a double value for syllableRepetitionWeighting
+	 */
 	public void setSyllableRepetitionWeighting(double a){
 		syllableRepetitionWeighting=a;
 	}
 	
-	
+	/**
+	 * Sets the various float[][] score matrices at the heart of this class.
+	 * @param a an index from 0 for elements to 4 for songs, and 5 for a second syllable matrix
+	 * @param b a float[][] array containing dissimilarities between song units
+	 */
 	public void setScores(int a, float[][] b){
 		if (a==0){scoresEle=b;}
 		else if (a==1){scoresEleC=b;}
@@ -218,6 +390,11 @@ public class AnalysisGroup {
 		else if (a==5){scoresSyll2=b;}
 	}
 	
+	/**
+	 * Gets the various float[][] score matrices at the heart of this class.
+	 * @param a an index from 0 for elements to 4 for songs, and 5 for a second syllable matrix
+	 * @return a float[][] array containing dissimilarities between song units
+	 */
 	public float[][] getScores(int a){
 		float[][] b=null;
 		if (a==0){b=scoresEle;}
@@ -229,6 +406,11 @@ public class AnalysisGroup {
 		return b;
 	}
 	
+	/**
+	 * Gets the labels assigned to each unit.
+	 * @param a an index from 0 for elements to 4 for songs
+	 * @return a double[] array containing labels for that unit
+	 */
 	public double[] getLabels(int a){
 		double[] s=null;
 		if (a==0){s=labelElements();}
@@ -239,6 +421,12 @@ public class AnalysisGroup {
 		return s;
 	}
 	
+	/**
+	 * This method copies/clones one of the score arrays into a new float[][] array and
+	 * returns it
+	 * @param a an index from 0 for elements to 4 for songs
+	 * @return a float[][] dissimilarity matrix
+	 */
 	public float[][] copy(int a){
 		int b=0;
 		if (a==0){b=eleNumber;}
@@ -258,6 +446,9 @@ public class AnalysisGroup {
 	
 	
 	//IS THIS ESSENTIAL?
+	/**
+	 * This method calculates the number of repetitions for each phrase in the sample
+	 */
 	public void calculateSyllableRepetitions(){
 		int n=0;
 		for (int i=0; i<songs.length; i++){
@@ -275,6 +466,9 @@ public class AnalysisGroup {
 		}
 	}
 	
+	/**
+	 * This method turns every element in the sample into a phrase
+	 */
 	public void makeEveryElementASyllable(){
 		for (int i=0; i<songs.length; i++){
 			LinkedList<int[][]> phrases=new LinkedList<int[][]>();
@@ -287,6 +481,11 @@ public class AnalysisGroup {
 		}
 	}
 	
+	/**
+	 * This method selects one exemplar syllable for each phrase, using a dtw comparison
+	 * within the phrase
+	 * @see lusc.net.github.analysis.SyllableCompressor
+	 */
 	public void pickJustOneExamplePerPhrase(){
 		SyllableCompressor sc=new SyllableCompressor();
 		for (int i=0; i<songs.length; i++){
@@ -296,6 +495,10 @@ public class AnalysisGroup {
 		}
 	}
 	
+	/**
+	 * This method re-segments songs into syllables based on a simple time gap threshold
+	 * @param thresh a threshold in ms
+	 */
 	public void segmentSyllableBasedOnThreshold(double thresh){
 		for (int i=0; i<songs.length; i++){
 			LinkedList<int[][]> phrases=new LinkedList<int[][]>();
@@ -321,13 +524,25 @@ public class AnalysisGroup {
 		}
 	}
 	
+	/**
+	 * This method is the first step for loading the raw song data (audio data) into
+	 * the song object. This may be useful (in future) for methods like spectrogram
+	 * cross correlation, where new spectrograms are needed
+	 * @param i index for the song
+	 */
 	public void checkAndLoadRawData(int i){
 		if (songs[i].getRawData()==null){
 			loadSongRawData(i);
 		}
 	}
 	
-	public void loadSongRawData(int i){
+	/**
+	 * This method is the second step for loading the raw song data (it is called from
+	 * the previous method). If you call this method directly, there is no time-saving
+	 * check whether the song is already loaded.
+	 * @param i index for the song
+	 */
+	void loadSongRawData(int i){
 		Song song=dbc.loadSongFromDatabase(songs[i].getSongID(), 0);
 		songs[i]=song;
 		//System.out.println(songs[i].getMaxF()+" "+songs[i].getDynRange());
@@ -338,6 +553,11 @@ public class AnalysisGroup {
 		
 	}
 	
+	
+	/**
+	 * Organizational method that calls a range of methods for calculating names and lookups
+	 * for the units in the analysis.
+	 */
 	public void makeNames(){
 		countEleNumber();
 		calculateMaxima();
@@ -353,6 +573,10 @@ public class AnalysisGroup {
 		getPopulationNames();
 	}
 	
+	
+	/**
+	 * This method calculates the number of different units and makes the look-up tables
+	 */
 	public void countEleNumber(){
 		eleNumber=0;
 		syllNumber=0;
@@ -445,6 +669,9 @@ public class AnalysisGroup {
 		}
 	}
 	
+	/**
+	 * This method calculates maximum lengths for some units
+	 */
 	public void calculateMaxima(){
 		maxEleLength=0;
 		maxSyllLength=0;
@@ -494,6 +721,11 @@ public class AnalysisGroup {
 		}
 	}
 
+	/**
+	 * Makes and Gets names for different units
+	 * @param a an index from 0 for Elements to 4 for Songs
+	 * @return
+	 */
 	public String[] getNames(int a){
 		String[] b=null;
 		if (a==0){b=makeEleNames();}
@@ -503,7 +735,12 @@ public class AnalysisGroup {
 		else if (a==4){b=makeSongNames();}
 		return b;
 	}
-	
+
+	/**
+	 * makes names for each Element in the sample
+	 * @return a String array of element names
+	 * @see lusc.net.github.Element
+	 */
 	public String[] makeEleNames(){
 		String [] eleNames=new String[eleNumber];
 		int count=0;
@@ -523,6 +760,11 @@ public class AnalysisGroup {
 		return eleNames;
 	}
 	
+	/**
+	 * makes names for each Compressed Element in the sample
+	 * @return a String array of element names
+	 * @see lusc.net.github.Element
+	 */
 	public String[] makeEleNamesC(){
 		String[] eleNamesC=new String[eleNumberC];
 		int count=0;
@@ -566,6 +808,11 @@ public class AnalysisGroup {
 		return eleNamesC;
 	}
 	
+	/**
+	 * makes names for each Syllable in the sample
+	 * @return a String array of syllable names
+	 * @see lusc.net.github.Song
+	 */
 	public String[] makeSyllNames(){
 		String[] syllNames=new String[syllNumber];
 		//syllLabels=new double[syllNumber];
@@ -612,6 +859,11 @@ public class AnalysisGroup {
 		return syllNames;
 	}
 	
+	/**
+	 * makes names for each Transition in the sample
+	 * @return a String array of transition names
+	 * @see lusc.net.github.Song
+	 */
 	public String[] makeTransNames(){
 		String[] transNames=new String[transNumber];
 		
@@ -627,6 +879,11 @@ public class AnalysisGroup {
 		return transNames;
 	}
 	
+	/**
+	 * makes names for each Song in the sample
+	 * @return a String array of song names
+	 * @see lusc.net.github.Song
+	 */
 	public String[] makeSongNames(){
 		String[] songNames=new String[songNumber];
 		for (int i=0; i<songs.length; i++){
@@ -642,14 +899,23 @@ public class AnalysisGroup {
 		return songNames;
 	}
 	
+	/**
+	 * Labels Elements in the sample by their position in the song
+	 * @return a double[] containing the position of elements
+	 */
 	public double[] labelElements(){
 		double[] eleLabels=new double[eleNumber];
 		for (int i=0; i<eleNumber; i++){
-			//eleLabels[i]=lookUpEls[i][1]/(songs[lookUpEls[i][0]].getNumElements()-1.0);
-			eleLabels[i]=lookUpEls[i][0]/(songNumber-1.0);
+			eleLabels[i]=lookUpEls[i][1]/(songs[lookUpEls[i][0]].getNumElements()-1.0);
+			//eleLabels[i]=lookUpEls[i][0]/(songNumber-1.0);
 		}
 		return eleLabels;
 	}
+	
+	/**
+	 * Labels Compressed Elements in the sample by their position in the song
+	 * @return a double[] containing the position of elements
+	 */
 	
 	public double[] labelElementsC(){
 		double[] eleLabels=new double[eleNumberC];
@@ -665,6 +931,11 @@ public class AnalysisGroup {
 		}
 		return eleLabels;
 	}
+	
+	/**
+	  * Sets syllable labels using an input int[] data set
+	 * @return a double[] containing syllables labels (normalized by the maximum value of inputs)
+	 */
 	
 	public double[] setSyllLabels(int[] dat){
 		double[] syllLabels=new double[syllNumber];
@@ -691,6 +962,11 @@ public class AnalysisGroup {
 		return syllLabels;
 	}
 	
+	
+	/**
+	 * Labels syllables, according to position of phrase within song
+	 * @return a double[] (range 0-1) giving relative position of each syllable within the song
+	 */
 	public double[] labelSyllables(){
 				
 		double[] syllLabels=new double[syllNumber];
@@ -741,6 +1017,11 @@ public class AnalysisGroup {
 		}
 		return syllLabels;
 	}
+	
+	/**
+	 * Labels transitions according to the relative position of the transition within the song
+	 * @return a double[] (range 0-1) giving relative position of transition within the song
+	 */
 
 	public double[] labelTransitions(){
 		double[] transLabels=new double[transNumber];
@@ -752,6 +1033,11 @@ public class AnalysisGroup {
 		}
 		return transLabels;
 	}
+	
+	/**
+	 * Labels songs according to an arbitrary naming system. Needs to be updated!
+	 * @return a double[] of song labels
+	 */
 	
 	public double[] labelSongs(){
 		double[] songLabels=new double[songs.length];
@@ -771,6 +1057,10 @@ public class AnalysisGroup {
 		}
 		return songLabels;
 	}
+	
+	/**
+	 * calculates population names - extracting all the population names found in the sample of songs to be analyzed.
+	 */
 	
 	public void getPopulationNames(){
 		LinkedList<String> populationName=new LinkedList<String>();
@@ -794,6 +1084,10 @@ public class AnalysisGroup {
 		populations=populationName.toArray(populations);
 	}
 	
+	/**
+	 * Calculates species names - looking up all the species in the analyzed sample
+	 */
+	
 	public void getSpeciesNames(){
 		LinkedList<String> speciesName=new LinkedList<String>();
 		for (int i=0; i<songs.length; i++){
@@ -815,6 +1109,13 @@ public class AnalysisGroup {
 		
 		species=speciesName.toArray(species);
 	}
+	
+	/**
+	 * For a given input hierarchical level, and id, returns the population id
+	 * @param a input level (from Element to Song)
+	 * @param b index to look up
+	 * @return an int giving the index of the population id (see getPopulationNames)
+	 */
 	
 	public int lookUpPopulation(int a, int b){
 		int c=0;
@@ -842,7 +1143,12 @@ public class AnalysisGroup {
 		}
 		return r;
 	}
-		
+	
+	/**
+	 * returns an array containing the species id for each item
+	 * @param h hierarchical level (from Element to Song)
+	 * @return an int[] containint the species id for each unit with the sample (see getSpeciesNames)
+	 */
 	
 	public int[] getSpeciesListArray(int h){
 		getSpeciesNames();
@@ -908,8 +1214,16 @@ public class AnalysisGroup {
 		}
 		return results;
 	}
-		
 	
+	/**
+	 * calculates and returns an int array for the position of units within the song
+	 * This is expressed as an integer from 0 (beginning) to 6 (end) of the song. This is 
+	 * chaffinch-specific and should be phased out to something more general. This was used
+	 * for some experiments with alternative types of entropy estimation.
+	 * @param h hierarchical level (from Element to Syllable)
+	 * @return an int[] indicating position.
+	 */
+		
 	public int[] getPositionListArray(int h){
 		
 		int[] results=new int[1];
@@ -953,7 +1267,12 @@ public class AnalysisGroup {
 		return results;
 	}
 	
-	//This method identifies which Individual is associated with which song/song unit.
+	/**
+	 * This method identifies which Individual is associated with which song/song unit.
+	 * @param type hierarchical level (from Element to Song)
+	 * @return an int array showing the individual associated with each unit.
+	 */
+	
 	public int[] calculateSongAssignments(int type){
 		int[] results;
 		int[][] lookUp=getLookUp(type);
@@ -971,6 +1290,12 @@ public class AnalysisGroup {
 		return results;
 	}
 	
+	/**
+	 * Calculates and returns the population id for each unit.
+	 * @param type hierarchical level (from Element to Song)
+	 * @return an int[] giving the population id for each unit.
+	 */
+	
 	public int[] getPopulationListArray(int type){
 		getPopulationNames();
 		int[][] lookUp=getLookUp(type);
@@ -987,8 +1312,11 @@ public class AnalysisGroup {
 		return results;
 	}
 	
+	/**
+	 *This method calculates the class arrays "individuals" which contains the song-types, transitions and elements owned by each individual in the set of songs
+	 */
+	
 	public void calculateIndividuals(){
-		//This method calculates the class arrays "individuals" which contains the song-types, transitions and elements owned by each individual in the set of songs
 		int countInds=0;
 		int[][] indLocs=new int[songNumber][5];
 		for (int i=0; i<songNumber; i++){
@@ -1064,6 +1392,10 @@ public class AnalysisGroup {
 		individualNumber=countInds;
 	}
 	
+	/**
+	 * This function takes Element comparisons and outputs compressed Element comparisons (averages for all versions of an element within a phrase)
+	 */
+	
 	public void compressElements(){
 		if (scoresEle!=null){
 			CompressComparisons cc=new CompressComparisons();
@@ -1071,15 +1403,22 @@ public class AnalysisGroup {
 		}
 	}
 	
+	/**
+	 * This function compresses syllables - takes arrays of syllable comparisons, and outputs arrays of phrase comparisons
+	 */
+	
 	public void compressSyllables(){
 		CompressComparisons cc=new CompressComparisons();
 		scoresSyll=cc.phraseComp(scoresEle, songs, (float)alignmentCost);		
 	}
 	
+	/**
+	 * this is what happens when you get both stitched and non-stitched syllable comparisons
+	 * this method compares the two comparisons... and outputs the highest scoring (least similar) one
+	 */
+	
 	public void compressSyllablesBoth(){
-		//this is what happens when you get both stitched and non-stitched syllable comparisons
-		//this method compares the two comparisons...
-		
+
 		if (scoresSyll2!=null){
 			CompressComparisons cc=new CompressComparisons();
 			scoresSyll2=cc.compareSyllables5(scoresSyll2, songs, alignmentCost);
@@ -1093,16 +1432,31 @@ public class AnalysisGroup {
 		}
 	}
 	
+	/**
+	 * This function compresses stitched syllable comparisons into phrase comparisons
+	 */
+	
 	public void compressSyllablesStitch(){
 		CompressComparisons cc=new CompressComparisons();
 		scoresSyll=cc.compareSyllables5(scoresSyll2, songs, alignmentCost);
 	}
+	
+	/**
+	 * This function compresses syllable-phrase comparisons into transition comparison
+	 */
 	
 	public void compressSyllableTransitions(){
 		CompressComparisons cc=new CompressComparisons();
 		scoreTrans=cc.compareSyllableTransitions2(scoresSyll, songs);
 		
 	}
+	
+	/**
+	 * This function constructs song comparisons, based on phrase or transition comparisons
+	 * @param useTrans this flags whether or not to use transition data (otherwise phrase data)
+	 * @param lowerProp This is a parameter for a gating function
+	 * @param upperProp This is a parameter for a gating function
+	 */
 	
 	public void compressSongs(boolean useTrans, double lowerProp, double upperProp){
 		try{
@@ -1120,6 +1474,12 @@ public class AnalysisGroup {
 		catch(Exception e){e.printStackTrace();}
 	}
 	
+	/**
+	 * This method calculates the mean dissimilarity within a matrix
+	 * @param score input triangular dissimilarity matrix
+	 * @return mean dissimilarity
+	 */
+	
 	public double getMatrixAv(float[][] score){
 		double a=0;
 		double b=0;
@@ -1132,6 +1492,11 @@ public class AnalysisGroup {
 		double av=a/b;
 		return av;
 	}
+	
+	/**
+	 * This method augments phrase dissimilarities by including a component related to their
+	 * number of repetitions
+	 */
 	
 	public void augmentSyllDistanceMatrixWithSyllableReps(){
 		if (syllableRepetitions.length!=scoresSyll.length){
@@ -1163,6 +1528,14 @@ public class AnalysisGroup {
 			
 		}
 	}
+	
+	/**
+	 * This function is used to calculate the number of shared syllables within a dataset between two individuals
+	 * @param a first individual id
+	 * @param b second individual id
+	 * @param threshold dissimilarity threshold
+	 * @return number of shared syllables
+	 */
 	
 	public int getSharedSyllCount(int a, int b, double threshold){
 		int count=0;
@@ -1205,6 +1578,14 @@ public class AnalysisGroup {
 		return count;
 	}
 	
+	/**
+	  * This function is used to calculate the number of shared transitions within a dataset between two individuals
+	 * @param a
+	 * @param b
+	 * @param threshold
+	 * @return
+	 */
+	
 	public int getSharedTransCount(int a, int b, double threshold){
 		int count=0;
 		for (int i=0; i<transNumber; i++){
@@ -1228,6 +1609,14 @@ public class AnalysisGroup {
 		System.out.println("Trans sharing: "+a+" "+b+" "+count);
 		return count;
 	}
+	
+	/**
+	 * 
+	 * @param a
+	 * @param b
+	 * @param threshold
+	 * @return
+	 */
 	
 	public double getWeightedSharedTransCount(int a, int b, double threshold){
 		double count=0;
@@ -1278,6 +1667,14 @@ public class AnalysisGroup {
 		return count;
 	}
 	
+	/**
+	 * 
+	 * @param label
+	 * @param type
+	 * @param ind
+	 * @return
+	 */
+	
 	public float[][] splitMatrix(int[] label, int type, int ind){
 		int c=0;
 		for (int i=0; i<label.length; i++){
@@ -1307,6 +1704,14 @@ public class AnalysisGroup {
 		return results;
 	}
 	
+	/**
+	 * 
+	 * @param label
+	 * @param h
+	 * @param ind
+	 * @return
+	 */
+	
 	public int[] splitCounts(int[] label, int h, int ind){
 		int c=0;
 		for (int i=0; i<label.length; i++){
@@ -1332,6 +1737,13 @@ public class AnalysisGroup {
 		}
 		return results;
 	}
+	
+	/**
+	 * This function looks up a subset of the song data based on label and ind input data
+	 * @param label int[] of values for each song
+	 * @param ind an int value to look up in label
+	 * @return an int[][] containing song ids for each individual in the subset
+	 */
 	
 	public int[][] splitIndSongs(int[] label, int ind){
 		int c=0;
@@ -1368,6 +1780,15 @@ public class AnalysisGroup {
 		return results;
 	}
 	
+	/**
+	 * This function extracts from lookup tables all data of a particular class, by matching
+	 * an int, ind to an int[] array label. 
+	 * @param label int[] array to match data to
+	 * @param type hierarchical level to use (from Element to Song)
+	 * @param ind label to look for
+	 * @return an int[][] of lookUps for a particular subclass of the dataset
+	 */
+	
 	public int[][] splitLookUps(int[] label, int type, int ind){
 		int c=0;
 		for (int i=0; i<label.length; i++){
@@ -1387,6 +1808,11 @@ public class AnalysisGroup {
 		}
 		return results;
 	}
+	
+	
+	/**
+	 * This function cleans up some of the large objects in Analysis when an analysis is complete
+	 */
 	
 	public void cleanUp(){
 		songs=null;

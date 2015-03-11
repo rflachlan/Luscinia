@@ -237,16 +237,19 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 		int locationArch=location;
 		double echoComp=song.getEchoComp();
 		float noiseRemArch=song.getNoiseRemoval();
+		double cutOffArch=song.getFrequencyCutOff();
 		//song.frameLength=5;
 		song.setFrameLength(256.0*1000/song.getSampRate());
 		song.setMaxF(gpmaxf);
 		song.setTimeStep(song.getOverallLength()/(d.width-60.0));
+		System.out.println("GP TIME STEP: "+song.getTimeStep());
 		//if (song.timeStep>song.frameLength){song.timeStep=song.frameLength;}
 		//song.timeStep=10;
 		song.setDynEqual(500);
 		song.setDynRange(40);
 		song.setEchoComp(0);
 		song.setNoiseRemoval(0);
+		song.setFrequencyCutOff(0);
 		song.setFFTParameters();		
 		
 		unx=song.getNx();
@@ -280,6 +283,7 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 		song.setDynRange(dynRangeArch);
 		song.setEchoComp(echoComp);
 		song.setNoiseRemoval(noiseRemArch);
+		song.setFrequencyCutOff(cutOffArch);
 		song.setFFTParameters();
 		stretchY=stretchYArch;
 		stretchX=stretchXArch;
@@ -478,6 +482,7 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 		song.makeAmplitude(currentMinX, currentMaxX, tnx);
 		nout=song.getOut();
 		song.makePhase();
+		songMeas=song.getMeasurer();
 		envelope=song.getEnvelope();
 		if (displayMode!=2){
 			updatePixelVals(im);
@@ -508,6 +513,23 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 		stretchX=tnx/(end-start-0.0);
 		System.out.println(stretchX+" "+location+" "+tnx+" "+start+" "+end);
 		restart();
+	}
+	
+	void moveForward(){
+		
+		int minx=getCurrentMinX();
+		int maxx=getCurrentMaxX();
+		int w=((maxx+minx)/2)+maxx-minx;
+		System.out.println("FORW: "+w+" "+minx+" "+maxx);
+		relocate(w);
+	}
+	
+	void moveBackward(){
+		int minx=getCurrentMinX();
+		int maxx=getCurrentMaxX();
+		int w=((maxx+minx)/2)-maxx+minx;
+		System.out.println("BACK: "+w+" "+minx+" "+maxx);
+		relocate(w);
 	}
 	
 	/*
