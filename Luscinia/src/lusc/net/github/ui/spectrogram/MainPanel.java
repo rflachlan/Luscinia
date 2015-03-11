@@ -22,6 +22,7 @@ import lusc.net.github.Element;
 import lusc.net.github.Song;
 import lusc.net.github.db.DataBaseController;
 import lusc.net.github.ui.SaveImage;
+import lusc.net.github.ui.db.DatabaseView;
 import lusc.net.github.ui.SaveSound;
 import lusc.net.github.ui.SyllableInduction;
 
@@ -57,11 +58,15 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 	JButton reestimate=new JButton("Re-measure");
 	JButton reestAll=new JButton("Re-measure all");
 	JButton displayMode=new JButton("Display mode: spectrogram");
+	JButton forwardButton= new JButton("Forw");
+	JButton backButton=new JButton("Back");
 	
 	JButton calculateSyllableStructure=new JButton("Calculate syllables automatically");
 	
 	boolean LISTEN_TO_DROP_DOWNS=true;
 	
+	private static String FORWARD_COMMAND = "forward";
+	private static String BACKWARD_COMMAND = "backward";
 	private static String SAVE_COMMAND = "save";
 	private static String SAVE_SOUND_COMMAND = "save sound";
 	private static String SAVE_IMAGE_COMMAND = "save image";
@@ -274,6 +279,9 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 	LinkedList host;
 	int maxUndoListSize=10;	
 	
+	DatabaseView dbv;
+	boolean editMode=false;
+	
 	public MainPanel(DataBaseController dbc, int songID, String user, Defaults defaults){
 		this.dbc=dbc;
 		this.songID=songID;
@@ -299,7 +307,37 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		this.songID=songID;
 		this.defaults=defaults;
 		this.host=host;
+		editMode=true;
 		song=dbc.loadSongFromDatabase(songID, 0);
+		song.setUpPlayback();
+		//defaults.getSongParameters(song);
+		cloneLists();
+	}
+	
+	public MainPanel(DataBaseController dbc, int songID, Defaults defaults, LinkedList host, DatabaseView dbv){
+		this.dbc=dbc;
+		this.songID=songID;
+		this.defaults=defaults;
+		this.host=host;
+		this.dbv=dbv;
+		editMode=false;
+		song=dbc.loadSongFromDatabase(songID, 0);
+		System.out.println("CHECKARCHIVED: "+song.getArchived());
+		if (song.getArchived()==1){
+			editMode=true;
+		}
+		song.setUpPlayback();
+		//defaults.getSongParameters(song);
+		cloneLists();
+	}
+	
+	public MainPanel(DataBaseController dbc, Song song, Defaults defaults, LinkedList host, DatabaseView dbv){
+		this.dbc=dbc;
+		this.song=song;
+		this.defaults=defaults;
+		this.host=host;
+		this.dbv=dbv;
+		editMode=false;
 		song.setUpPlayback();
 		//defaults.getSongParameters(song);
 		cloneLists();
@@ -325,6 +363,12 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		//System.out.println("maxfhere3: "+song.maxf);
 		song.setFFTParameters();
 		s=new SpectrPane(song, true, false, this);
+		
+		if (!editMode){
+			s.syllable=true;
+			song.setBrushType(2);
+			s.viewParameters[2]=true;
+		}
 		
 		defaults.getParameterViews(s);
 		
@@ -358,8 +402,19 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		s.setPreferredSize(new Dimension(s.nnx, s.nny));
 		sp.setPreferredSize(new Dimension(x, y));
 		
-		guidePanelScrollPane.setPreferredSize(new Dimension(x, 120));
-		JSplitPane bottomSplitPane=new JSplitPane(JSplitPane.VERTICAL_SPLIT, sp, guidePanelScrollPane);
+		forwardButton.addActionListener(this);
+		backButton.addActionListener(this);
+		forwardButton.setActionCommand(FORWARD_COMMAND);
+		backButton.setActionCommand(BACKWARD_COMMAND);
+		
+		guidePanelScrollPane.setPreferredSize(new Dimension(x-50, 120));
+		JPanel bPane=new JPanel(new BorderLayout());
+		JPanel bpPane=new JPanel(new BorderLayout());
+		bpPane.add(forwardButton, BorderLayout.NORTH);
+		bpPane.add(backButton, BorderLayout.SOUTH);
+		bPane.add(bpPane, BorderLayout.WEST);
+		bPane.add(guidePanelScrollPane, BorderLayout.CENTER);
+		JSplitPane bottomSplitPane=new JSplitPane(JSplitPane.VERTICAL_SPLIT, sp, bPane);
 		bottomSplitPane.setResizeWeight(1);
 		
 		
@@ -1257,36 +1312,42 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		SpringLayout slayout4=new SpringLayout();
 		parameterPane=new JPanel(slayout4);
 
-
-		measurePane.add(mode);
-		measurePane.add(undo);
-		measurePane.add(redo);
-		measurePane.add(automatic);
-		measurePane.add(reestimate);
-		measurePane.add(reestAll);
-		measurePane.add(calculateSyllableStructure);
-		//measurePane.add(selectModel);
+		if (editMode){
+			measurePane.add(mode);
+			measurePane.add(undo);
+			measurePane.add(redo);
+			measurePane.add(automatic);
+			measurePane.add(reestimate);
+			measurePane.add(reestAll);
+			measurePane.add(calculateSyllableStructure);
+			//measurePane.add(selectModel);
 		
-		measurePane.add(delete);
-		measurePane.add(deleteS);
-		measurePane.add(merge);
-		measurePane.add(brush);
-		measurePane.add(harmonic);
-		measurePane.add(minGap);
-		measurePane.add(minLength);
-		measurePane.add(deleteLE);
-		measurePane.add(deleteLS);
-		measurePane.add(mergeLE);
-		measurePane.add(brushS);
-		measurePane.add(harmonicL);
-		measurePane.add(minGapL);
-		measurePane.add(minLengthL);
-		measurePane.add(upperLoop);
-		measurePane.add(upperLoopL);
-		measurePane.add(lowerLoop);
-		measurePane.add(lowerLoopL);
-		measurePane.add(jumpSuppressionL);
-		measurePane.add(fundJumpSuppression);
+			measurePane.add(delete);
+			measurePane.add(deleteS);
+			measurePane.add(merge);
+			measurePane.add(brush);
+			measurePane.add(harmonic);
+			measurePane.add(minGap);
+			measurePane.add(minLength);
+			measurePane.add(deleteLE);
+			measurePane.add(deleteLS);
+			measurePane.add(mergeLE);
+			measurePane.add(brushS);
+			measurePane.add(harmonicL);
+			measurePane.add(minGapL);
+			measurePane.add(minLengthL);
+			measurePane.add(upperLoop);
+			measurePane.add(upperLoopL);
+			measurePane.add(lowerLoop);
+			measurePane.add(lowerLoopL);
+			measurePane.add(jumpSuppressionL);
+			measurePane.add(fundJumpSuppression);
+		}
+		else{
+			measurePane.add(undo);
+			measurePane.add(redo);
+			measurePane.add(automatic);
+		}
 		
 		parameterPane.add(viewElements);
 		parameterPane.add(viewSyllables);
@@ -1307,90 +1368,105 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		parameterPane.add(viewTrillRate);
 		parameterPane.add(viewReverb);
 		
-		slayout3.putConstraint(SpringLayout.WEST, mode, spring, SpringLayout.WEST, measurePane);
-		slayout3.putConstraint(SpringLayout.NORTH, mode, 2, SpringLayout.NORTH, measurePane);
+		if (editMode){
+			slayout3.putConstraint(SpringLayout.WEST, mode, spring, SpringLayout.WEST, measurePane);
+			slayout3.putConstraint(SpringLayout.NORTH, mode, 2, SpringLayout.NORTH, measurePane);
 		
-		slayout3.putConstraint(SpringLayout.WEST, undo, 0, SpringLayout.WEST, mode);
-		slayout3.putConstraint(SpringLayout.NORTH, undo, spring, SpringLayout.SOUTH, mode);
+			slayout3.putConstraint(SpringLayout.WEST, undo, 0, SpringLayout.WEST, mode);
+			slayout3.putConstraint(SpringLayout.NORTH, undo, spring, SpringLayout.SOUTH, mode);
 		
-		slayout3.putConstraint(SpringLayout.WEST, redo, 0, SpringLayout.WEST, mode);
-		slayout3.putConstraint(SpringLayout.NORTH, redo, spring, SpringLayout.SOUTH, undo);
+			slayout3.putConstraint(SpringLayout.WEST, redo, 0, SpringLayout.WEST, mode);
+			slayout3.putConstraint(SpringLayout.NORTH, redo, spring, SpringLayout.SOUTH, undo);
 		
-		//slayout3.putConstraint(SpringLayout.WEST, selectModel, spring, SpringLayout.EAST, mode);
-		//slayout3.putConstraint(SpringLayout.NORTH, selectModel, 2, SpringLayout.NORTH, measurePane);
+			//slayout3.putConstraint(SpringLayout.WEST, selectModel, spring, SpringLayout.EAST, mode);
+			//slayout3.putConstraint(SpringLayout.NORTH, selectModel, 2, SpringLayout.NORTH, measurePane);
 		
-		slayout3.putConstraint(SpringLayout.WEST, automatic, spring, SpringLayout.EAST, mode);
-		slayout3.putConstraint(SpringLayout.NORTH, automatic, 2, SpringLayout.NORTH, measurePane);
+			slayout3.putConstraint(SpringLayout.WEST, automatic, spring, SpringLayout.EAST, mode);
+			slayout3.putConstraint(SpringLayout.NORTH, automatic, 2, SpringLayout.NORTH, measurePane);
 		
-		slayout3.putConstraint(SpringLayout.WEST, reestimate, 0, SpringLayout.WEST, automatic);
-		slayout3.putConstraint(SpringLayout.NORTH, reestimate, spring, SpringLayout.SOUTH, automatic);
+			slayout3.putConstraint(SpringLayout.WEST, reestimate, 0, SpringLayout.WEST, automatic);
+			slayout3.putConstraint(SpringLayout.NORTH, reestimate, spring, SpringLayout.SOUTH, automatic);
 		
-		slayout3.putConstraint(SpringLayout.WEST, reestAll, 0, SpringLayout.WEST, automatic);
-		slayout3.putConstraint(SpringLayout.NORTH, reestAll, spring, SpringLayout.SOUTH, reestimate);
+			slayout3.putConstraint(SpringLayout.WEST, reestAll, 0, SpringLayout.WEST, automatic);
+			slayout3.putConstraint(SpringLayout.NORTH, reestAll, spring, SpringLayout.SOUTH, reestimate);
 		
-		slayout3.putConstraint(SpringLayout.WEST, calculateSyllableStructure, 0, SpringLayout.WEST, automatic);
-		slayout3.putConstraint(SpringLayout.NORTH, calculateSyllableStructure, spring, SpringLayout.SOUTH, reestAll);
+			slayout3.putConstraint(SpringLayout.WEST, calculateSyllableStructure, 0, SpringLayout.WEST, automatic);
+			slayout3.putConstraint(SpringLayout.NORTH, calculateSyllableStructure, spring, SpringLayout.SOUTH, reestAll);
 		
-		slayout3.putConstraint(SpringLayout.WEST, deleteLE, spring, SpringLayout.EAST, calculateSyllableStructure);
-		slayout3.putConstraint(SpringLayout.NORTH, deleteLE, 10, SpringLayout.NORTH, measurePane);
+			slayout3.putConstraint(SpringLayout.WEST, deleteLE, spring, SpringLayout.EAST, calculateSyllableStructure);
+			slayout3.putConstraint(SpringLayout.NORTH, deleteLE, 10, SpringLayout.NORTH, measurePane);
 		
-		slayout3.putConstraint(SpringLayout.WEST, delete, 5, SpringLayout.EAST, deleteLE);
-		slayout3.putConstraint(SpringLayout.NORTH, delete, 5, SpringLayout.NORTH, measurePane);
+			slayout3.putConstraint(SpringLayout.WEST, delete, 5, SpringLayout.EAST, deleteLE);
+			slayout3.putConstraint(SpringLayout.NORTH, delete, 5, SpringLayout.NORTH, measurePane);
 		
-		slayout3.putConstraint(SpringLayout.WEST, deleteS, 0, SpringLayout.WEST, delete);
-		slayout3.putConstraint(SpringLayout.NORTH, deleteS, spring, SpringLayout.SOUTH, delete);
+			slayout3.putConstraint(SpringLayout.WEST, deleteS, 0, SpringLayout.WEST, delete);
+			slayout3.putConstraint(SpringLayout.NORTH, deleteS, spring, SpringLayout.SOUTH, delete);
 		
-		slayout3.putConstraint(SpringLayout.WEST, merge, 0, SpringLayout.WEST, delete);
-		slayout3.putConstraint(SpringLayout.NORTH, merge, spring, SpringLayout.SOUTH, deleteS);
+			slayout3.putConstraint(SpringLayout.WEST, merge, 0, SpringLayout.WEST, delete);
+			slayout3.putConstraint(SpringLayout.NORTH, merge, spring, SpringLayout.SOUTH, deleteS);
 		
-		slayout3.putConstraint(SpringLayout.EAST, deleteLS, -5, SpringLayout.WEST, deleteS);
-		slayout3.putConstraint(SpringLayout.NORTH, deleteLS, 2, SpringLayout.NORTH, deleteS);
+			slayout3.putConstraint(SpringLayout.EAST, deleteLS, -5, SpringLayout.WEST, deleteS);
+			slayout3.putConstraint(SpringLayout.NORTH, deleteLS, 2, SpringLayout.NORTH, deleteS);
 		
-		slayout3.putConstraint(SpringLayout.EAST, mergeLE, -5, SpringLayout.WEST, merge);
-		slayout3.putConstraint(SpringLayout.NORTH, mergeLE, 2, SpringLayout.NORTH, merge);
+			slayout3.putConstraint(SpringLayout.EAST, mergeLE, -5, SpringLayout.WEST, merge);
+			slayout3.putConstraint(SpringLayout.NORTH, mergeLE, 2, SpringLayout.NORTH, merge);
 		
-		slayout3.putConstraint(SpringLayout.WEST, jumpSuppressionL, spring, SpringLayout.EAST, delete);
-		slayout3.putConstraint(SpringLayout.NORTH, jumpSuppressionL, 10, SpringLayout.NORTH, measurePane);
+			slayout3.putConstraint(SpringLayout.WEST, jumpSuppressionL, spring, SpringLayout.EAST, delete);
+			slayout3.putConstraint(SpringLayout.NORTH, jumpSuppressionL, 10, SpringLayout.NORTH, measurePane);
 		
-		slayout3.putConstraint(SpringLayout.WEST, fundJumpSuppression, 5, SpringLayout.EAST, jumpSuppressionL);
-		slayout3.putConstraint(SpringLayout.NORTH, fundJumpSuppression, 5, SpringLayout.NORTH, measurePane);
+			slayout3.putConstraint(SpringLayout.WEST, fundJumpSuppression, 5, SpringLayout.EAST, jumpSuppressionL);
+			slayout3.putConstraint(SpringLayout.NORTH, fundJumpSuppression, 5, SpringLayout.NORTH, measurePane);
 		
-		slayout3.putConstraint(SpringLayout.WEST, harmonic, 0, SpringLayout.WEST, fundJumpSuppression);
-		slayout3.putConstraint(SpringLayout.NORTH, harmonic, spring, SpringLayout.SOUTH, fundJumpSuppression);
+			slayout3.putConstraint(SpringLayout.WEST, harmonic, 0, SpringLayout.WEST, fundJumpSuppression);
+			slayout3.putConstraint(SpringLayout.NORTH, harmonic, spring, SpringLayout.SOUTH, fundJumpSuppression);
 		
-		slayout3.putConstraint(SpringLayout.EAST, harmonicL, -5, SpringLayout.WEST, harmonic);
-		slayout3.putConstraint(SpringLayout.NORTH, harmonicL, 2, SpringLayout.NORTH, harmonic);
+			slayout3.putConstraint(SpringLayout.EAST, harmonicL, -5, SpringLayout.WEST, harmonic);
+			slayout3.putConstraint(SpringLayout.NORTH, harmonicL, 2, SpringLayout.NORTH, harmonic);
 		
-		slayout3.putConstraint(SpringLayout.WEST, minGap,  0, SpringLayout.WEST, fundJumpSuppression);
-		slayout3.putConstraint(SpringLayout.NORTH, minGap,  spring, SpringLayout.SOUTH, harmonic);
+			slayout3.putConstraint(SpringLayout.WEST, minGap,  0, SpringLayout.WEST, fundJumpSuppression);
+			slayout3.putConstraint(SpringLayout.NORTH, minGap,  spring, SpringLayout.SOUTH, harmonic);
 		
-		slayout3.putConstraint(SpringLayout.EAST, minGapL, -5, SpringLayout.WEST, minGap);
-		slayout3.putConstraint(SpringLayout.NORTH, minGapL, 2, SpringLayout.NORTH, minGap);
+			slayout3.putConstraint(SpringLayout.EAST, minGapL, -5, SpringLayout.WEST, minGap);
+			slayout3.putConstraint(SpringLayout.NORTH, minGapL, 2, SpringLayout.NORTH, minGap);
 		
-		slayout3.putConstraint(SpringLayout.WEST, brush, 0, SpringLayout.WEST, minGap);
-		slayout3.putConstraint(SpringLayout.NORTH, brush, spring, SpringLayout.SOUTH, minGap);
+			slayout3.putConstraint(SpringLayout.WEST, brush, 0, SpringLayout.WEST, minGap);
+			slayout3.putConstraint(SpringLayout.NORTH, brush, spring, SpringLayout.SOUTH, minGap);
 				
-		slayout3.putConstraint(SpringLayout.EAST, brushS, -5, SpringLayout.WEST, brush);
-		slayout3.putConstraint(SpringLayout.NORTH, brushS, 2, SpringLayout.NORTH, brush);
+			slayout3.putConstraint(SpringLayout.EAST, brushS, -5, SpringLayout.WEST, brush);
+			slayout3.putConstraint(SpringLayout.NORTH, brushS, 2, SpringLayout.NORTH, brush);
 		
-		slayout3.putConstraint(SpringLayout.WEST, upperLoopL, spring, SpringLayout.EAST, brush);
-		slayout3.putConstraint(SpringLayout.NORTH, upperLoopL, 10, SpringLayout.NORTH, measurePane);
+			slayout3.putConstraint(SpringLayout.WEST, upperLoopL, spring, SpringLayout.EAST, brush);
+			slayout3.putConstraint(SpringLayout.NORTH, upperLoopL, 10, SpringLayout.NORTH, measurePane);
 		
-		slayout3.putConstraint(SpringLayout.WEST, upperLoop, 5, SpringLayout.EAST, upperLoopL);
-		slayout3.putConstraint(SpringLayout.NORTH, upperLoop, 5, SpringLayout.NORTH, measurePane);
+			slayout3.putConstraint(SpringLayout.WEST, upperLoop, 5, SpringLayout.EAST, upperLoopL);
+			slayout3.putConstraint(SpringLayout.NORTH, upperLoop, 5, SpringLayout.NORTH, measurePane);
 		
-		slayout3.putConstraint(SpringLayout.WEST, lowerLoop, 0, SpringLayout.WEST, upperLoop);
-		slayout3.putConstraint(SpringLayout.NORTH, lowerLoop, spring, SpringLayout.SOUTH, upperLoop);
+			slayout3.putConstraint(SpringLayout.WEST, lowerLoop, 0, SpringLayout.WEST, upperLoop);
+			slayout3.putConstraint(SpringLayout.NORTH, lowerLoop, spring, SpringLayout.SOUTH, upperLoop);
 		
-		slayout3.putConstraint(SpringLayout.EAST, lowerLoopL, -5, SpringLayout.WEST, lowerLoop);
-		slayout3.putConstraint(SpringLayout.NORTH, lowerLoopL, 0, SpringLayout.NORTH, lowerLoop);
+			slayout3.putConstraint(SpringLayout.EAST, lowerLoopL, -5, SpringLayout.WEST, lowerLoop);
+			slayout3.putConstraint(SpringLayout.NORTH, lowerLoopL, 0, SpringLayout.NORTH, lowerLoop);
 		
-		slayout3.putConstraint(SpringLayout.WEST, minLength, 0, SpringLayout.WEST, lowerLoop);
-		slayout3.putConstraint(SpringLayout.NORTH, minLength, spring, SpringLayout.SOUTH, lowerLoop);
+			slayout3.putConstraint(SpringLayout.WEST, minLength, 0, SpringLayout.WEST, lowerLoop);
+			slayout3.putConstraint(SpringLayout.NORTH, minLength, spring, SpringLayout.SOUTH, lowerLoop);
+			
+			slayout3.putConstraint(SpringLayout.EAST, minLengthL, -5, SpringLayout.WEST, minLength);
+			slayout3.putConstraint(SpringLayout.NORTH, minLengthL, 0, SpringLayout.NORTH, minLength);
+			
+			//slayout3.putConstraint(SpringLayout.SOUTH, parameterPane, spring, SpringLayout.SOUTH, brushS);
+			slayout3.putConstraint(SpringLayout.SOUTH, measurePane, spring, SpringLayout.SOUTH, calculateSyllableStructure);
+		}
+		else{
+			slayout3.putConstraint(SpringLayout.WEST, undo, spring, SpringLayout.WEST, measurePane);
+			slayout3.putConstraint(SpringLayout.NORTH, undo, 2, SpringLayout.NORTH, measurePane);
 		
-		slayout3.putConstraint(SpringLayout.EAST, minLengthL, -5, SpringLayout.WEST, minLength);
-		slayout3.putConstraint(SpringLayout.NORTH, minLengthL, 0, SpringLayout.NORTH, minLength);
+			slayout3.putConstraint(SpringLayout.WEST, redo, 0, SpringLayout.WEST, undo);
+			slayout3.putConstraint(SpringLayout.NORTH, redo, spring, SpringLayout.SOUTH, undo);
 		
+			slayout3.putConstraint(SpringLayout.WEST, automatic, spring, SpringLayout.EAST, undo);
+			slayout3.putConstraint(SpringLayout.NORTH, automatic, 2, SpringLayout.NORTH, measurePane);
+		
+		}
 		slayout4.putConstraint(SpringLayout.WEST, viewElements, spring, SpringLayout.WEST, parameterPane);
 		slayout4.putConstraint(SpringLayout.NORTH, viewElements, 5, SpringLayout.NORTH, parameterPane);
 		
@@ -1447,13 +1523,11 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 
 		
 		slayout4.putConstraint(SpringLayout.SOUTH, parameterPane, spring, SpringLayout.SOUTH, viewMedianFreqChange);
-		//slayout3.putConstraint(SpringLayout.SOUTH, parameterPane, spring, SpringLayout.SOUTH, brushS);
-		slayout3.putConstraint(SpringLayout.SOUTH, measurePane, spring, SpringLayout.SOUTH, calculateSyllableStructure);
 		
 		tabPane.addTab("Measurements", measurePane);
-		
-		tabPane.addTab("Parameters", parameterPane);
-		
+		if (editMode){	
+			tabPane.addTab("Parameters", parameterPane);
+		}
 		SpringLayout slayout5=new SpringLayout();
 		recordPane=new JPanel(slayout5);
 				
@@ -1961,11 +2035,9 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		if (PLAY_SCREEN_COMMAND.equals(command)) {
 			if (player){
 				System.out.println(s.dx);
-				int a=(int)(2*s.getCurrentMinX()*Math.round(s.getDx()*song.getSampleRate()*song.getStereo()*0.001));
-				int b=(int)(2*s.getCurrentMaxX()*Math.round(s.getDx()*song.getSampleRate()*song.getStereo()*0.001));
-
 				
-				song.playSound(a, b);
+				song.prepPlaybackScreen(s.getCurrentMinX(), s.getCurrentMaxX());
+				
 				drawProgress(s.getCurrentMinX()/(song.getNx()+0.0), s.getCurrentMaxX()/(song.getNx()+0.0), song.getPlaybackDivider());
 			}
 		}
@@ -2317,7 +2389,13 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 			}
 			s.resetFonts();
 			s.paintFound();
-		}		
+		}
+		if (FORWARD_COMMAND.equals(command)){
+			s.moveForward();
+		}
+		if (BACKWARD_COMMAND.equals(command)){
+			s.moveBackward();
+		}
 	}
 	
 	void resetBrush(){
@@ -2886,10 +2964,8 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 	}
 		
 	public void writeResults(){
-	
 		Calendar timeCal=Calendar.getInstance();
 		timeCal.setTime(timeModel.getDate());
-		
 		Calendar dateCal=Calendar.getInstance();
 		dateCal.setTime(dateModel.getDate());
 		dateCal.add(Calendar.HOUR, timeCal.get(Calendar.HOUR)-dateCal.get(Calendar.HOUR));
@@ -2901,14 +2977,49 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		song.setNotes(notesField.getText());
 		song.setRecordEquipment(equipmentField.getText());
 		song.setRecordist(recordistField.getText());
-		song.sortSyllsEles();
-		song.calculateGaps();
+		dbc.writeSongInfo(song);
+		if (editMode){
+			song.sortSyllsEles();
+			song.calculateGaps();
+			dbc.writeSongMeasurements(song);	
+		}
+		else{
+			Song[] songs=song.splitSong();
+			LinkedList ustore=new LinkedList();
+			int[] sonq={1,2,3};
+			//dbc.writeToDataBase("INSERT INTO songdata (name, IndividualID) VALUES ('"+nam+"' , "+par.dex+")");
+			for (int i=0; i<songs.length; i++){
+				System.out.println(songs[i].getName());
+				dbc.writeToDataBase("INSERT INTO songdata (name, IndividualID) VALUES ('"+songs[i].getName()+"' , "+songs[i].getIndividualID()+")");
+				ustore=new LinkedList();
+				//String query="SELECT id, IndividualID FROM songdata WHERE Name='"+songs[i].getName()+"'";
+				String query="SELECT name, id, IndividualID FROM songdata WHERE IndividualID="+songs[i].getIndividualID();
+				ustore.addAll(dbc.readFromDataBase(query, sonq));
+				int maxind=-1;
+				for (int j=0; j<ustore.size(); j++){
+					String[]nam2=(String[])ustore.get(j);
+					Integer q1=Integer.valueOf(nam2[2]);
+					int q=q1.intValue();
+					if (q==songs[i].getIndividualID()){
+					System.out.println(nam2[0]+" "+nam2[1]);
+					Integer p1=Integer.valueOf(nam2[1]);
+					int p=p1.intValue();
+					if (p>maxind){maxind=p;}
+					}
+				}
+				System.out.println("CHECK ID"+maxind);
+				songs[i].setSongID(maxind);
+				dbc.writeSongIntoDatabase(songs[i]);
+				dbc.writeSongInfo(songs[i]);
+			}
+			dbv.refreshTree();
+			
+		}
 		defaults.setSongDetails(song);
 		defaults.setIntProperty("GPMAXF", guidePanelMaxFrequency);
 		defaults.setDoubleProperty("stretchX", s.stretchX, 1000);
 		defaults.setDoubleProperty("stretchY", s.stretchY, 1000);
-		dbc.writeSongMeasurements(song);
-		dbc.writeSongInfo(song);
+		
 	}
 	
 	

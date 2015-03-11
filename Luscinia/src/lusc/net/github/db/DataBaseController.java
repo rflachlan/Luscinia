@@ -205,6 +205,12 @@ public class DataBaseController {
 		//db.disconnect();
 	}
 	
+	public void writeSongIntoDatabase(Song song){
+		//db.doConnect();
+		db.writeSongIntoDatabase(song);
+		//db.disconnect();
+	}
+	
 	public void writeSongInfo(Song song){
 		//db.doConnect();
 		db.writeSongInfo(song);

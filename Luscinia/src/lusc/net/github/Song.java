@@ -10,10 +10,17 @@ package lusc.net.github;
 
 //import java.awt.image.BufferedImage;
 //import java.sql.Blob;
+//import java.nio.file.Files;
+//import java.nio.file.Path;
+//import java.nio.file.Paths;
+//import java.nio.file.attribute.BasicFileAttributes;
+//import java.sql.SQLException;
 import java.util.LinkedList;
 import java.util.Arrays;
+import java.io.*;
 
 import javax.sound.sampled.*;
+import javax.swing.JOptionPane;
 
 
 /**
@@ -75,6 +82,7 @@ public class Song {
 	String location=" "; 
 	String recordEquipment=" ";
 	String recordist=" "; 
+	int archived=1;
 	double fundAdjust=1; 
 	double fundJumpSuppression=100; 
 	double minGap=0;
@@ -112,6 +120,99 @@ public class Song {
 	  
 	 
 	SpectrogramMeasurement sm;
+	
+	public Song(){
+		
+	}
+	
+	public Song (File f, int indid){
+		try {
+			//Path pa=Paths.get(f.getPath());
+			//BasicFileAttributes attr = Files.readAttributes(pa, BasicFileAttributes.class);
+			//tDate=attr.creationTime().toMillis();
+			//System.out.println("creationTime: " + attr.creationTime());
+			//System.out.println("lastAccessTime: " + attr.lastAccessTime());
+			//System.out.println("lastModifiedTime: " + attr.lastModifiedTime());
+			
+			tDate=f.lastModified();
+			
+			
+			AudioInputStream AFStreamA = AudioSystem.getAudioInputStream(f);
+			AudioFormat afFormat = AFStreamA.getFormat();
+			if(afFormat.isBigEndian()){
+				AudioFormat targetFormat = new AudioFormat(afFormat.getEncoding(), afFormat.getSampleRate(), afFormat.getSampleSizeInBits(), afFormat.getChannels(),
+						afFormat.getFrameSize(), afFormat.getFrameRate(), false);
+				afFormat=targetFormat;
+			}
+			if (afFormat.getEncoding().toString().startsWith("MPEG")){
+				AudioFormat targetFormat = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, afFormat.getSampleRate(), 16, afFormat.getChannels(),
+						afFormat.getChannels()*2, afFormat.getSampleRate(), false);
+					afFormat=targetFormat;
+			}
+			
+			AudioInputStream AFStream=AudioSystem.getAudioInputStream(afFormat, AFStreamA);
+			
+			sampleRate=AFStream.getFormat().getSampleRate();
+			stereo=AFStream.getFormat().getChannels();
+			
+			int process=0;
+			if (stereo>1){
+				Object[] possibleValues = { "Use left channel", "Use right channel", "Merge channels" };
+				Object selectedValue = JOptionPane.showInputDialog(null, "Choose one", "This is a stereo file. How would you like Luscinia to process it?", JOptionPane.INFORMATION_MESSAGE, null, possibleValues, possibleValues[0]);
+				if (selectedValue.equals(possibleValues[0])){
+					process=1;
+				}
+				else if (selectedValue.equals(possibleValues[1])){
+					process=2;
+				}
+				else if (selectedValue.equals(possibleValues[2])){
+					process=3;
+				}
+			}
+			
+			frameSize=AFStream.getFormat().getFrameSize();
+			int length=(int)(AFStream.getFrameLength()*frameSize);
+			bigEnd=AFStream.getFormat().isBigEndian();
+			AudioFormat.Encoding afe=AFStream.getFormat().getEncoding();
+			signed=false;
+			if (afe.toString().startsWith("PCM_SIGNED")){signed=true;}
+			ssizeInBits=AFStream.getFormat().getSampleSizeInBits();
+			
+			System.out.println("READ SONG: "+ sampleRate+" "+stereo+" "+frameSize+" "+length+" "+afe.toString()+" "+ssizeInBits);
+			
+			int xl=(int)Math.round(1000*AFStream.getFrameLength()/(sampleRate));
+			
+			//This is a hack that uses the last modified time and subtracts the length of the file to get the 
+			//creation time - when the file was begun to have been recorded. This works quite well for Macs
+			//where there is a bug with the nio creation time attribute. I should revisit this when I move
+			//to Java 8...
+			
+			
+			tDate-=xl;
+			rawData=new byte[length];
+			AFStream.read(rawData);
+			syllList=new LinkedList<int[]>();
+			eleList=new LinkedList<Element>();
+			individualID=indid;
+			name=f.getName();
+			
+			if (process>0){
+				if (process<2){
+					parseSingle(process);
+				}
+				else{
+					parseMerge();
+				}
+				stereo=1;
+				frameSize=frameSize/2;
+			}
+			
+		} 
+		catch (Exception e){
+			e.printStackTrace();
+		}
+	}
+	
 	
 	/**
 	 * Gets the Song's {@link SpectrogramMeasurement} object
@@ -948,6 +1049,14 @@ public class Song {
 	public String getRecordist(){
 		return recordist;
 	}
+	
+	/**
+	 * gets the archive status of the song
+	 * @return int value for archived
+	 */
+	public int getArchived(){
+		return archived;
+	}
 
 	/**
 	 * sets the metadata for the recordist
@@ -955,6 +1064,14 @@ public class Song {
 	 */
 	public void setRecordist(String a){
 		recordist=a;
+	}
+	
+	/**
+	 * sets whether or not the song is an archived file (not to be measured)
+	 * @param an int value for archive status (0=archived, 1=not an archive)
+	 */
+	public void setArchived(int a){
+		archived=a;
 	}
 
 	/**
@@ -1421,6 +1538,52 @@ public class Song {
 	}
 	*/
 	
+	/**
+	 * This method splits a song object into multiple song objects by its syllables
+	 * making a set of new 'songs' that are returned in an array.
+	 */
+	public Song[] splitSong(){
+		Song[] songs=new Song[syllList.size()];
+		for (int i=0; i<syllList.size(); i++){
+			int[] syll=(int[])syllList.get(i);
+			int a=0;
+			int b=0;
+			
+			if (ssizeInBits<=16){
+				int p1=syll[0];
+				if (p1<0){p1=0;}
+				int p2=syll[1];
+				if (p2>=overallLength){
+					p2=overallLength-1;
+				}
+				a=(int)(p1*Math.round(sampleRate*stereo*0.002));
+				b=(int)(p2*Math.round(sampleRate*stereo*0.002));	
+			}
+			
+			byte[] sub=new byte[b-a];
+			System.arraycopy(rawData, a, sub, 0, b-a);
+			Song s=new Song();
+			s.rawData=sub;
+			s.ssizeInBits=this.ssizeInBits;
+			s.signed=this.signed;
+			s.bigEnd=this.bigEnd;
+			s.stereo=this.stereo;
+			s.sampleRate=this.sampleRate;
+			s.frameSize=this.frameSize;
+			s.name=this.name+"_"+i;
+			s.individualID=this.individualID;
+			s.individualName=this.individualName;
+			s.tDate=this.tDate+syll[0];
+			s.recordEquipment=this.recordEquipment;
+			s.recordist=this.recordist;
+			s.location=this.location;
+			s.notes=this.notes;
+			songs[i]=s;
+		}
+		return songs;
+	}
+	
+	
 	
 	/**
 	 * This is another effort to turn audio data into a float[] array. This is deprecated
@@ -1573,11 +1736,15 @@ public class Song {
 				if (adEndTime>overSize){adEndTime=overSize;}
 				//int adStartTime=sTime;
 				//int adEndTime=eTime;
+				System.out.println("PARSESOUND");
 				parseSound(adStartTime*stereo, adEndTime*stereo);
 				//System.out.println("a: "+data.length+" "+adEndTime+" "+adStartTime+" "+rawData.length);
+				System.out.println("FILTERSOUND");
 				filter(sTime-adStartTime, eTime-adStartTime);
 				//System.out.println("b: "+data.length);
+				System.out.println("FFTSOUND");
 				calculateFFT(L);
+				System.out.println("DONECHUNK");
 			}
 		}
 	}
@@ -1593,12 +1760,12 @@ public class Song {
 		this.endTime=endTime;
 		
 		double chunks=(endTime-startTime)/20000.0;
-		
+		System.out.println("Sampling FFT");
 		calculateSampleFFT();
 
-		
+		System.out.println("Chunky FFT");
 		chunkyFFT(chunks);
-		
+		System.out.println("Done FFT");
 		/*
 		int pframe=frame;
 		float[][]o1=new float[ny][anx];
@@ -1635,10 +1802,11 @@ public class Song {
 			}
 		}
 		*/
-		
+		System.out.println("Dyn Equal");
 		if (dynEqual>0){
 			dynamicEqualizer();
 		}
+		System.out.println("Dyn Range");
 		dynamicRange();
 		//denoiser();
 		//float maxCh=10f;
@@ -1650,7 +1818,7 @@ public class Song {
 			out=m2o.medianFilterNR1(noiseLength2, 0.75f, 0, out, 0);
 		}
 		
-		
+		System.out.println("Dereverb");
 		if (echoComp>0){
 			
 			
@@ -1682,7 +1850,9 @@ public class Song {
 			
 			//out=m2o.medianFilterNR(20, 0.25f, 10, out, 0);
 		}
+		System.out.println("Equalize");
 		equalize();	
+		System.out.println("FInished");
 	}
 	
 	/**
@@ -1853,6 +2023,63 @@ public class Song {
 	}	
 	
 	/**
+	 * This method splits a stereo track into two, and keeps one track
+	 * @param side which track to keep (1=left, 2=right)
+	 */
+	public void parseSingle(int side){
+		int n=rawData.length/2;
+		byte[] rd=new byte[n];
+		
+		int q=ssizeInBits/8;
+		System.out.println("Bytes: "+q);
+		//int p=rawData.length;
+
+		
+		int ii=0;
+		int k=0;
+		if (side==2){k=q;}
+		for (int i=0; i<n/q; i++){
+			
+			for (int j=0; j<q; j++){
+				
+				rd[ii]=rawData[k];
+				ii++;
+				k++;
+			}
+			k+=q;
+		}
+		rawData=rd;
+	}
+	
+	/**
+	 * This method splits a stereo track into two, and keeps one track
+	 * @param side which track to keep (1=left, 2=right)
+	 */
+	public void parseMerge(){
+		int n=rawData.length/2;
+		byte[] rd=new byte[n];
+		
+		int q=ssizeInBits/8;
+		System.out.println("Bytes: "+q);
+		//int p=rawData.length;
+
+		
+		int ii=0;
+		int k=0;
+		for (int i=0; i<n/q; i++){
+			
+			for (int j=0; j<q; j++){
+				rd[ii]=(byte)((rawData[k]+rawData[k+q])/2);
+				ii++;
+				k++;
+			}
+			k+=q;
+		}
+		rawData=rd;
+	}
+	
+	
+	/**
 	 * This is a crude method to try to make a stereo copy of a sound. Is not used.
 	 */
 	void makeStereoCopy(){
@@ -1957,6 +2184,7 @@ public class Song {
 			
 		} 
 		catch (Exception e) {
+			e.printStackTrace();
 			System.out.println("Here's the problem!");
 			System.out.println(e);
 			//System.exit(0);
@@ -2001,6 +2229,19 @@ public class Song {
 	}
 	
 	/**
+	 * This method is called to arrange playback of a region of a song (normally the screen view)
+	 * @param x start point for playback
+	 * @param y end point for playback
+	 */
+	
+	public void prepPlaybackScreen(int x, int y){
+		int a=(int)(2*x*Math.round(dx*sampleRate*stereo*0.001));
+		int b=(int)(2*y*Math.round(dx*sampleRate*stereo*0.001));
+		System.out.println(a+" "+b+" "+sampleRate+" "+ssizeInBits+" "+stereo);
+		playSound(a, b);
+	}
+	
+	/**
 	 * This method is called to arrange which parts of the song need to be played back
 	 * @param syll
 	 * @return a double[] with the transformed start and stopped locations.
@@ -2019,7 +2260,9 @@ public class Song {
 			}
 			a=(int)(p1*Math.round(sampleRate*stereo*0.002));
 			b=(int)(p2*Math.round(sampleRate*stereo*0.002));
+			
 		}
+		
 		if(rawData.length<=b){
 			b=a;
 		}	
@@ -2129,19 +2372,25 @@ public class Song {
 	 * @param endd end point of signal
 	 */
 	private void filter(int startd, int endd){
-		float[] data1=fir(startd, endd, filtu, data);
+		int size=endd-startd;
 		if (frequencyCutOff>0){
+			float[] data1=fir(startd, endd, filtu, data);
 			float[] data2=fir(startd, endd, filtl, data1);
 			for (int i=0; i<data.length; i++){
 				data1[i]=data2[i];
 			}
-		}
+		
 
-		int size=endd-startd;
-		data=new float[size];
-		for (int i=0; i<size; i++){
-			data[i]=data1[i+startd];
-		}		
+			
+			data=new float[size];
+			for (int i=0; i<size; i++){
+				data[i]=data1[i+startd];
+			}
+		}
+		//else{
+			//data=new float(size);
+			//System.arr
+		//}
 	}
 
 	/**
