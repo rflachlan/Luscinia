@@ -320,12 +320,9 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		this.defaults=defaults;
 		this.host=host;
 		this.dbv=dbv;
-		editMode=false;
+		//editMode=false;
+		editMode=true;
 		song=dbc.loadSongFromDatabase(songID, 0);
-		System.out.println("CHECKARCHIVED: "+song.getArchived());
-		if (song.getArchived()==1){
-			editMode=true;
-		}
 		song.setUpPlayback();
 		//defaults.getSongParameters(song);
 		cloneLists();
@@ -359,10 +356,13 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		if (song.getMaxF()<=0){
 			defaults.getSongParameters(song);
 		}
+		
 		defaults.getMiscellaneousSongParameters(song);
 		//System.out.println("maxfhere3: "+song.maxf);
 		song.setFFTParameters();
 		s=new SpectrPane(song, true, false, this);
+		
+		defaults.getParameterViews(s);
 		
 		if (!editMode){
 			s.syllable=true;
@@ -370,7 +370,7 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 			s.viewParameters[2]=true;
 		}
 		
-		defaults.getParameterViews(s);
+		
 		
 		guidePanelMaxFrequency=defaults.getIntProperty("GPMAXF", 10000);
 		
@@ -392,6 +392,9 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		
 		s.stretchX=defaults.getDoubleProperty("stretchX", 1000, 1);
 		s.stretchY=defaults.getDoubleProperty("stretchY", 1000, 1);
+		if (s.stretchX<=0.5){
+			s.stretchX=0.501;
+		}
 		s.restart();
 		
 		int x=s.nnx+20;
@@ -543,8 +546,7 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		timeZoom.setValue(new Double(100/s.stretchX));
 		timeZoom.setFont(font);
 		
-		System.out.println(s.stretchX);
-		if (s.stretchX<=0.5){s.stretchX=0.501;}
+
 		timeZoomSL=new JSlider(0, 100, (int)(50/s.stretchX));
 		timeZoomSL.addChangeListener(this);
 		timeZoomSL.setFont(font);

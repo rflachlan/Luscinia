@@ -201,9 +201,9 @@ public class DbConnection {
 			updateDB1();
 			updateDB2();
 		}
-		if (!dversionD.equals(version[1])){
-			updateDB3();
-		}
+		//if (!dversionD.equals(version[1])){
+			//updateDB3();
+		//}
 		if ((!version[0].equals(lversionD))||(!version[1].equals(dversionD))){
 			writeToDataBase("INSERT INTO dbdetails (version, luscvers) VALUES ('"+version[0]+"' , '"+version[1]+"')");
 		}
@@ -874,7 +874,7 @@ public class DbConnection {
 		String query4="SELECT call_context FROM songdata WHERE id = "+id;
 		String query5="SELECT RecordingEquipment FROM songdata WHERE id = "+id;
 		String query6="SELECT Recorder FROM songdata WHERE id = "+id;
-		String query7="SELECT Archived FROM songdata WHERE id = "+id;
+		//String query7="SELECT Archived FROM songdata WHERE id = "+id;
 		
 		PreparedStatement stmt = null; 
 		ResultSet rs = null; 
@@ -975,14 +975,14 @@ public class DbConnection {
 				song.setRecordist(rs.getString("Recorder"));
 			}
 			
-			stmt = con.prepareStatement(query7);
-			rs = stmt.executeQuery( );
-			if( !rs.next( ) ) {
-				System.out.println("No such file stored. "+id);
-			}
-			else {
-				song.setArchived(rs.getInt("Archived"));
-			}
+			//stmt = con.prepareStatement(query7);
+			//rs = stmt.executeQuery( );
+			//if( !rs.next( ) ) {
+				//System.out.println("No such file stored. "+id);
+			//}
+			//else {
+				//song.setArchived(rs.getInt("Archived"));
+			//}
 			
 		}
 		 
@@ -1251,8 +1251,8 @@ public class DbConnection {
 		writeToDataBase(query);
 		query="UPDATE songdata SET Recorder='"+song.getRecordist()+"'" +w;
 		writeToDataBase(query);
-		query="UPDATE songdata SET Archived='"+song.getArchived()+"'" +w;
-		writeToDataBase(query);
+		//query="UPDATE songdata SET Archived='"+song.getArchived()+"'" +w;
+		//writeToDataBase(query);
 		query="UPDATE songdata SET Name='"+song.getName()+"'" +w;
 		writeToDataBase(query);
 	}
