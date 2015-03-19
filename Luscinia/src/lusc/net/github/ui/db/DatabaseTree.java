@@ -93,6 +93,7 @@ public class DatabaseTree extends JPanel {
 		if ((selnode==null)||(selnode[0].getLevel()==0)){
 			sc.addIndButton.setEnabled(true);
 			sc.addSongButton.setEnabled(false);
+			sc.addRecordingButton.setEnabled(false);
 			sc.removeButton.setEnabled(false);
 			sc.sonogramButton.setEnabled(false);
 			sc.hideInformationPanel();
@@ -101,6 +102,7 @@ public class DatabaseTree extends JPanel {
 			if (selnode[0].getLevel()==1){
 				sc.addIndButton.setEnabled(false);
 				sc.addSongButton.setEnabled(true);
+				sc.addRecordingButton.setEnabled(true);
 				sc.removeButton.setEnabled(true);
 				sc.sonogramButton.setEnabled(false);
 				sc.showInformationIndividual();
@@ -108,6 +110,7 @@ public class DatabaseTree extends JPanel {
 			else{
 				sc.addIndButton.setEnabled(false);
 				sc.addSongButton.setEnabled(false);
+				sc.addRecordingButton.setEnabled(false);
 				sc.removeButton.setEnabled(true);
 				sc.sonogramButton.setEnabled(true);
 				sc.showInformationSong();
@@ -141,7 +144,7 @@ public class DatabaseTree extends JPanel {
         } 
     }
 
-    public void addAbject() {
+    public void addAbject(int x) {
         myNode parentNode = null;
         TreePath parentPath = tree.getSelectionPath();
 		Object child;
@@ -170,7 +173,14 @@ public class DatabaseTree extends JPanel {
 			//myNode ch=addObject(parentNode, child, true);
 			//sc.addNewSong(ch, parentNode);
 			//selnode=ch;
-			sc.openWav(parentNode, child);
+			System.out.println("x: "+x);
+			if (x==0){
+				sc.openWav(parentNode, child);
+			}
+			else{
+				System.out.println("here");
+				sc.openRec(parentNode, child);
+			}
 		}
     }
 

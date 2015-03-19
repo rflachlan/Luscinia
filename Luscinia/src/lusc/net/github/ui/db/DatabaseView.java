@@ -47,6 +47,7 @@ public class DatabaseView extends TabType implements ActionListener {
     private int newNodeSuffix = 1;
     private static String ADD_IND_COMMAND = "add individual";
 	private static String ADD_SONG_COMMAND = "add song";
+	private static String ADD_RECORDING_COMMAND = "add recording";
     private static String REMOVE_COMMAND = "remove";
     private static String INFORMATION_COMMAND = "information";
 	private static String SONO_COMMAND = "sonogram";
@@ -64,7 +65,7 @@ public class DatabaseView extends TabType implements ActionListener {
 	private int [] indq={1,2};
 	private int [] sonq={1,2,3};
 	int addType=0;
-	JButton manageUsers, addIndButton, addSongButton, removeButton, expandTreeButton, analysisButton, sonogramButton, expandButton, logOutButton, copyButton;
+	JButton manageUsers, addIndButton, addSongButton, addRecordingButton, removeButton, expandTreeButton, analysisButton, sonogramButton, expandButton, logOutButton, copyButton;
 	JCheckBox informationCheckBox;
 	
 	File file;
@@ -126,6 +127,11 @@ public class DatabaseView extends TabType implements ActionListener {
         addSongButton.setActionCommand(ADD_SONG_COMMAND);
         addSongButton.addActionListener(this);
 		addSongButton.setEnabled(false);
+		
+		addRecordingButton = new JButton("Add Recording");
+		addRecordingButton.setActionCommand(ADD_RECORDING_COMMAND);
+		addRecordingButton.addActionListener(this);
+		addRecordingButton.setEnabled(false);
         
         removeButton = new JButton("Remove");
         removeButton.setActionCommand(REMOVE_COMMAND);
@@ -167,6 +173,7 @@ public class DatabaseView extends TabType implements ActionListener {
 		
 		sidePanel.add(addIndButton);
 		sidePanel.add(addSongButton);
+		sidePanel.add(addRecordingButton);
 		sidePanel.add(removeButton);
 		sidePanel.add(informationCheckBox);
 		sidePanel.add(sonogramButton);
@@ -395,10 +402,13 @@ public class DatabaseView extends TabType implements ActionListener {
 			if (ADD_SONG_COMMAND.equals(command)) {
 				//int n = JOptionPane.showConfirmDialog(this,"Do you really want to add a wav file here?\n"+"(It will permanently remove whatever wav\n"+"is stored in the database)","Confirm Change", JOptionPane.YES_NO_OPTION);
 				//if (n==0){openWav();}
-				treePanel.addAbject();
+				treePanel.addAbject(0);
 			}
 			else if (ADD_IND_COMMAND.equals(command)) {
-				treePanel.addAbject();
+				treePanel.addAbject(1);
+			}
+			else if (ADD_RECORDING_COMMAND.equals(command)) {
+				treePanel.addAbject(2);
 			}
 			else if (REMOVE_COMMAND.equals(command)) {
 				int n = JOptionPane.showConfirmDialog(this,"Do you really want to permanently delete this?","Confirm Delete", JOptionPane.YES_NO_OPTION);
@@ -704,18 +714,79 @@ public class DatabaseView extends TabType implements ActionListener {
 				String lcdefn=defName.toLowerCase();
 				
 				if ((lcdefn.endsWith(".wav"))||(lcdefn.endsWith(".aiff"))||(lcdefn.endsWith(".aif"))||(lcdefn.endsWith(".mp3"))){
+					myNode ch=treePanel.addObject(parentNode, child, true);
+					addNewSong(ch, parentNode);
+					treePanel.selnode[i]=ch;				
+					treePanel.selnode[i].setUserObject(defName);
+					renameSong(treePanel.selnode[i]);
+					
+					//Song song=new Song(file[i], parentNode.dex);
+					//MainPanel mp=new MainPanel(dbc, song, defaults, spectrogramList, this);
+					//mp.startDrawing();
+					//spectrogramList.add(mp);
+					dbc.writeSongIntoDatabase(defName, treePanel.selnode[i].dex, file[i]);
+				}
+			}
+			file=null;
+		}
+	}
+	
+	public void openRec(myNode parentNode, Object child){
+		File [] file;
+		JFileChooser fc=new JFileChooser();
+		String defPath=defaults.props.getProperty("path");
+		
+		if (defPath!=null){fc=new JFileChooser(defPath);}
+		
+		SpectrogramFileFilter[] sff={new SpectrogramFileFilter("wav"), new SpectrogramFileFilter("aiff"), new SpectrogramFileFilter("aif"), new SpectrogramFileFilter("mp3")};
+		
+		fc.addChoosableFileFilter(sff[0]);
+		fc.addChoosableFileFilter(sff[1]);
+		fc.addChoosableFileFilter(sff[2]);
+		fc.addChoosableFileFilter(sff[3]);
+		int p=defaults.getDefaultSoundFormat();
+		
+		fc.setFileFilter(sff[p]);
+		
+		fc.setMultiSelectionEnabled(false);
+		int returnVal = fc.showOpenDialog(DatabaseView.this);
+		if (returnVal == JFileChooser.APPROVE_OPTION) {
+			//file  = fc.getSelectedFiles();
+			File file2=fc.getSelectedFile();
+			//treePanel.selnode=new myNode[file.length];
+			treePanel.selnode=new myNode[1];
+			//for (int i=0; i<file.length; i++){
+				defPath=file2.getParent();
+				String defName=file2.getName();
+				defaults.props.setProperty("path", defPath);
+				defaults.props.setProperty("filename", defName);
+				SpectrogramFileFilter sfu=(SpectrogramFileFilter)fc.getFileFilter();
+				
+				if (sfu==sff[0]){
+					defaults.setDefaultSoundFormat(0);
+				}
+				else if (sfu==sff[1]){
+					defaults.setDefaultSoundFormat(1);
+				}
+				else if (sfu==sff[2]){
+					defaults.setDefaultSoundFormat(2);
+				}
+				
+				String lcdefn=defName.toLowerCase();
+				
+				if ((lcdefn.endsWith(".wav"))||(lcdefn.endsWith(".aiff"))||(lcdefn.endsWith(".aif"))||(lcdefn.endsWith(".mp3"))){
 					//myNode ch=treePanel.addObject(parentNode, child, true);
 					//addNewSong(ch, parentNode);
 					//treePanel.selnode[i]=ch;				
 					//treePanel.selnode[i].setUserObject(defName);
 					//renameSong(treePanel.selnode[i]);
 					
-					Song song=new Song(file[i], parentNode.dex);
+					Song song=new Song(file2, parentNode.dex);
 					MainPanel mp=new MainPanel(dbc, song, defaults, spectrogramList, this);
 					mp.startDrawing();
 					spectrogramList.add(mp);
 					//dbc.writeSongIntoDatabase(defName, treePanel.selnode[i].dex, file[i]);
-				}
+				//}
 			}
 			file=null;
 		}
