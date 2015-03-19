@@ -58,8 +58,10 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 	JButton reestimate=new JButton("Re-measure");
 	JButton reestAll=new JButton("Re-measure all");
 	JButton displayMode=new JButton("Display mode: spectrogram");
-	JButton forwardButton= new JButton("Forw");
-	JButton backButton=new JButton("Back");
+	JButton forwardButton= new JButton(">");
+	JButton backButton=new JButton("<");
+	JButton fForwardButton= new JButton(">>");
+	JButton fBackButton=new JButton("<<");
 	
 	JButton calculateSyllableStructure=new JButton("Calculate syllables automatically");
 	
@@ -67,6 +69,8 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 	
 	private static String FORWARD_COMMAND = "forward";
 	private static String BACKWARD_COMMAND = "backward";
+	private static String F_FORWARD_COMMAND = "fast forward";
+	private static String F_BACKWARD_COMMAND = "fast backward";
 	private static String SAVE_COMMAND = "save";
 	private static String SAVE_SOUND_COMMAND = "save sound";
 	private static String SAVE_IMAGE_COMMAND = "save image";
@@ -320,12 +324,9 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		this.defaults=defaults;
 		this.host=host;
 		this.dbv=dbv;
-		editMode=false;
+		//editMode=false;
+		editMode=true;
 		song=dbc.loadSongFromDatabase(songID, 0);
-		System.out.println("CHECKARCHIVED: "+song.getArchived());
-		if (song.getArchived()==1){
-			editMode=true;
-		}
 		song.setUpPlayback();
 		//defaults.getSongParameters(song);
 		cloneLists();
@@ -359,10 +360,13 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		if (song.getMaxF()<=0){
 			defaults.getSongParameters(song);
 		}
+		
 		defaults.getMiscellaneousSongParameters(song);
 		//System.out.println("maxfhere3: "+song.maxf);
 		song.setFFTParameters();
 		s=new SpectrPane(song, true, false, this);
+		
+		defaults.getParameterViews(s);
 		
 		if (!editMode){
 			s.syllable=true;
@@ -370,7 +374,7 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 			s.viewParameters[2]=true;
 		}
 		
-		defaults.getParameterViews(s);
+		
 		
 		guidePanelMaxFrequency=defaults.getIntProperty("GPMAXF", 10000);
 		
@@ -392,6 +396,9 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		
 		s.stretchX=defaults.getDoubleProperty("stretchX", 1000, 1);
 		s.stretchY=defaults.getDoubleProperty("stretchY", 1000, 1);
+		if (s.stretchX<=0.5){
+			s.stretchX=0.501;
+		}
 		s.restart();
 		
 		int x=s.nnx+20;
@@ -406,12 +413,18 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		backButton.addActionListener(this);
 		forwardButton.setActionCommand(FORWARD_COMMAND);
 		backButton.setActionCommand(BACKWARD_COMMAND);
+		fForwardButton.addActionListener(this);
+		fBackButton.addActionListener(this);
+		fForwardButton.setActionCommand(F_FORWARD_COMMAND);
+		fBackButton.setActionCommand(F_BACKWARD_COMMAND);
 		
 		guidePanelScrollPane.setPreferredSize(new Dimension(x-50, 120));
 		JPanel bPane=new JPanel(new BorderLayout());
-		JPanel bpPane=new JPanel(new BorderLayout());
-		bpPane.add(forwardButton, BorderLayout.NORTH);
-		bpPane.add(backButton, BorderLayout.SOUTH);
+		JPanel bpPane=new JPanel(new GridLayout(0,1));
+		bpPane.add(fForwardButton);
+		bpPane.add(forwardButton);
+		bpPane.add(backButton);
+		bpPane.add(fBackButton);
 		bPane.add(bpPane, BorderLayout.WEST);
 		bPane.add(guidePanelScrollPane, BorderLayout.CENTER);
 		JSplitPane bottomSplitPane=new JSplitPane(JSplitPane.VERTICAL_SPLIT, sp, bPane);
@@ -543,8 +556,7 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		timeZoom.setValue(new Double(100/s.stretchX));
 		timeZoom.setFont(font);
 		
-		System.out.println(s.stretchX);
-		if (s.stretchX<=0.5){s.stretchX=0.501;}
+
 		timeZoomSL=new JSlider(0, 100, (int)(50/s.stretchX));
 		timeZoomSL.addChangeListener(this);
 		timeZoomSL.setFont(font);
@@ -2396,10 +2408,16 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 			s.paintFound();
 		}
 		if (FORWARD_COMMAND.equals(command)){
-			s.moveForward();
+			s.moveForward(0.33);
 		}
 		if (BACKWARD_COMMAND.equals(command)){
-			s.moveBackward();
+			s.moveBackward(0.33);
+		}
+		if (F_FORWARD_COMMAND.equals(command)){
+			s.moveForward(1);
+		}
+		if (F_BACKWARD_COMMAND.equals(command)){
+			s.moveBackward(1);
 		}
 	}
 	

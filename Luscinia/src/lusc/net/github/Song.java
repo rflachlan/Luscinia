@@ -1550,14 +1550,17 @@ public class Song {
 			int b=0;
 			
 			if (ssizeInBits<=16){
-				int p1=syll[0];
+				int p1=(int)Math.round(syll[0]-20);
 				if (p1<0){p1=0;}
-				int p2=syll[1];
+				int p2=(int)Math.round(syll[1]+20);
 				if (p2>=overallLength){
 					p2=overallLength-1;
 				}
-				a=(int)(p1*Math.round(sampleRate*stereo*0.002));
-				b=(int)(p2*Math.round(sampleRate*stereo*0.002));	
+				double q=sampleRate*0.001;
+				System.out.println(q+" "+frameSize);
+				a=(int)Math.round(p1*q)*frameSize;
+				b=(int)Math.round(p2*q)*frameSize;
+				System.out.println("NEWSONGBOUNDS: "+a+" "+b+" "+sampleRate+" "+stereo+" "+p1+" "+p2+" "+syll[0]+" "+syll[1]);
 			}
 			
 			byte[] sub=new byte[b-a];

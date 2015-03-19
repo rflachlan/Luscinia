@@ -900,8 +900,13 @@ public class AnalysisGroup {
 	}
 	
 	/**
+<<<<<<< HEAD
+	 * Labels Elements in the sample by their position in the 
+	 * @return
+=======
 	 * Labels Elements in the sample by their position in the song
 	 * @return a double[] containing the position of elements
+>>>>>>> FETCH_HEAD
 	 */
 	public double[] labelElements(){
 		double[] eleLabels=new double[eleNumber];

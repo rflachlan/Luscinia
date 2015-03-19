@@ -241,7 +241,13 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 		//song.frameLength=5;
 		song.setFrameLength(256.0*1000/song.getSampRate());
 		song.setMaxF(gpmaxf);
-		song.setTimeStep(song.getOverallLength()/(d.width-60.0));
+		
+		double ts=song.getOverallLength()/(d.width-60.0);
+		if (ts>song.getFrameLength()){
+			ts=Math.max(song.getFrameLength(), 0.25*ts);
+		}
+
+		song.setTimeStep(ts);
 		System.out.println("GP TIME STEP: "+song.getTimeStep());
 		//if (song.timeStep>song.frameLength){song.timeStep=song.frameLength;}
 		//song.timeStep=10;
@@ -256,8 +262,8 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 		ny=song.getNy();
 		
 		if (unx<minX){
-			song.setTimeStep(song.getTimeStep()*unx/minX);
-			song.setFFTParameters();
+			//song.setTimeStep(song.getTimeStep()*unx/minX);
+			//song.setFFTParameters();
 		}
 		
 		BufferedImage imf=new BufferedImage(unx, ny, BufferedImage.TYPE_INT_ARGB);
@@ -515,16 +521,20 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 		restart();
 	}
 	
-	void moveForward(){
+	void moveForward(double amt){
+		
 		
 		int minx=getCurrentMinX();
 		int maxx=getCurrentMaxX();
-		int w=((maxx+minx)/2)+maxx-minx;
+		
+		double d=amt*(maxx-minx);
+		
+		int w=(int)Math.round(((maxx+minx)/2)+d);
 		System.out.println("FORW: "+w+" "+minx+" "+maxx);
 		relocate(w);
 	}
 	
-	void moveBackward(){
+	void moveBackward(double amt){
 		int minx=getCurrentMinX();
 		int maxx=getCurrentMaxX();
 		int w=((maxx+minx)/2)-maxx+minx;
@@ -935,8 +945,9 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 			int maxx=unx-2;								//this bit identifies the start and end of the element
 			while (pointList[maxx][0]==0){maxx--;}
 			maxx++;
+			//System.out.println(dx);
 			int[] s={(int)Math.round(dx*(minx+currentMinX)), (int)Math.round(dx*(maxx+currentMinX))};
-			//System.out.println(s[0]+" "+s[1]+" "+minx+" "+maxx);
+			System.out.println("SYLL: "+s[0]+" "+s[1]+" "+minx+" "+maxx);
 			int p=s[0]+s[1];
 			int count=0;
 			int ns=song.getNumSyllables();
@@ -2459,7 +2470,11 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 					String pl=p.toString();
 					g2.drawString(pl, xspace-40, newy+yspace+5);
 				}		
-				int xm=(int)Math.round((newx+(currentMinX/stretchX))*tdx);
+				int xm=(int)Math.round((newx+(currentMinX*stretchX))*tdx);
+				
+				//int begin500=(int)(500*Math.ceil((currentMinX*stretchX)*tdx*0.002));
+				
+				
 				Integer p=new Integer(xm);
 				String pl=p.toString();
 				g2.drawString(pl,  newx+xspace-3, yspace+tny+15);
@@ -2601,6 +2616,9 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 	
 	
 	public void updatePoint(){					//updates the list of points for the element the user is currently selecting
+		
+		//System.out.println(stretchX);
+		
 		int bt=song.getBrushType();
 		if (pointList!=null){
 			int maxy=2;
