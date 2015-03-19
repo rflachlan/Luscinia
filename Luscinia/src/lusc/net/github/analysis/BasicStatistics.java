@@ -8,8 +8,20 @@ package lusc.net.github.analysis;
 //
 import java.util.*;
 
+/**
+ * BasicStatistics is a utility class containing methods for some standard summary
+ * statistics  - as applied to single and double-indexed arrays.
+ * @author Rob
+ *
+ */
+
 public class BasicStatistics {
 
+	/**
+	 * casts float data into double.
+	 * @param data in put array
+	 * @return output double[] array
+	 */
 	public double[] getDoubleVals(float[] data){
 		int n=data.length;
 		double[]data2=new double[n];
@@ -19,6 +31,11 @@ public class BasicStatistics {
 		return (data2);
 	}
 	
+	/**
+	 * copies double data into a new double array
+	 * @param data input array
+	 * @return	output double[] array
+	 */
 	public double[] getDoubleVals(int[] data){
 		int n=data.length;
 		double[]data2=new double[n];
@@ -28,6 +45,11 @@ public class BasicStatistics {
 		return (data2);
 	}
 	
+	/**
+	 * Calculates the mean of an input array.
+	 * @param data input double[] array
+	 * @return a double value of the mean of the array
+	 */
 	public double calculateMean(double[] data){
 		int n=data.length;
 		double sum=0;
@@ -37,16 +59,31 @@ public class BasicStatistics {
 		return (sum/(n+0.0));
 	}
 	
+	/**
+	 * Calculates the mean of an input array.
+	 * @param data input float[] array
+	 * @return a double value of the mean of the array
+	 */
 	public double calculateMean(float[] data){
 		double[] data2=getDoubleVals(data);
 		return(calculateMean(data2));
 	}
 	
+	/**
+	 * Calculates the mean of an input array.
+	 * @param data input int[] array
+	 * @return a double value of the mean of the array
+	 */
 	public double calculateMean(int[] data){
 		double[] data2=getDoubleVals(data);
 		return (calculateMean(data2));
 	}
 	
+	/**
+	 * Calculates the mean of a 2-D input array.
+	 * @param data input double[][] array
+	 * @return a double value of the mean of the array
+	 */
 	public double calculateMean(double[][] data){
 		int n=data.length;
 		double count1=0;
@@ -61,6 +98,11 @@ public class BasicStatistics {
 		return (count1/count2);
 	}
 	
+	/**
+	 * Calculates the mean of a 2-D input array.
+	 * @param data input float[][] array
+	 * @return a double value of the mean of the array
+	 */
 	public float calculateMean(float[][] data){
 		int n=data.length;
 		double count1=0;
@@ -75,6 +117,11 @@ public class BasicStatistics {
 		return (float)(count1/count2);
 	}
 	
+	/**
+	 * Calculates the sum of squares of an input array.
+	 * @param data input double[] array
+	 * @return a double value of the sum of squares of the array
+	 */
 	public double calculateSumSquares(double[] data){
 		double ss=0;
 		double mean=calculateMean(data);
@@ -87,6 +134,11 @@ public class BasicStatistics {
 		return ss;
 	}
 	
+	/**
+	 * Calculates the sum of squares of a 2-D input array.
+	 * @param data input double[][] array
+	 * @return a double value of the sum of squares of the array
+	 */
 	public double calculateSumSquares(double[][] data){
 		double ss=0;
 		double mean=calculateMean(data);
@@ -101,6 +153,11 @@ public class BasicStatistics {
 		return ss;
 	}
 	
+	/**
+	 * Calculates the sum of squares of a 2-D input array.
+	 * @param data input float[][] array
+	 * @return a double value of the sum of squares of the array
+	 */
 	public float calculateSumSquares(float[][] data){
 		double ss=0;
 		double mean=calculateMean(data);
@@ -115,6 +172,14 @@ public class BasicStatistics {
 		return (float)ss;
 	}
 	
+	
+	
+	/**
+	 * Calculates the standard deviation of an input array.
+	 * @param data data input double[] array
+	 * @param adjustSample a boolean value that determines whether the denominator is n-1 (true) or n (false)
+	 * @return double valued standard deviation
+	 */
 	public double calculateSD(double[] data, boolean adjustSample){
 		double ss=calculateSumSquares(data);	
 		double a=0;
@@ -124,16 +189,36 @@ public class BasicStatistics {
 		return Math.sqrt(ss/n2);
 	}
 
+	/**
+	 * Calculates the standard deviation of an input array.
+	 * @param data data input float[] array
+	 * @param adjustSample a boolean value that determines whether the denominator is n-1 (true) or n (false)
+	 * @return double valued standard deviation
+	 */
 	public double calculateSD(float[] data, boolean adjustSample){
 		double[] data2=getDoubleVals(data);
 		return(calculateSD(data2, adjustSample));
 	}
 	
+	
+	/**
+	 * Calculates the standard deviation of an input array.
+	 * @param data data input int[] array
+	 * @param adjustSample a boolean value that determines whether the denominator is n-1 (true) or n (false)
+	 * @return double valued standard deviation
+	 */
 	public double calculateSD(int[] data, boolean adjustSample){
 		double[] data2=getDoubleVals(data);
 		return (calculateSD(data2, adjustSample));
 	}
 	
+	
+	/**
+	 * Calculates the standard deviation of an input array.
+	 * @param data data input double[][] array
+	 * @param adjustSample a boolean value that determines whether the denominator is n-1 (true) or n (false)
+	 * @return double valued standard deviation
+	 */
 	public double calculateSD(double[][] data, boolean adjustSample){
 		double ss=calculateSumSquares(data);
 		double a=0;
@@ -143,6 +228,12 @@ public class BasicStatistics {
 		return Math.sqrt(ss/n2);
 	}
 	
+	/**
+	 * Calculates the standard deviation of an input array.
+	 * @param data data input float[][] array
+	 * @param adjustSample a boolean value that determines whether the denominator is n-1 (true) or n (false)
+	 * @return double valued standard deviation
+	 */
 	public double calculateSD(float[][] data, boolean adjustSample){
 		double ss=calculateSumSquares(data);
 		double a=0;
@@ -152,7 +243,11 @@ public class BasicStatistics {
 		return Math.sqrt(ss/n2);
 	}
 	
-	
+	/**
+	 * Calculates the median of an input array
+	 * @param data input double[] array
+	 * @return the median value of the array.
+	 */
 	public double calculateMedian(double[] data){
 		int n=data.length;
 		double[] data2=new double[n];
@@ -179,6 +274,14 @@ public class BasicStatistics {
 		return result;
 	}
 	
+	
+	/**
+	 * Calculates percentile values of an input array.
+	 * @param data a double[] input array
+	 * @param percentile the percentile to calculate
+	 * @param upperOrLower returns the upper (true) or lower (false) percentile
+	 * @return the requested percentile as a double
+	 */
 	public double calculatePercentile(double[] data, double percentile, boolean upperOrLower){
 		int n=data.length;
 		double[] data2=new double[n];
@@ -193,6 +296,13 @@ public class BasicStatistics {
 		return result;	
 	}
 	
+	/**
+	 * Calculates percentile values of an input array.
+	 * @param data a float[] input array
+	 * @param percentile the percentile to calculate
+	 * @param upperOrLower returns the upper (true) or lower (false) percentile
+	 * @return the requested percentile as a float
+	 */
 	public float calculatePercentile(float[] data, double percentile, boolean upperOrLower){
 		int n=data.length;
 		float[] data2=new float[n];
@@ -207,6 +317,13 @@ public class BasicStatistics {
 		return result;	
 	}
 	
+	/**
+	 * Calculates percentile values of an input array.
+	 * @param data an int[] input array
+	 * @param percentile the percentile to calculate
+	 * @param upperOrLower returns the upper (true) or lower (false) percentile
+	 * @return the requested percentile as an int
+	 */
 	public int calculatePercentile(int[] data, double percentile, boolean upperOrLower){
 		int n=data.length;
 		int[] data2=new int[n];

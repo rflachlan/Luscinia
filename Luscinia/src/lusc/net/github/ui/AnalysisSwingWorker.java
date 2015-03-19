@@ -913,7 +913,7 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 	public Object[] makeUPGMA(float[][] input, double[] sds, int type, double[] labels){
 		UPGMA upgma=new UPGMA(input, dendrogramMode);
 		progress();
-		ClusterValidation cv=new ClusterValidation(upgma, input, dendrogramMode);
+		ClusterValidation cv=new ClusterValidation(dendrogramMode);
 		progress();
 		double[][] sil=cv.silhouettePValue(upgma, input, sds);
 		double[] sil1=sil[0];

@@ -1,6 +1,11 @@
 package lusc.net.github.analysis;
 
-
+/**
+ * This class carries out the Dynamic Time Warping on input array data.
+ * It is thread-enabled for performance
+ * @author Rob
+ *
+ */
 
 public class CompareThread extends Thread{
 	int start, stop, maxlength, dims, dimsE, f;
@@ -29,6 +34,23 @@ public class CompareThread extends Thread{
 	
 	double sdRatio=0.5;
 	double lowerCutOff=0.02;
+	
+	/**
+	 * Depreprecated
+	 * @param maxlength
+	 * @param data
+	 * @param dataT
+	 * @param dataE
+	 * @param elPos
+	 * @param sds
+	 * @param sdRatio
+	 * @param validParameters
+	 * @param weightByAmp
+	 * @param scores
+	 * @param start
+	 * @param stop
+	 * @param f
+	 */
 	
 	public CompareThread(int maxlength, double[][][]data, double[][][]dataT, double[][][]dataE, int[][]elPos, double[] sds, double sdRatio,  double[] validParameters, boolean weightByAmp, float[] scores, int start, int stop, int f){
 		
@@ -69,6 +91,16 @@ public class CompareThread extends Thread{
 		}
 	}
 	
+	/**
+	 * Constructor for CompareThread
+	 * @param maxlength the maximum length of any array (time series)
+	 * @param pdtw a PrepareDTW object containing data for the analysis 
+	 * @param stitch if true, the data is stitched, and the algorithm should check for joins
+	 * @param scores an array to put the results
+	 * @param start position to begin comparing
+	 * @param stop	 position to stop comparing
+	 * @param f
+	 */
 	public CompareThread(int maxlength, PrepareDTW pdtw, boolean stitch, float[] scores, int start, int stop, int f){
 		
 		numTempPars=pdtw.getNumTempPars();
@@ -130,7 +162,9 @@ public class CompareThread extends Thread{
 		dimsE=dataFocalE.length;
 	}
 	
-	
+	/**
+	 * Run method for thread
+	 */
 	public synchronized void run(){
 		
 		p=new double[maxlength][maxlength];
@@ -157,7 +191,12 @@ public class CompareThread extends Thread{
 	
 	
 	
-	
+	/**
+	 * Method called from Thread's run method.
+	 * This carries out three DTW algorithms, one with the shorter array centre-aligned, one with
+	 * it left-aligned, and one with it right-aligned
+	 * @return a float dissimarity score.
+	 */
 			
 	public float derTimeWarpingAsym (){
 		
@@ -188,6 +227,13 @@ public class CompareThread extends Thread{
 		return scoreb;
 	}
 
+	
+	/**
+	 * This method is called by  derTimeWarpingAsym. It calculates the standard deviations
+	 * for the various parameters in the matrix. It then runs the actual comparison.
+	 * @return a float value for dissimilarity
+	 */
+	
 	public float runComp(){
 		
 		double[] sd=new double[sds.length];
@@ -224,6 +270,16 @@ public class CompareThread extends Thread{
 		return score1;
 	}
 	
+	/**
+	 * This method carries out Luscinia's implementation of dynamic time-warping.
+	 * It treats time differently from other parameters
+	 * It interpolates between points in an asymmetric manner. This helps when points vary rapidly
+	 * over time
+	 * It can detect break-points in the time series (i.e. different elements) and doesn't interpolate over break-points
+	 * @param sdt standard deviation for time parameter
+	 * @param sdf standard deviation for other parameters
+	 * @return float value of dissimilarity between two time series.
+	 */
 	public float derTimeWarpingPointInterpol (double sdt, double[] sdf){
 		
 		
@@ -393,7 +449,14 @@ public class CompareThread extends Thread{
 	}
 	
 	
-	
+	/**
+	 * This method carries out dynamic time warping without interpolation. Currently unused,
+	 * but I'd like to add it back in as an option in the future. 
+	 * @param dataFocal Focal time series
+	 * @param dataComp Comparator time series
+	 * @param sdf set of standard deviations for normalisation
+	 * @return float value of dissimilarity.
+	 */
 	
 	public float derTimeWarpingPointFast (double[][] dataFocal, double[][] dataComp, double[] sdf){
 		

@@ -1817,7 +1817,7 @@ public class Song {
 			out=m2o.medianFilterNR(noiseLength1, 0.25f, noiseRemoval, out, 0);
 			out=m2o.medianFilterNR1(noiseLength2, 0.75f, 0, out, 0);
 		}
-		
+		//out=m2o.accentuateLines(out, 2, 1);
 		System.out.println("Dereverb");
 		if (echoComp>0){
 			

@@ -1,16 +1,17 @@
 package lusc.net.github.analysis;
-//
-//  ClusterValidation.java
-//  Luscinia
-//
-//  Created by Robert Lachlan on 9/24/07.
-//  Copyright 2007 __MyCompanyName__. All rights reserved.
-//
 
 import java.util.*;
 
 import lusc.net.github.analysis.dendrograms.TreeDat;
 import lusc.net.github.analysis.dendrograms.UPGMA;
+
+
+/**
+ * This class carries out various external cluster validate metrics, including the Silhouette Index.
+ * Takes as input data a hierarchically-clustered data-set.
+ * @author Rob
+ *
+ */
 
 public class ClusterValidation {
 
@@ -21,23 +22,36 @@ public class ClusterValidation {
 	Random random=new Random(System.currentTimeMillis());
 	
 	
-	public ClusterValidation(UPGMA upgma,  double[][] pcRep, float[][] matrix, int dmode){
-		////this.upgma=upgma;
+	/**
+	 * 
+	 * @param upgma
+	 * @param pcRep
+	 * @param matrix
+	 * @param dmode
+	 */
+	
+	public ClusterValidation(double[][] pcRep, int dmode){
 		this.pcRep=pcRep;
 		this.dmode=dmode;
-		//this.matrix=matrix;
 	}
 	
-	public ClusterValidation(UPGMA upgma, float[][] matrix, int dmode){
+	
+	/**
+	 * Constructor takes a dendrogramMode parameter. Inelegant...
+	 * @param dmode
+	 */
+	public ClusterValidation(int dmode){
 		this.dmode=dmode;
-		//this.upgma=upgma;
-		//this.matrix=matrix;
 	}
 	
-	public void randomizeMatrix(float[][] matrix){
+	/**
+	 * Constructs a randomly simulated matrix. Deprecated
+	 * @param matrix - dissimilarity matrix to be simulated
+	 * @param p - number of dimensions for simulated data to be calculated.
+	 */
+	public void randomizeMatrix(float[][] matrix, int p){
 	
 		int n=matrix.length;
-		int p=4;
 		double[][] pcrand=new double[n][p];
 		
 		for (int i=0; i<n; i++){
@@ -58,6 +72,16 @@ public class ClusterValidation {
 		
 		pcrand=null;
 	}
+	
+	
+	/**
+	 * Calculate Silhouette Index with an approximate p-value.
+	 * See Rousseeuw 1987
+	 * @param upgma Input dendrogram
+	 * @param matrix Dissimilarity matrix (that underlies dendrogram)
+	 * @param sds standard deviations of dimensions associated with the dendrogram (e.g. of MDS dimensions)
+	 * @return a 2-D double[][] array containing silhouette indices in the first column, and p-values in the second
+	 */
 	
 	public double[][] silhouettePValue(UPGMA upgma, float[][] matrix, double[] sds){
 		
@@ -116,11 +140,6 @@ public class ClusterValidation {
 		}
 		
 		for (int i=0; i<realResults.length; i++){
-		//	System.out.println(realResults[i]+" "+simTotals[i]+" "+sds[0]+" "+sds[1]+" "+sds[2]+" "+sds[3]+" "+sds[4]+" "+sds[5]);
-			//realResults[i]=(realResults[i]-simTotals[i])/(1-simTotals[i]);
-			//realResults[i]=realResults[i]-simTotals[i];
-			//realResults[i]-=simTotals[i];
-			//results[0][i]=realResults[i];
 			results[0][i]=(realResults[i]-simTotals[i])/(1-simTotals[i]);
 			results[1][i]=pcounter[i];
 		}
@@ -128,8 +147,14 @@ public class ClusterValidation {
 		return results;
 	}
 	
+	/**
+	 * Deprecated
+	 * @param upgma
+	 * @param matrix
+	 * @return
+	 */
 	
-	public double[] calculateValidityPerCluster(UPGMA upgma, float[][] matrix){
+	public double[] calculateValidityPerClusterX(UPGMA upgma, float[][] matrix){
 		TreeDat[] td=upgma.getDat();
 		int n=td.length;				
 		double[] sil=new double[n];
@@ -181,7 +206,14 @@ public class ClusterValidation {
 		}
 		
 		return sil;
-	}	
+	}
+	
+	/**
+	 * Calculates global Silhouette index at each slice of a dendrogram
+	 * @param upgma input dendrogram
+	 * @param matrix input dissimilarity matri
+	 * @return double[] with Silhouette indices
+	 */
 	
 	public double[] calculateValidityPerCluster2(UPGMA upgma, float[][] matrix){
 		TreeDat[] td=upgma.getDat();
@@ -242,13 +274,18 @@ public class ClusterValidation {
 		return sil;
 	}	
 
-	
+	/**
+	 * Calculates the mean overall within cluster distance for each slice of a dendrogram
+	 * @param upgma input dendrogram
+	 * @param matrix input dissimilarity matrix
+	 * @return output array containing mean within-cluster distances
+	 */
 	
 	public double[] calculateWithinClusterDistance(UPGMA upgma, float[][] matrix){
 		TreeDat[] td=upgma.getDat();
 		int n=td.length;				
 		double[] sil=new double[n];
-		double silref=0;
+		//double silref=0;
 		int pc, pc2;
 		double avwithinscore;
 		double score=0;
@@ -282,6 +319,14 @@ public class ClusterValidation {
 		return sil;
 	}	
 	
+	
+	/**
+	 * Calculates the Levine & Domany (2007) resampling index for cluster validation
+	 * @param sds an array of standard deviations for the dimensions that went into calculating the dissimilarity matrix
+	 * @param upgma input dendrogram
+	 * @param matrix dissimilarity matrix
+	 * @return output 
+	 */
 	public double[] levineDomanyPValue2(double[] sds, UPGMA upgma, float[][] matrix){
 		
 		int repeat=5;
@@ -318,6 +363,13 @@ public class ClusterValidation {
 		return simResults;
 	}
 	
+	
+	/**
+	 * Deprecated Levine Domany algorithm
+	 * @param upgma
+	 * @param matrix
+	 * @return
+	 */
 	public double[] levineDomanyPValue(UPGMA upgma, float[][] matrix){
 		
 		int repeat=20;
@@ -376,7 +428,14 @@ public class ClusterValidation {
 		return realResults;
 	}
 	
-	
+	/**
+	 * This resamples 67% of the tips in the tree and looks at the distributions of resulting
+	 * dendrograms
+	 * @param repeat number of repeats
+	 * @param nupgma input upgma
+	 * @param matrix dissimilarity matrix
+	 * @return array containing the proportion of branches at a depth matching that of the corresponding branch in the input data
+	 */
 	public double[] resamplingMethod(int repeat, UPGMA nupgma, float[][] matrix){
 	
 		//int repeat=500;
@@ -472,6 +531,12 @@ public class ClusterValidation {
 	}
 	
 	
+	/**
+	 * Calculates a dissimilarity matrix based on dendrogram data
+	 * @param mat dissimilarity matrix to be filled
+	 * @param dat input dendrogram branches
+	 */
+	
 	public void calculateTreeDistance(float[][] mat, TreeDat[] dat){
 	
 	
@@ -494,6 +559,14 @@ public class ClusterValidation {
 			}	
 		}
 	}
+	
+	/**
+	 * Averages scores based on number of items per cluster
+	 * @param perCluster
+	 * @param weightByClusterSize
+	 * @param upgma
+	 * @return
+	 */
 	
 	public double[] getAverageClusterV(double[] perCluster, boolean weightByClusterSize, UPGMA upgma){
 		int n=perCluster.length;
@@ -567,6 +640,12 @@ public class ClusterValidation {
 	
 	}
 	
+	
+	/**
+	 * Calculates the partition members for each branch of a dendrogram
+	 * @param dat input array of TreeDat tree branches
+	 * @return an int[][] array that gives the tips of each branch of the dendrogram
+	 */
 	public int[][] getPartitionMembers(TreeDat[] dat){
 		int n=dat.length;
 		
@@ -600,6 +679,13 @@ public class ClusterValidation {
 		return results;
 	}
 	
+	
+	/**
+	 * Deprecated (unnecessarily?)
+	 * @param upgma
+	 * @param sg
+	 * @return
+	 */
 	public double[] runCompositionAnalysis(UPGMA upgma, SongGroup sg){
 		TreeDat[] dat=upgma.getDat();
 		int[][] pt=getPartitionMembers(dat);
@@ -623,7 +709,12 @@ public class ClusterValidation {
 		return results;
 	}
 
-	
+	/**
+	 * Deprecated???
+	 * @param observedData
+	 * @param counts
+	 * @return
+	 */
 	public double compositionAnalysis(int[][] observedData, int[] counts){
 	
 		int numRepeats=10000;

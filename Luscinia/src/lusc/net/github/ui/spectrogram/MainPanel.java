@@ -2091,8 +2091,13 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		
 		if (UPDATE_COMMAND.equals(command)) {replot();}
 		if (AUTOMATIC_COMMAND.equals(command)) {
-			s.selectAll();
-			cloneLists();
+			if (editMode){
+				s.selectAll();
+				cloneLists();
+			}
+			else{
+				s.searchSongs();
+			}
 		}
 		if (REESTIMATE_COMMAND.equals(command)) {
 			s.reEstimateElements();

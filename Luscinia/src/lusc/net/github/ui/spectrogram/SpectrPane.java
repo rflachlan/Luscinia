@@ -906,6 +906,11 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 		updateElement();
 	}
 	
+	void searchSongs(){
+		
+		
+	}
+	
 	void reDoLastSelection(){
 		if (lastPointList!=null){
 			pointList=new int[lastPointList.length][];
