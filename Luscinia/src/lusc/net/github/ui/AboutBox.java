@@ -61,7 +61,7 @@ public class AboutBox extends JFrame implements ActionListener {
         aboutLabel[4] = new JLabel("");
         aboutLabel[5] = new JLabel("JDK " + System.getProperty("java.version"));
         aboutLabel[5].setFont(bodyFont);
-        aboutLabel[6] = new JLabel("Copyright Robert Lachlan 2007-12");
+        aboutLabel[6] = new JLabel("Copyright Robert Lachlan 2007-15");
         aboutLabel[6].setFont(bodyFont);
         aboutLabel[7] = new JLabel("");		
 		
