@@ -58,8 +58,10 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 	JButton reestimate=new JButton("Re-measure");
 	JButton reestAll=new JButton("Re-measure all");
 	JButton displayMode=new JButton("Display mode: spectrogram");
-	JButton forwardButton= new JButton("Forw");
-	JButton backButton=new JButton("Back");
+	JButton forwardButton= new JButton(">");
+	JButton backButton=new JButton("<");
+	JButton fForwardButton= new JButton(">>");
+	JButton fBackButton=new JButton("<<");
 	
 	JButton calculateSyllableStructure=new JButton("Calculate syllables automatically");
 	
@@ -67,6 +69,8 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 	
 	private static String FORWARD_COMMAND = "forward";
 	private static String BACKWARD_COMMAND = "backward";
+	private static String F_FORWARD_COMMAND = "fast forward";
+	private static String F_BACKWARD_COMMAND = "fast backward";
 	private static String SAVE_COMMAND = "save";
 	private static String SAVE_SOUND_COMMAND = "save sound";
 	private static String SAVE_IMAGE_COMMAND = "save image";
@@ -409,12 +413,18 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		backButton.addActionListener(this);
 		forwardButton.setActionCommand(FORWARD_COMMAND);
 		backButton.setActionCommand(BACKWARD_COMMAND);
+		fForwardButton.addActionListener(this);
+		fBackButton.addActionListener(this);
+		fForwardButton.setActionCommand(F_FORWARD_COMMAND);
+		fBackButton.setActionCommand(F_BACKWARD_COMMAND);
 		
 		guidePanelScrollPane.setPreferredSize(new Dimension(x-50, 120));
 		JPanel bPane=new JPanel(new BorderLayout());
-		JPanel bpPane=new JPanel(new BorderLayout());
-		bpPane.add(forwardButton, BorderLayout.NORTH);
-		bpPane.add(backButton, BorderLayout.SOUTH);
+		JPanel bpPane=new JPanel(new GridLayout(0,1));
+		bpPane.add(fForwardButton);
+		bpPane.add(forwardButton);
+		bpPane.add(backButton);
+		bpPane.add(fBackButton);
 		bPane.add(bpPane, BorderLayout.WEST);
 		bPane.add(guidePanelScrollPane, BorderLayout.CENTER);
 		JSplitPane bottomSplitPane=new JSplitPane(JSplitPane.VERTICAL_SPLIT, sp, bPane);
@@ -2393,10 +2403,16 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 			s.paintFound();
 		}
 		if (FORWARD_COMMAND.equals(command)){
-			s.moveForward();
+			s.moveForward(0.33);
 		}
 		if (BACKWARD_COMMAND.equals(command)){
-			s.moveBackward();
+			s.moveBackward(0.33);
+		}
+		if (F_FORWARD_COMMAND.equals(command)){
+			s.moveForward(1);
+		}
+		if (F_BACKWARD_COMMAND.equals(command)){
+			s.moveBackward(1);
 		}
 	}
 	
