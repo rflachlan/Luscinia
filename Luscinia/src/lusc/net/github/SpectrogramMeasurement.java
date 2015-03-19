@@ -93,6 +93,12 @@ public class SpectrogramMeasurement {
 		kernel=null;
 	}
 	
+	/**
+	 * This method sets up the nout array which is essential for measurement.
+	 */
+	public void setUp(){
+		nout=song.getOut();
+	}
 	
 	
 	/**
@@ -104,7 +110,7 @@ public class SpectrogramMeasurement {
 	 * @return a LinkedList of int[][] containing signal locations
 	 */
 	public LinkedList<int[][]> getSignal(int[][] pointList, int unx){						
-		nout=song.getOut();
+		setUp();
 		//This method identifies which parts of the highlighted sound are loud enough to be "signal"
 		//and joins them together on the basis of temporal contiguity into elements (further lumping/splitting
 		//of elements can happen in later methods)

@@ -35,7 +35,12 @@ public class DTWSwingWorker extends SwingWorker{
 	}
 	
 	
-	public PrepareDTW doInBackground(){ //truly horrible
+	public PrepareDTW doInBackground(){ 
+		return(analyze());
+	}
+		
+		
+	public PrepareDTW analyze(){	
 		PrepareDTW pdtw=new PrepareDTW(dtwp, ag);
 		ag.setSyllableRepetitionWeighting(dtwp.getSyllableRepetitionWeighting());
 		ag.setStitchPunishment(dtwp.getStitchPunishment());
@@ -92,86 +97,6 @@ public class DTWSwingWorker extends SwingWorker{
 		}	
 		return pdtw;
 	}
-	
-	/*	
-	public SongGroup doInBackground(){ //truly horrible
-
-		try{
-			System.out.println("DTWPanel: Labeling elements");
-			sg.makeNames();
-			//sg.setWeightByAmp(dtwp.weightByAmp.isSelected());
-			//sg.logFrequencies=dtwp.logFrequencies.isSelected();
-			//sg.stitchSyllables=dtwp.stitch.getSelectedIndex();
-			System.out.println("DTWPanel: Setting parameters");
-			//defaults.setDTWParameters(sg);
-			defaults.setDTWParameters(dtwp);
-			
-			
-			System.out.println("DTWPanel: getting valid parameters");
-			sg.getValidParameters(true);
-			System.out.println("DTWPanel: compressing data");
-			sg.compressData2();
-			System.out.println("DTWPanel: prepare to normalize");
-			sg.prepareToNormalize();
-			System.out.println("DTWPanel: prepare to normalize per element");
-			sg.prepareToNormalizePerElement();
-			//sg.normalizePerElement=dtwp.normalizePerElement.isSelected();
-			//sg.normalize(sg.data);
-			if (dtwp.stitch.getSelectedIndex()!=1){
-				System.out.println("DTWPanel: element DTW running");
-				sg.setScoresEle(sg.runDTW(this, false));
-				sg.compressSyllables2();
-			}
-			else{
-				sg.setScoresEle(null);
-				sg.setScoresSyll(null);
-			}
-			if (dtwp.stitch.getSelectedIndex()!=0){
-				System.out.println("DTWPanel: syllable analysis");
-				System.out.println("DTWPanel: getting parameters");
-				sg.getValidParameters(true);
-				System.out.println("DTWPanel: compressing data");
-				sg.compressData2();
-				System.out.println("DTWPanel: stitching syllables");
-				sg.stitchSyllables2();
-				System.out.println("DTWPanel: normalizing");
-				sg.prepareToNormalize();
-				sg.prepareToNormalizePerElement();
-				//sg.normalize(sg.data);
-				//sg.prepareToNormalize(sg.data);
-				//sg.prepareToNormalizePerElement(sg.data);
-				//sg.normalizePerElement=dtwp.normalizePerElement.isSelected();
-				System.out.println("DTWPanel: syllable DTW running");
-				sg.setScoresSyll2(sg.runDTW(this, true));
-				
-				//sg.scoresSyll2=sg.normalizeScores(sg.scoresSyll2);
-				//System.out.println("DTWPanel: transforming scores");
-				//sg.scoresSyll2=sg.transformScores(sg.scoresSyll2);
-			
-				if (dtwp.stitch.getSelectedIndex()==1){
-					sg.compressSyllables5();
-				}
-				else{
-					sg.compressSyllables3();
-				}
-			
-			
-			}
-			else{
-				sg.setScoresSyll2(null);
-			}
-			if (sg.getSyllableRepetitionWeighting()>0){
-				sg.augmentSyllDistanceMatrixWithSyllableReps();
-			}
-			System.out.println("DTWPanel: analysis finished");
-		}
-		catch(Exception e){
-			e.printStackTrace();
-		}	
-		return sg;
-	}
-	*/
-	
 	
 	public void progress(int p){
 		Integer prog=new Integer(p);

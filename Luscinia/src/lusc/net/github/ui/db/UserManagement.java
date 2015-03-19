@@ -114,11 +114,74 @@ public class UserManagement extends JPanel implements ActionListener, TableModel
 				table.revalidate();
 			}
 			if (ADD_USER_COMMAND.equals(command)) {
-				String p=JOptionPane.showInputDialog("Add new user name:");
-				((MyTableModel)table.getModel()).addRow(p);
-				dbc.addUser(p);
+				JTextField unameField = new JTextField(20);
+				JPasswordField pField1 = new JPasswordField(20);
+				JPasswordField pField2 = new JPasswordField(20);
+			    
+			    JPanel myPanel = new JPanel(new GridLayout(0,2));
+			    myPanel.add(new JLabel("User name:"));
+			    myPanel.add(unameField);
+			    myPanel.add(Box.createHorizontalStrut(15)); // a spacer
+			    myPanel.add(Box.createHorizontalStrut(15)); 
+			    myPanel.add(new JLabel("Password:"));
+			    myPanel.add(pField1);
+			    myPanel.add(Box.createHorizontalStrut(15)); // a spacer
+			    myPanel.add(Box.createHorizontalStrut(15)); 
+			    myPanel.add(new JLabel("Repeat Password:"));
+			    myPanel.add(pField2);
+
+			    int result = JOptionPane.showConfirmDialog(null, myPanel, 
+			               "Please Enter User Name and Password", JOptionPane.OK_CANCEL_OPTION);
+			    if (result == JOptionPane.OK_OPTION) {
+			    	String p1=new String(pField1.getPassword());
+			    	String p2=new String(pField2.getPassword());
+			    	String u=unameField.getText();
+			    	if (!p1.equals(p2)){
+			    		JOptionPane.showMessageDialog(this, "Passwords did not match");
+			    	}
+			    	else if(u.equals("")){
+			    		JOptionPane.showMessageDialog(this, "User name was blank");
+			    	}
+			    	else{
+			    		((MyTableModel)table.getModel()).addRow(u);
+			    		dbc.addUserPassword(u, p1);
+			    	}
+			    }
+				//String p=JOptionPane.showInputDialog("Add new user name:");
+				//((MyTableModel)table.getModel()).addRow(p);
+				//dbc.addUser(p);
 			}
 			if (PWORD_COMMAND.equals(command)){
+				JPasswordField pField1 = new JPasswordField(20);
+				JPasswordField pField2 = new JPasswordField(20);
+			    
+			    JPanel myPanel = new JPanel(new GridLayout(0,2));
+			    myPanel.add(new JLabel("Password:"));
+			    myPanel.add(pField1);
+			    myPanel.add(Box.createHorizontalStrut(15)); // a spacer
+			    myPanel.add(Box.createHorizontalStrut(15)); 
+			    myPanel.add(new JLabel("Password:"));
+			    myPanel.add(pField2);
+
+			    int result = JOptionPane.showConfirmDialog(null, myPanel, 
+			               "Please Enter New Password", JOptionPane.OK_CANCEL_OPTION);
+			    if (result == JOptionPane.OK_OPTION) {
+			    	String p1=new String(pField1.getPassword());
+			    	String p2=new String(pField2.getPassword());
+			    	if (!p1.equals(p2)){
+			    		JOptionPane.showMessageDialog(this, "Passwords did not match");
+			    	}
+			    	else{
+			    		int a=table.getSelectedRow();
+						Object[] x=dat.get(a);
+						String s=(String)x[0];
+						Boolean b=(Boolean)x[1];
+			    		dbc.setPassword(s, p1);
+			    	}
+			    }
+				
+				
+				/*
 				JPasswordField pf = new JPasswordField();
 				int okCxl = JOptionPane.showConfirmDialog(null, pf, "Enter Password", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 
@@ -130,6 +193,7 @@ public class UserManagement extends JPanel implements ActionListener, TableModel
 				  Boolean b=(Boolean)x[1];
 				  dbc.setPassword(s,password);
 				}
+				*/
 			}
 				
 		}

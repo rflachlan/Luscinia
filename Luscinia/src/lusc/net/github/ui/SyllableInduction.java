@@ -117,8 +117,7 @@ public class SyllableInduction extends JFrame implements ActionListener{
 		DTWSwingWorker dtwsw=new DTWSwingWorker(null, dtwPanel, sg, defaults);
 		//dtwsw.addPropertyChangeListener(this);
 		//stopButton.setEnabled(true);
-		dtwsw.execute();
-		
+		dtwsw.analyze();
 		double results1[][]=calculateSimilarities(sg.getScoresEle(), 5);
 		double results2[][]=calculateRhythm(song, 5, 20);
 		results2=sparsifyResults(results2);

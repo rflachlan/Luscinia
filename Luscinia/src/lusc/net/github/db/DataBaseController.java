@@ -268,9 +268,17 @@ public class DataBaseController {
 		db.writeToDataBase(st2);
 	}
 	
+	public void addUserPassword(String s, String p){ 
+		String st="CREATE USER "+s+" PASSWORD '"+p+"'";
+		String st2="GRANT ALL ON comparesong, comparesyll, compareele, comparesongcomp,comparesongcomp, element, individual, population, songdata, species, specpop, syllable, wavs TO "+s;
+
+		db.writeToDataBase(st);	
+		db.writeToDataBase(st2);
+	}
+	
 	public void setPassword(String uname, String pword){
-		String st="DROP USER "+uname;
-		db.writeToDataBase(st);
+		//String st="DROP USER "+uname;
+		//db.writeToDataBase(st);
 		String st2="ALTER USER "+uname+" SET PASSWORD '"+pword+"'";
 		db.writeToDataBase(st2);
 	}

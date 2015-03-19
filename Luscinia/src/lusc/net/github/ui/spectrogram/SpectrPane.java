@@ -1104,6 +1104,7 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 		int b=currentMaxX;
 		float c=(float)(1/song.getDynMax());
 		relocate(0, nx);
+		songMeas.setUp();
 		LinkedList<int[][]> tList=new LinkedList<int[][]>();
 		int ne=song.getNumElements();
 		for (int i=0; i<ne; i++){
@@ -1184,7 +1185,7 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 		}	
 		song.clearElements();
 		measureAndAddElements(tList);
-		
+		System.out.println("remeasuring complete");
 		relocate(a,b);
 	
 	}

@@ -104,7 +104,7 @@ public class CompareThread extends Thread{
 	public CompareThread(int maxlength, PrepareDTW pdtw, boolean stitch, float[] scores, int start, int stop, int f){
 		
 		numTempPars=pdtw.getNumTempPars();
-		
+		this.stitch=stitch;
 		if (stitch){
 			data=pdtw.getData(2);
 			if (numTempPars>0){
@@ -122,7 +122,7 @@ public class CompareThread extends Thread{
 				sdsT=pdtw.getSDTemp(0);
 			}
 			dataE=pdtw.getData(1);
-			sds=pdtw.getSD(1);
+			sds=pdtw.getSD(0);
 				
 		}
 		
