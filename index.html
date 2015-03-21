@@ -1,37 +1,44 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
   <head>
-    <meta charset='utf-8'>
+    <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="chrome=1">
-    <link href='https://fonts.googleapis.com/css?family=Chivo:900' rel='stylesheet' type='text/css'>
-    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
-    <link rel="stylesheet" type="text/css" href="stylesheets/pygment_trac.css" media="screen">
-    <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print">
-    <!--[if lt IE 9]>
-    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-    <![endif]-->
     <title>Luscinia by rflachlan</title>
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+    <script src="javascripts/respond.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <!--[if lt IE 8]>
+    <link rel="stylesheet" href="stylesheets/ie.css">
+    <![endif]-->
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+
   </head>
-
   <body>
-    <div id="container">
-      <div class="inner">
+      <div id="header">
+        <nav>
+          <li class="fork"><a href="https://github.com/rflachlan/Luscinia">View On GitHub</a></li>
+          <li class="downloads"><a href="https://github.com/rflachlan/Luscinia/zipball/master">ZIP</a></li>
+          <li class="downloads"><a href="https://github.com/rflachlan/Luscinia/tarball/master">TAR</a></li>
+          <li class="title">DOWNLOADS</li>
+        </nav>
+      </div><!-- end header -->
 
-        <header>
+    <div class="wrapper">
+
+      <section>
+        <div id="title">
           <h1>Luscinia</h1>
-          <h2>Bioacoustic analysis of field recordings</h2>
-        </header>
+          <p>Bioacoustic analysis of field recordings</p>
+          <hr>
+          <span class="credits left">Project maintained by <a href="https://github.com/rflachlan">rflachlan</a></span>
+          <span class="credits right">Hosted on GitHub Pages &mdash; Theme by <a href="https://twitter.com/michigangraham">mattgraham</a></span>
+        </div>
 
-        <section id="downloads" class="clearfix">
-          <a href="https://github.com/rflachlan/Luscinia/zipball/master" id="download-zip" class="button"><span>Download .zip</span></a>
-          <a href="https://github.com/rflachlan/Luscinia/tarball/master" id="download-tar-gz" class="button"><span>Download .tar.gz</span></a>
-          <a href="https://github.com/rflachlan/Luscinia" id="view-on-github" class="button"><span>View on GitHub</span></a>
-        </section>
-
-        <hr>
-
-        <section id="main_content">
-          <h1>
+        <h1>
 <a id="welcome-to-luscinia" class="anchor" href="#welcome-to-luscinia" aria-hidden="true"><span class="octicon octicon-link"></span></a>Welcome to Luscinia!</h1>
 
 <p>This is the website for Luscinia: software for bioacoustic archiving, measurement and analysis.</p>
@@ -60,7 +67,7 @@ It can be downloaded from the <a href="https://github.com/rflachlan/Luscinia/rel
 <p>Luscinia implements a wide range of analytical methods, from exporting summary statistics to spreadsheets to its centrepiece: and advanced implementation of the dynamic time warping algorithm. This allows the comparison of disparate and complex signals, and forms the basis for a range of bioinformatic and statistical analyses: multidimensional scaling, dendrograms, geographic analysis, syntax analysis and more.</p>
 
 <h3>
-<a id="luscinia-has-currently-been-used-in-more-than-20-publications-and-is-actively-supported-and-developed" class="anchor" href="#luscinia-has-currently-been-used-in-more-than-20-publications-and-is-actively-supported-and-developed" aria-hidden="true"><span class="octicon octicon-link"></span></a>Luscinia has currently been used in <a href="https://github.com/rflachlan/Luscinia/wiki/Publications">more than 20 publications</a> and is actively supported and developed.</h3>
+<a id="luscinia-has-currently-been-used-in-more-than-20-publications-and-is-actively-supported-and-developed" class="anchor" href="#luscinia-has-currently-been-used-in-more-than-20-publications-and-is-actively-supported-and-developed" aria-hidden="true"><span class="octicon octicon-link"></span></a>Luscinia has currently been used in <a href="https://github.com/rflachlan/Luscinia/wiki/Publications-using-Luscinia">more than 20 publications</a> and is actively supported and developed.</h3>
 
 <p>Spectrogram screen. Users can navigate in the lower "Navigation panel", and measure song elements in the main window. Luscinia provides a fully-featured spectrogram view with a flexible, semi-automated and efficient method to measure songs.
 <img src="https://raw.githubusercontent.com/rflachlan/Luscinia/master/Luscinia/images/SpectScreen.png" alt="Spect"></p>
@@ -70,14 +77,11 @@ It can be downloaded from the <a href="https://github.com/rflachlan/Luscinia/rel
 
 <p>Dendrogram of chaffinch song-types.
 <img src="https://raw.githubusercontent.com/rflachlan/Luscinia/master/Luscinia/images/SyllableDendrogramPlot.png" alt="Dendrogram Plot"></p>
-        </section>
+      </section>
 
-        <footer>
-          Luscinia is maintained by <a href="https://github.com/rflachlan">rflachlan</a><br>
-          This page was generated by <a href="https://pages.github.com">GitHub Pages</a>. Tactile theme by <a href="https://twitter.com/jasonlong">Jason Long</a>.
-        </footer>
-
-                  <script type="text/javascript">
+    </div>
+    <!--[if !IE]><script>fixScale(document);</script><![endif]-->
+              <script type="text/javascript">
             var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
             document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
           </script>
@@ -88,7 +92,5 @@ It can be downloaded from the <a href="https://github.com/rflachlan/Luscinia/rel
             } catch(err) {}
           </script>
 
-      </div>
-    </div>
   </body>
 </html>
