@@ -131,6 +131,9 @@ public class DisplaySimilarity extends DisplayPane implements MouseInputListener
 			score=scores[xchoice][ychoice];
 			System.out.println("SCORE: "+score);
 			paintPanel(width, height);
+			if (dataType<=2){
+				
+			}
 			repaint();	
 		}
 	}

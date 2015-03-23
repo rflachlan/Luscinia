@@ -353,9 +353,9 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 				if (ac.mdsProvided){
 					mdsEle=ac.mdsEle;
 				}
-				if (mdsEle==null){
+				if ((!ac.mdsProvided)||(mdsEle==null)){
 					mdsEle=calculateMDS(tempEle);
-					ac.mdsProvided=true;
+					//ac.mdsProvided=true;
 					ac.mdsEle=mdsEle;
 				}
 				tempEle=mdsEle.getDistanceMatrix();
@@ -369,9 +369,9 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 				if (ac.mdsProvided){
 					mdsSyll=ac.mdsSyll;
 				}
-				if (mdsSyll==null){
+				if ((!ac.mdsProvided)||(mdsSyll==null)){
 					mdsSyll=calculateMDS(tempSyll);
-					ac.mdsProvided=true;
+					//ac.mdsProvided=true;
 					ac.mdsSyll=mdsSyll;
 				}
 				tempSyll=mdsSyll.getDistanceMatrix();
@@ -388,9 +388,9 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 				if (ac.mdsProvided){
 					mdsSyTr=ac.mdsSyTr;
 				}
-				if (mdsSyTr==null){
+				if ((!ac.mdsProvided)||(mdsSyTr==null)){
 					mdsSyTr=calculateMDS(tempSyTr);
-					ac.mdsProvided=true;
+					//ac.mdsProvided=true;
 					ac.mdsSyTr=mdsSyTr;
 				}
 				
@@ -405,14 +405,17 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 				if (ac.mdsProvided){
 					mdsSong=ac.mdsSong;
 				}
-				if (mdsSong==null){
+				if ((!ac.mdsProvided)||(mdsSong==null)){
 					mdsSong=calculateMDS(tempSong);
-					ac.mdsProvided=true;
+					//ac.mdsProvided=true;
 					ac.mdsSong=mdsSong;
 				}
 				
 				tempSong=mdsSong.getDistanceMatrix();
 			}
+		}
+		if (!ac.mdsProvided){
+			ac.mdsProvided=true;
 		}
 		if (matrixcomp){
 			updateProgressLabel("drawing distance matrix");
@@ -459,6 +462,7 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 			}	
 			if (anasy){
 				Object[] x=makeUPGMA(tempSyll, mdsSyll.getSDS(), 2, sg.getLabels(2));
+				//Object[] x=makeUPGMA(sg.getScoresSyll(), mdsSyll.getSDS(), 2, sg.getLabels(2));
 				dupsy=(DisplayUPGMA)x[0];
 				denpsy=(DendrogramPanel)x[1];
 			}

@@ -240,10 +240,10 @@ public class Defaults {
 	
 	public boolean[] getBooleanArray(String key, int length){
 		String s=props.getProperty(key);
-		boolean[] results=null;
+		boolean[] results=new boolean[length];
 		if (s!=null){
 			int n=s.length();
-			results=new boolean[length];
+			//results=new boolean[length];
 			for (int i=0; i<n; i++){
 				char p=s.charAt(i);
 				if (p=='0'){
@@ -256,6 +256,42 @@ public class Defaults {
 		}
 		return results;
 	}
+	
+	/**
+	 * Gets a boolean parameter from the store
+	 * @param key the key value (String)
+	 * @param defval the default value for the store (if it's not already stored)
+	 * @return a boolean parameter value.
+	 */
+	
+	public boolean getBooleanProperty(String key, boolean defval){
+		String s=props.getProperty(key);
+		boolean results=defval;
+		if (s!=null){
+			if (s.equals("0")){
+				results=false;
+			}
+			else{
+				results=true;
+			}
+		}
+		return results;
+	}
+	
+	/**
+	 * Sets a boolean parameter in the store
+	 * @param key the key value (String)
+	 * @param val the boolean parameter to be stored
+	 */
+	
+	public void setBooleanProperty(String key, boolean val){
+		String s="0";
+		if (val){
+			s="1";
+		}
+		props.setProperty(key, s);
+	}
+	
 	
 	/**
 	 * gets an array of booleans from the store.
@@ -638,6 +674,47 @@ public class Defaults {
 			sp.setViewParameters(results);
 		}
 	}
+	
+	/**A convenience function to get the array of parameters chosen for Parametric comparison
+	 * 
+	 */
+	
+	public boolean[][] getParameterPanelArray(){
+		
+		boolean[] temp=getBooleanArray("paramarr", 8*17);
+		
+		boolean[][] out=new boolean[8][17];
+		
+		int k=0;
+		for (int i=0; i<8; i++){
+			for (int j=0; j<17; j++){
+				out[i][j]=temp[k];
+				k++;
+			}
+		}
+		return (out);
+		
+	}
+	
+	/**A convenience function to set the array of parameters chosen for Parametric comparison
+	 * 
+	 */
+	
+	public void setParameterPanelArray(boolean[][] d){
+		
+		boolean[] temp=new boolean[8*17];
+				
+		int k=0;
+		for (int i=0; i<8; i++){
+			for (int j=0; j<17; j++){
+				temp[k]=d[i][j];
+				k++;
+			}
+		}
+		setBooleanArray("paramarr", temp);
+		
+	}
+	
 	
 	/**
 	 * A convenience function to set the defaults for the statistics output. This method works

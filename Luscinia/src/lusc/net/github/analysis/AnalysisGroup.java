@@ -527,11 +527,25 @@ public class AnalysisGroup {
 	/**
 	 * This method is the first step for loading the raw song data (audio data) into
 	 * the song object. This may be useful (in future) for methods like spectrogram
+	 * cross correlation, where new spectrograms are needed. This version of the method
+	 * loads raw audio data for all songs in the song object.
+	 */
+	public void checkAndLoadRawData(){
+		for (int i=0; i<songs.length; i++){
+			checkAndLoadRawData(i);
+		}
+	}
+	
+	/**
+	 * This method is the first step for loading the raw song data (audio data) into
+	 * the song object. This may be useful (in future) for methods like spectrogram
 	 * cross correlation, where new spectrograms are needed
 	 * @param i index for the song
 	 */
 	public void checkAndLoadRawData(int i){
+		System.out.println("CHECKING RAW DATA: "+i);
 		if (songs[i].getRawData()==null){
+			System.out.println("RAW DATA LOADING: "+i);
 			loadSongRawData(i);
 		}
 	}
@@ -549,7 +563,7 @@ public class AnalysisGroup {
 		if ((songs[i].getMaxF()<=1)||(songs[i].getDynRange()<1)){
 			defaults.getSongParameters(songs[i]);
 		}
-		//System.out.println(songs[i].getRawDataLength());
+		System.out.println(songs[i].getRawDataLength()+" "+songs[i].getSongID());
 		
 	}
 	

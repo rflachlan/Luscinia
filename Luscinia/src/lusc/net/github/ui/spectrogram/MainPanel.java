@@ -290,6 +290,7 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		this.dbc=dbc;
 		this.songID=songID;
 		this.defaults=defaults;
+		editMode=true;
 		song=dbc.loadSongFromDatabase(songID, 0);
 		song.setUpPlayback();
 		//defaults.getSongParameters(song);
@@ -300,6 +301,7 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		this.dbc=dbc;
 		this.songID=songID;
 		this.defaults=defaults;
+		editMode=true;
 		song=dbc.loadSongFromDatabase(songID, 0);
 		song.setUpPlayback();
 		//defaults.getSongParameters(song);

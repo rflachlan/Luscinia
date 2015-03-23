@@ -463,15 +463,15 @@ public class VisualComparison extends JPanel implements PropertyChangeListener, 
 			choices=new String[size1+1];
 			choices[0]=" ";
 			syllChoice1.addItem(choices[0]);
-			
+			int ii=0;
 			for (int i=0; i<phraseId1.length; i++){
 				if (phraseId1[i]){
-					choicesL[i]=i;
-					Integer i2=new Integer(i+1);
+					choicesL[ii]=i;
+					Integer i2=new Integer(ii+1);
 					String i3=i2.toString();
-					choices[i+1]=i3;
-					syllChoice1.addItem(choices[i+1]);
-					
+					choices[ii+1]=i3;
+					syllChoice1.addItem(choices[ii+1]);
+					ii++;
 				}
 			}
 			syllChoice2.removeAllItems();
@@ -479,14 +479,16 @@ public class VisualComparison extends JPanel implements PropertyChangeListener, 
 			choices=new String[size2+1];
 			choices[0]=" ";
 			syllChoice2.addItem(choices[0]);
+			int jj=0;
 			for (int i=0; i<phraseId2.length; i++){
 				if (phraseId2[i]){
-					choicesL[i]=i;
-					Integer i2=new Integer(i+1);
+					choicesL[jj]=i;
+					Integer i2=new Integer(jj+1);
 					String i3=i2.toString();
-					choices[i+1]=i3;
-					syllChoice2.addItem(choices[i+1]);
+					choices[jj+1]=i3;
+					syllChoice2.addItem(choices[jj+1]);
 					//playb.addItem(choices[i+1]);
+					jj++;
 				}
 			}
 			syllSim.setSelectedIndex(0);

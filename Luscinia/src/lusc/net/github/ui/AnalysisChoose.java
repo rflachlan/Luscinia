@@ -488,7 +488,7 @@ public class AnalysisChoose extends JPanel implements ActionListener, ChangeList
 				
 				else if (parAnalysis.isSelected()){
 					//pp=new ParameterPanel(sg);
-					pp=new ParameterPanel(ag);
+					pp=new ParameterPanel(ag, defaults);
 					mainPanel.addTab("Parametric analysis", pp);
 					analysisMode=1;
 					

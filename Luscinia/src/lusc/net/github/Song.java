@@ -32,6 +32,7 @@ import javax.swing.JOptionPane;
  */
 public class Song {
 
+	boolean updateFFT=true;
 	boolean loaded=false;
 	boolean running=false;
 	boolean setRangeToMax=true; 
@@ -1354,6 +1355,16 @@ public class Song {
 	public void setSyllList(LinkedList<int[]> a){
 		syllList=a;
 	}
+	
+	/**
+	 * This method overrides making the FFT. It may be useful in some cases to save redoing
+	 * identical FFTs.
+	 * @param x sets updateFFT flag
+	 */
+	
+	public void setUpdateFFT(boolean x){
+		updateFFT=x;
+	}
 
 	/**
 	 * This is a legacy function to update syllable measurements for old versions of the db.
@@ -1759,16 +1770,17 @@ public class Song {
 	 * @param endTime time to finish
 	 */
 	public void makeMyFFT(int startTime, int endTime){
-		this.startTime=startTime;
-		this.endTime=endTime;
+		if (updateFFT){
+			this.startTime=startTime;
+			this.endTime=endTime;
 		
-		double chunks=(endTime-startTime)/20000.0;
-		System.out.println("Sampling FFT");
-		calculateSampleFFT();
+			double chunks=(endTime-startTime)/20000.0;
+			System.out.println("Sampling FFT");
+			calculateSampleFFT();
 
-		System.out.println("Chunky FFT");
-		chunkyFFT(chunks);
-		System.out.println("Done FFT");
+			System.out.println("Chunky FFT");
+			chunkyFFT(chunks);
+			System.out.println("Done FFT");
 		/*
 		int pframe=frame;
 		float[][]o1=new float[ny][anx];
@@ -1805,24 +1817,24 @@ public class Song {
 			}
 		}
 		*/
-		System.out.println("Dyn Equal");
-		if (dynEqual>0){
-			dynamicEqualizer();
-		}
-		System.out.println("Dyn Range");
-		dynamicRange();
+			System.out.println("Dyn Equal");
+			if (dynEqual>0){
+				dynamicEqualizer();
+			}
+			System.out.println("Dyn Range");
+			dynamicRange();
 		//denoiser();
 		//float maxCh=10f;
 		//out=medianFilterXD(10, 0.45f);
-		Matrix2DOperations m2o=new Matrix2DOperations();
+			Matrix2DOperations m2o=new Matrix2DOperations();
 		
-		if (noiseRemoval>0){
-			out=m2o.medianFilterNR(noiseLength1, 0.25f, noiseRemoval, out, 0);
-			out=m2o.medianFilterNR1(noiseLength2, 0.75f, 0, out, 0);
-		}
+			if (noiseRemoval>0){
+				out=m2o.medianFilterNR(noiseLength1, 0.25f, noiseRemoval, out, 0);
+				out=m2o.medianFilterNR1(noiseLength2, 0.75f, 0, out, 0);
+			}
 		//out=m2o.accentuateLines(out, 2, 1);
-		System.out.println("Dereverb");
-		if (echoComp>0){
+			System.out.println("Dereverb");
+			if (echoComp>0){
 			
 			
 			
@@ -1836,26 +1848,27 @@ public class Song {
 			//out=m2o.matrixMax(out1, out2);
 			//out=m2o.matrixMax(out2, out3);
 			//out=out2;
-			int noisePasses=1;
+				int noisePasses=1;
 			
 			//float[][] ed=m2o.edgeDetection(1, false, out);
 			//out=m2o.fillDetects(out, ed, 15, 0, 1);
 			
 			
-			for (int i=0; i<noisePasses; i++){
-				float[][] o=echoAverager2();
-				out=m2o.matrixSubtract(out, o);
+				for (int i=0; i<noisePasses; i++){
+					float[][] o=echoAverager2();
+					out=m2o.matrixSubtract(out, o);
 				//out=m2o.matrixSubSameMax(out, o);
 				//echoAverager();
-			}
+				}
 			
 			
 			
 			//out=m2o.medianFilterNR(20, 0.25f, 10, out, 0);
+			}
+			System.out.println("Equalize");
+			equalize();	
+			System.out.println("FInished");
 		}
-		System.out.println("Equalize");
-		equalize();	
-		System.out.println("FInished");
 	}
 	
 	/**
@@ -1961,7 +1974,7 @@ public class Song {
 		filtu=makeFilterBank(0.9*(sampRate/2.0), 0);
 		dy=sampRate/(framePad+0.0);
 		dx=timeStep;
-		
+		System.out.println(songID+" "+name);
 		overallSize=(rawData.length/(frameSize));
 		overallLength=(int)Math.round(overallSize/(sampRate*0.001));
 		
@@ -1986,10 +1999,12 @@ public class Song {
 		double start=0;
 		anx=0;
 		while (start+frame<dist*step+frame){start+=step; anx++;}
-		out=null;
-		out1=null;
-		out=new float[ny][anx];
-		out1=new float[ny][anx];
+		if (updateFFT){
+			out=null;
+			out1=null;
+			out=new float[ny][anx];
+			out1=new float[ny][anx];
+		}
 		System.out.println("out dims: "+ny+" "+anx);
 	}
 	

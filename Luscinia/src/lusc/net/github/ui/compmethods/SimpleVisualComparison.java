@@ -33,7 +33,7 @@ public class SimpleVisualComparison extends JPanel implements PropertyChangeList
 	private static final long serialVersionUID = 7325278160764952259L;
 	LinkedList repertoireList;
 	SpectrPane s1, s2;
-	Song song1, song2;
+	Song song2;
 	boolean updateable=true;
 	boolean started=true;
 	boolean fitOnScreen=true;
@@ -83,8 +83,9 @@ public class SimpleVisualComparison extends JPanel implements PropertyChangeList
 	//public SimpleVisualComparison(SongGroup sg, int sckey, boolean fitOnScreen, AnalysisChoose ac){
 	public SimpleVisualComparison(AnalysisGroup sg, int sckey, boolean fitOnScreen, AnalysisChoose ac){
 		this.sg=sg;
+		sg.checkAndLoadRawData();
 		songs=sg.getSongs();
-		this.dbc=dbc;
+		this.dbc=sg.getDBC();
 		this.sckey=sckey;
 		this.fitOnScreen=fitOnScreen;
 		this.ac=ac;
@@ -267,16 +268,16 @@ public class SimpleVisualComparison extends JPanel implements PropertyChangeList
 		cycle--;
 		LinkedList holder=(LinkedList)repertoireList.get(repertoireList.size()-cycle-1);
 		if (beginning){
-			Song song=(Song)holder.get(0);
-			song.clearUp();
+			//Song song=(Song)holder.get(0);
+			//song.clearUp();
 			holder.addFirst(song2);
 		}
 		else{
-			song2.clearUp();
+			//song2.clearUp();
 			holder.addLast(song2);
 		}
-		repertoireList.remove(cycle);
-		repertoireList.add(cycle, holder);
+		//repertoireList.remove(cycle);
+		//repertoireList.add(cycle, holder);
 		song2=null;
 		sg.checkAndLoadRawData(place);
 		song2=songs[place];
@@ -295,22 +296,31 @@ public class SimpleVisualComparison extends JPanel implements PropertyChangeList
 		listener=true;
 	}
 	
+	public Song getCurrentSong(){
+		int c=cycle-1;
+		LinkedList holder=(LinkedList)repertoireList.get(repertoireList.size()-c-1);
+		Song song1=(Song)holder.get(0);
+		return (song1);
+	}
+	
 	public void getNextPair1(boolean updateType){
 
 		listener=false;
 		if (cycle==repertoireList.size()){cycle=0;}
-		if (song1!=null){song1.setOut(null);}
+		//if (song1!=null){song1.setOut(null);}
 		LinkedList holder=(LinkedList)repertoireList.get(repertoireList.size()-cycle-1);
 		cycle++;
-		song1=null;
-		song1=(Song)holder.get(0);
+		//song1=null;
+		Song song1=(Song)holder.get(0);
+		
 		song1.setFFTParameters();
-
-		if (updateType){setValues1();}
-		else{setValues2();}
-
+		if (song1.getOut()!=null){song1.setUpdateFFT(false);}
 		s1.relaunch(song1, false, true);
+		song1.setUpdateFFT(true);
 		s1.setPreferredSize(new Dimension(s1.getNnx(), s1.getNny()));
+		
+		if (updateType){setValues1();}
+		else{setValues2();}	
 		position.setText((cycle)+" of "+repertoireList.size());
 		listener=true;
 	}
@@ -319,10 +329,10 @@ public class SimpleVisualComparison extends JPanel implements PropertyChangeList
 		listener=false;
 		cycle=0;
 		LinkedList holder=new LinkedList();
-		song2.clearUp();
+		//song2.clearUp();
 		holder.add(song2);
 		repertoireList.add(holder);
-		song2=null;
+		//song2=null;
 		sg.checkAndLoadRawData(place);
 		song2=songs[place];
 
@@ -356,10 +366,10 @@ public class SimpleVisualComparison extends JPanel implements PropertyChangeList
 			int p=1;
 			for (int i=0; i<repertoireList.size(); i++){
 				LinkedList holder=(LinkedList)repertoireList.get(i);
-				song1=(Song)holder.get(0);
+				Song song1=(Song)holder.get(0);
 				if (holder.size()>1){
 					for (int j=1; j<holder.size(); j++){
-						song2=(Song)holder.get(j);
+						Song song2=(Song)holder.get(j);
 						dbc.writeToDataBase(s+"'"+userName+"'"+b+song1.getSongID()+b+song2.getSongID()+b+p+b+1+b+sckey+t);
 					}
 				}
@@ -374,13 +384,13 @@ public class SimpleVisualComparison extends JPanel implements PropertyChangeList
 	public void actionPerformed(ActionEvent e) {
 		Object source = e.getSource();
 		if (source==next){
-			if (progress==total){
-				saveAndQuit();
-			}
-			else{
-				progressLabel="Simple Visual Comparison - Status: "+progress+" of "+total+" ";
-				getNextPair1(false);
-			}
+			//if (progress==total){
+				//saveAndQuit();
+			//}
+			//else{
+			progressLabel="Simple Visual Comparison - Status: "+progress+" of "+total+" ";
+			getNextPair1(false);
+			//}
 		}
 		if (source==newType){
 			if (progress==total){
@@ -414,6 +424,12 @@ public class SimpleVisualComparison extends JPanel implements PropertyChangeList
 			}
 		}
 		if ((listener)&&(source==play1)){
+			
+			LinkedList holder=(LinkedList)repertoireList.get(repertoireList.size()-cycle-1);
+			cycle++;
+			//song1=null;
+			Song song1=getCurrentSong();
+			
 			song1.playSound(0, song1.getRawDataLength());
 		}
 		if ((listener)&&(source==play2)){
@@ -432,6 +448,7 @@ public class SimpleVisualComparison extends JPanel implements PropertyChangeList
 				double s = ((Number)dynRange1.getValue()).doubleValue();
 				if (s<=0){s=0.00001;}
 				dynRange1.setValue(new Double(s));
+				Song song1=getCurrentSong();
 				song1.setDynRange(s);
 			}
 			if (source==echoRemoval1){
@@ -439,22 +456,26 @@ public class SimpleVisualComparison extends JPanel implements PropertyChangeList
 				if (s<0){s=0;}
 				if (s>1000){s=1000;}
 				echoRemoval1.setValue(new Double(s));
+				Song song1=getCurrentSong();
 				song1.setEchoComp(s);
 			}
 			if (source==echoTail1){
 				int s = (int)((Number)echoTail1.getValue()).doubleValue();
 				if (s<0){s=0;}
 				echoTail1.setValue(new Double(s));
+				Song song1=getCurrentSong();
 				song1.setEchoRange(s);
 			}
 			if (source==dynEq1){
 				int te = ((Number)dynEq1.getValue()).intValue();
 				if (te<0){te=0;}
+				Song song1=getCurrentSong();
 				song1.setDynEqual(te);
 				dynEq1.setValue(new Double(te));
 			}
 			if (source==filterCutOff1){
 				double te = ((Number)filterCutOff1.getValue()).doubleValue();
+				Song song1=getCurrentSong();
 				if (te<0){te=0;}
 				if (te>song1.getMaxF()){te=song1.getMaxF();}
 				song1.setFrequencyCutOff(te);
@@ -513,6 +534,7 @@ public class SimpleVisualComparison extends JPanel implements PropertyChangeList
 	}
 	
 	public void setValues1(){
+		Song song1=getCurrentSong();
 		dynRange1.setValue(new Double(song1.getDynRange()));
 		dynEq1.setValue(new Double(song1.getDynEqual()));
 		echoRemoval1.setValue(new Double(song1.getEchoComp()));
@@ -527,6 +549,7 @@ public class SimpleVisualComparison extends JPanel implements PropertyChangeList
 	}
 	
 	public void setValues2(){
+		Song song1=getCurrentSong();
 		double s = ((Number)dynRange1.getValue()).doubleValue();
 		if (s<=0){s=0.00001;}
 		dynRange1.setValue(new Double(s));

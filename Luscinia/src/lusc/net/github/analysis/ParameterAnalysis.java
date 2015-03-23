@@ -8,13 +8,34 @@ public class ParameterAnalysis {
 	Song[] songs;
 	int eleNumber=0;
 	double[][] dataSum;
+	boolean[][] parameterMatrix;
+	boolean byRow=false;
+	boolean logFrequencies=false;
+	boolean logTime=false;
+	
 	
 	public ParameterAnalysis(Song[] songs, int eleNumber){
 		this.songs=songs;
 		this.eleNumber=eleNumber;
 	}
 	
-	public void calculateSummaries(boolean[][] parameterMatrix){
+	public void setMatrix(boolean[][] matrix){
+		this.parameterMatrix=matrix;
+	}
+	
+	public void setByRow(boolean byRow){
+		this.byRow=byRow;
+	}
+	
+	public void setLogFrequencies(boolean logFrequencies){
+		this.logFrequencies=logFrequencies;
+	}
+	
+	public void setLogTime(boolean logTime){
+		this.logTime=logTime;
+	}
+	
+	public void calculateSummaries(){
 		
 		int numParams=0;
 		for (int i=0; i<parameterMatrix.length; i++){
@@ -35,15 +56,30 @@ public class ParameterAnalysis {
 				int y=0;
 				for (int a=0; a<14; a++){
 					if (parameterMatrix[0][a]){
-						dataSum[x][y]=measu[4][a];
+						if ((a<4)&&logFrequencies){
+							dataSum[x][y]=Math.log(measu[4][a]);
+						}
+						else{
+							dataSum[x][y]=measu[4][a];
+						}
 						y++;
 					}
 					if (parameterMatrix[1][a]){
-						dataSum[x][y]=measu[0][a];
+						if ((a<4)&&logFrequencies){
+							dataSum[x][y]=Math.log(measu[0][a]);
+						}
+						else{
+							dataSum[x][y]=measu[0][a];
+						}
 						y++;
 					}
 					if (parameterMatrix[2][a]){
-						dataSum[x][y]=measu[1][a];
+						if ((a<4)&&logFrequencies){
+							dataSum[x][y]=Math.log(measu[1][a]);
+						}
+						else{
+							dataSum[x][y]=measu[1][a];
+						}
 						y++;
 					}
 					if (parameterMatrix[3][a]){
@@ -55,22 +91,39 @@ public class ParameterAnalysis {
 						y++;
 					}
 					if (parameterMatrix[5][a]){
-						dataSum[x][y]=measu[5][a];
+						if ((a<4)&&logFrequencies){
+							dataSum[x][y]=Math.log(measu[5][a]);
+						}
+						else{
+							dataSum[x][y]=measu[5][a];
+						}
 						y++;
 					}
 					if (parameterMatrix[6][a]){
-						dataSum[x][y]=measu[measu.length-1][a];
+						if ((a<4)&&logFrequencies){
+							dataSum[x][y]=Math.log(measu[measu.length-1][a]);
+						}
+						else{
+							dataSum[x][y]=measu[measu.length-1][a];
+						}
 						y++;
 					}
 					if (parameterMatrix[7][a]){
 						double[] temp=new double[measu.length-5];
 						for (int k=0; k<temp.length; k++){temp[k]=measu[k+5][a];}
 						dataSum[x][y]=bs.calculateSD(temp, true);
+						if ((a<4)&&logFrequencies){
+							dataSum[x][y]=Math.log(dataSum[x][y]);
+						}
 						y++;
 					}
 				}
 				if (parameterMatrix[0][14]){
-					dataSum[x][y]=Math.log(ele.getLength()*ele.getTimeStep());
+					dataSum[x][y]=ele.getLength()*ele.getTimeStep();
+					if (logTime){
+						dataSum[x][y]=Math.log(dataSum[x][y]);
+					}
+					
 					y++;
 				}
 				if (parameterMatrix[0][15]){
@@ -84,7 +137,7 @@ public class ParameterAnalysis {
 		}
 	}	
 	
-	public float[][] calculateDistancesFromParameters(boolean[][] parameterMatrix, boolean normalizePerRow){
+	public float[][] calculateDistancesFromParameters(){
 
 		int numParams=0;
 		int[] countPerType=new int[parameterMatrix[0].length];
@@ -98,12 +151,13 @@ public class ParameterAnalysis {
 		}
 		
 		double adjustCount[]=new double[numParams];
-		if (normalizePerRow){
+		if (byRow){
 			numParams=0;
-			for (int i=0; i<parameterMatrix.length; i++){
-				for (int j=0; j<parameterMatrix[i].length; j++){
-					if (parameterMatrix[i][j]){
-						adjustCount[numParams]=countPerType[j];
+			for (int i=0; i<parameterMatrix[0].length; i++){
+				for (int j=0; j<parameterMatrix.length; j++){
+					if (parameterMatrix[j][i]){
+						adjustCount[numParams]=countPerType[i];
+						System.out.println(j+" "+adjustCount[numParams]);
 						numParams++;
 					}
 				}
@@ -124,7 +178,7 @@ public class ParameterAnalysis {
 		double means[]=new double[numParams];
 		
 		for (int i=0; i<eleNumber; i++){
-			for (int j=0; j<numParams; j++){	
+			for (int j=0; j<numParams; j++){
 				means[j]+=dataSum[i][j];
 			}
 		}
@@ -137,7 +191,7 @@ public class ParameterAnalysis {
 		double[] sds=new double[numParams];
 		double a,b;
 		for (int i=0; i<eleNumber; i++){
-			for (int j=0; j<numParams; j++){	
+			for (int j=0; j<numParams; j++){
 				a=dataSum[i][j]-means[j];
 				sds[j]+=a*a;
 			}
@@ -145,7 +199,7 @@ public class ParameterAnalysis {
 		
 		for (int i=0; i<numParams; i++){
 			sds[i]=1/(adjustCount[i]*Math.sqrt(sds[i]/(eleNumber-1.0)));
-			System.out.println("SDS: "+i+" "+sds[i]);
+			System.out.println("SDS: "+i+" "+sds[i]+" "+adjustCount[i]);
 		}
 		
 		

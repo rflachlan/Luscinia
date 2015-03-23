@@ -392,6 +392,10 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 		return currentMaxX;
 	}
 	
+	public Song getSong(){
+		return song;
+	}
+	
 	
 	public void setLimitedOptions(int spectHeight, int width){
 		viewParameters[1]=false;
