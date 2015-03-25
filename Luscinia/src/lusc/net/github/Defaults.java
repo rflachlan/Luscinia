@@ -459,7 +459,7 @@ public class Defaults {
 				setDoubleProperty("dtwpa"+i, pv[i], 1000);
 			}
 		}
-		
+		/*
 		boolean w=sg.getWeightByAmp();
 		if (w){
 			setIntProperty("dtwwba", 1);
@@ -469,6 +469,7 @@ public class Defaults {
 		}
 		int st=sg.getStitchSyllables();
 		setIntProperty("dtwsti", st);
+		*/
 		/*
 		if (sg.stitchSyllables){
 			setIntProperty("dtwsti", 1);
@@ -477,6 +478,7 @@ public class Defaults {
 			setIntProperty("dtwsti", 0);
 		}
 		*/
+		/*
 		boolean lf=sg.getLogFrequencies();
 		if (lf){
 			setIntProperty("dtwlf", 1);
@@ -484,12 +486,23 @@ public class Defaults {
 		else{
 			setIntProperty("dtwlf", 0);
 		}
+		*/
+		
+		setBooleanProperty("dtwWBAX", sg.getWeightByAmp());
+		setBooleanProperty("dtwLOGF", sg.getLogFrequencies());
+		setBooleanProperty("dtwnsd", sg.getWeightBySD());
+		setBooleanProperty("dtwintp", sg.getInterpolate());
+		setBooleanProperty("dtwdyn", sg.getDynamicWarping());
+		setIntProperty("dtwSTISYL", sg.getStitchSyllables());
+		setIntProperty("dtwALIGN", sg.getAlignmentPoints());
+		
 		setDoubleProperty("dtwmrf", sg.getMainReductionFactor(), 1000);
 		setDoubleProperty("dtwsdr", sg.getSDRatio(), 1000);
 		setDoubleProperty("dtwstp", sg.getStitchPunishment(), 1000);
 		setDoubleProperty("dtwalc", sg.getAlignmentCost(), 1000);
 		setIntProperty("dtwmpo", sg.getMinPoints());
 		setDoubleProperty("dtwsrw", sg.getSyllableRepetitionWeighting(), 1000);
+		setDoubleProperty("dtwmaxw", sg.getMaximumWarp(), 1000);
 	}
 	
 	/**
@@ -509,6 +522,7 @@ public class Defaults {
 			}
 		}
 		
+		/*
 		int a=getIntProperty("dtwwba", 0);
 		if (a==0){
 			sg.setWeightByAmp(false);
@@ -528,13 +542,23 @@ public class Defaults {
 		else{
 			sg.setLogFrequencies(true);
 		}
+		*/
 		
+		sg.setWeightByAmp(getBooleanProperty("dtwWBAX", true)); 
+		sg.setLogFrequencies(getBooleanProperty("dtwLOGF", true));
+		sg.setWeightBySD(getBooleanProperty("dtwnsd", true));
+		sg.setInterpolate(getBooleanProperty("dtwintp", true));
+		sg.setDynamicWarping(getBooleanProperty("dtwdyn", true));
+		sg.setStitchSyllables(getIntProperty("dtwSTISYL", 1));
+		sg.setAlignmentPoints(getIntProperty("dtwALIGN", 1));
+				
 		sg.setMainReductionFactor(getDoubleProperty("dtwmrf", 1000, 1));
 		sg.setMinPoints(getIntProperty("dtwmpo", 10));
 		sg.setSDRatio(getDoubleProperty("dtwsdr", 1000, 0.5));
 		sg.setStitchPunishment(getDoubleProperty("dtwstp", 1000, 150));
 		sg.setAlignmentCost(getDoubleProperty("dtwalc", 1000, 150));
 		sg.setSyllableRepetitionWeighting(getDoubleProperty("dtwsrw", 1000, 0));
+		sg.setMaximumWarp(getDoubleProperty("dtwmaxw", 1000, 0));
 	}
 	
 	/**

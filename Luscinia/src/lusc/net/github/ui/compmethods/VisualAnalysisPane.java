@@ -61,10 +61,13 @@ public class VisualAnalysisPane extends JPanel {
 		leftPanel.add(allowVis);
 		leftPanel.add(allowSound);
 		leftPanel.add(fitSignal);
-		leftPanel.add(subScale);
+		if (!isSimple){
+			leftPanel.add(subScale);
+		}
 		
+		JPanel mainPanel=new JPanel(new BorderLayout());
 		
-		this.add(leftPanel, BorderLayout.LINE_START);
+		mainPanel.add(leftPanel, BorderLayout.WEST);
 		
 		JPanel rightPanel=new JPanel(new GridLayout(0,1));
 		rightPanel.setBorder(BorderFactory.createTitledBorder("Compare or Analyze"));
@@ -75,7 +78,8 @@ public class VisualAnalysisPane extends JPanel {
 		bg.add(doVisualComparison);
 		bg.add(analyzeResults);
 		
-		this.add(rightPanel, BorderLayout.LINE_END);
+		mainPanel.add(rightPanel, BorderLayout.EAST);
+		this.add(mainPanel, BorderLayout.CENTER);
 		
 	}
 	
@@ -85,6 +89,31 @@ public class VisualAnalysisPane extends JPanel {
 	
 	public boolean getFitSignalSelected(){
 		return fitSignal.isSelected();
+	}
+	
+	public boolean getAllowVis(){
+		return allowVis.isSelected();
+	}
+	
+	public boolean getAllowSound(){
+		return allowSound.isSelected();
+	}
+	
+	
+	public boolean getRandom(){
+		return random.isSelected();
+	}
+	
+	public boolean getSyllable(){
+		return syllable.isSelected();
+	}
+	
+	public boolean getSong(){
+		return song.isSelected();
+	}
+	
+	public int getLevels(){
+		return choiceScaleInt[choiceScale.getSelectedIndex()];
 	}
 	
 	public void exportComplex(int schemeID, DataBaseController dbc, Defaults defaults){

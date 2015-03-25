@@ -8,6 +8,8 @@ import lusc.net.github.ui.compmethods.DTWPanel;
 
 public class PrepareDTW {
 	
+	double[] normReal;
+	double meanSDTemp=0;
 	
 	int numParams=0;
 	int numTempParams=0;
@@ -26,8 +28,11 @@ public class PrepareDTW {
 	
 	boolean weightByAmp=false;
 	boolean logFrequencies=false;
+	boolean normaliseWithSDs=false;
 	int stitchSyllables=0;
+	int alignmentPoints=3;
 	double mainReductionFactor=0.25;
+	double maximumWarp=0.25;
 	int minPoints=5;
 	double minVar=0.2;
 	double sdRatio=0.5;
@@ -43,10 +48,15 @@ public class PrepareDTW {
 		weightByAmp=dtw.getWeightByAmp();
 		stitchSyllables=dtw.getStitchSyllables();
 		logFrequencies=dtw.getLogFrequencies();
+		normaliseWithSDs=dtw.getWeightBySD();
 		mainReductionFactor=dtw.getMainReductionFactor();
 		offsetRemoval=dtw.getOffsetRemoval();
 		sdRatio=dtw.getSDRatio();
 		minPoints=dtw.getMinPoints();
+		alignmentPoints=dtw.getAlignmentPoints();
+		interpolateWarp=dtw.getInterpolate();
+		dynamicWarp=dtw.getDynamicWarping();
+		maximumWarp=dtw.getMaximumWarp();
 	}
 	
 	
@@ -58,12 +68,28 @@ public class PrepareDTW {
 		return weightByAmp;
 	}
 	
+	public boolean getNormaliseWithSds(){
+		return normaliseWithSDs;
+	}
+	
 	public int getStitchSyllables(){
 		return stitchSyllables;
 	}
 	
+	public int getAlignmentPoints(){
+		return alignmentPoints;
+	}
+	
 	public boolean getLogFrequencies(){
 		return logFrequencies;
+	}
+	
+	public boolean getInterpolateWarp(){
+		return interpolateWarp;
+	}
+	
+	public boolean getDynamicWarp(){
+		return dynamicWarp;
 	}
 	
 	public double getMainReductionFactor(){
@@ -76,6 +102,10 @@ public class PrepareDTW {
 	
 	public double getSDRatio(){
 		return sdRatio;
+	}
+	
+	public double getMaximumWarp(){
+		return maximumWarp;
 	}
 	
 	public int getMinPoints(){
@@ -394,12 +424,16 @@ public class PrepareDTW {
 	
 	public void prepareToNormalize(){
 		sdReal=normalize(data);
-		sdRealTemp=normalize(dataTemp);
+		if (numTempParams>0){
+			sdRealTemp=normalize(dataTemp);
+		}
 	}
 	
 	public void prepareToNormalizeStitch(){
 		sdRealStitch=normalize(dataSyls);
-		sdRealStitchTemp=normalize(dataSylsTemp);
+		if (numTempParams>0){
+			sdRealStitchTemp=normalize(dataSylsTemp);
+		}	
 	}
 	
 	public double normalize(double[][] data){
@@ -481,16 +515,20 @@ public class PrepareDTW {
 		int ncores=Runtime.getRuntime().availableProcessors();
 		
 		int eleSize=data.length;
+		if(stitch){
+			eleSize=dataSyls.length;
+		}
+		
 		
 		int[][] elpos=null;
-		double[][][] data1=data;
-		double[][] data2=dataTemp;
-		double[][][] data3=dataExtra;
+		//double[][][] data1=data;
+		//double[][] data2=dataTemp;
+		//double[][][] data3=dataExtra;
 		if(stitch){
 			elpos=elementPos;
-			data1=dataSyls;
-			data2=dataSylsTemp;
-			data3=dataSylsExtra;
+			//data1=dataSyls;
+			//data2=dataSylsTemp;
+			//data3=dataSylsExtra;
 			System.out.println("STITCHING ENABLED");
 		}
 		
@@ -572,6 +610,48 @@ public class PrepareDTW {
 				
 			}
 		}
+		
+		
+		double totweight=0;
+		for (int i=0; i<validParameters.length; i++){
+			totweight+=validParameters[i];
+		}
+		totweight+=validTempParameters;
+		
+		int p=0;
+		if (stitch){p=1;}
+		
+		double[][] dataT=getDataT(p);
+		double sdsT=getSDTemp(p);
+		
+		double sdT=0;
+		if (numTempParams>0){
+			for (int i=0; i<eleSize; i++){
+				for (int j=0; j<eleSize; j++){
+					double sdT2=0;
+					sdT2+=Math.max(dataT[i][dataT[i].length-1]-dataT[i][0],dataT[j][dataT[j].length-1]-dataT[j][0]);
+					sdT2=sdT2*sdRatio+(1-sdRatio)*sdsT;
+					sdT2=validTempParameters/(totweight*sdT2);
+					sdT+=sdT2;
+				}
+			}
+			sdT/=(eleSize*eleSize)*1.0;
+		}
+		meanSDTemp=sdT;
+		normReal=new double[sdReal.length];
+		
+		double[] sdR=getSD(p);
+		
+		for (int i=0; i<sdReal.length; i++){
+			normReal[i]=validParameters[i]/(totweight*sdR[i]);
+		}
+		
+		System.out.println("ACTUAL COMPARATORS "+sdT);
+		for (int i=0; i<sdReal.length; i++){
+			System.out.println(normReal[i]);
+		}
+		
+		
 		return scoresH;	
 	}
 	

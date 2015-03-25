@@ -40,9 +40,9 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 	JButton save=new JButton("Save to database");
 	JButton saveSound=new JButton("Save sound");
 	JButton saveImage=new JButton("Save image");
-	JButton playAll=new JButton("Play all");
-	JButton playScreen=new JButton("Play screen");
-	JButton stop=new JButton("Stop");
+	JButton playAll=new JButton(" \u25B6 all ");
+	JButton playScreen=new JButton("\u25B6 screen");
+	JButton stop=new JButton("\u25FC  ");
 	JButton redo=new JButton("Re-do");
 	JButton undo=new JButton("Undo");
 	JButton automatic=new JButton("Select All");

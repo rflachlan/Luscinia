@@ -37,10 +37,14 @@ public class SimpleVisualComparison extends JPanel implements PropertyChangeList
 	boolean updateable=true;
 	boolean started=true;
 	boolean fitOnScreen=true;
+	boolean allowSound=true;
+	boolean allowVis=true;
+	boolean randomOrder=true;
 	DataBaseController dbc;
 	int progress=0;
 	int total;
 	int place=0;
+	int[] placeInd;
 	int spectHeight=0;
 	Dimension d=new Dimension(800,600);
 
@@ -79,15 +83,22 @@ public class SimpleVisualComparison extends JPanel implements PropertyChangeList
 	//SongGroup sg;
 	AnalysisGroup sg;
 	Song[] songs;
+	VisualAnalysisPane vap;
+	
+	Random random=new Random(System.currentTimeMillis());
 	
 	//public SimpleVisualComparison(SongGroup sg, int sckey, boolean fitOnScreen, AnalysisChoose ac){
-	public SimpleVisualComparison(AnalysisGroup sg, int sckey, boolean fitOnScreen, AnalysisChoose ac){
+	public SimpleVisualComparison(AnalysisGroup sg, int sckey, VisualAnalysisPane vap, AnalysisChoose ac){
 		this.sg=sg;
 		sg.checkAndLoadRawData();
 		songs=sg.getSongs();
 		this.dbc=sg.getDBC();
 		this.sckey=sckey;
-		this.fitOnScreen=fitOnScreen;
+		this.vap=vap;
+		this.fitOnScreen=vap.getFitSignalSelected();
+		this.allowSound=vap.getAllowSound();
+		this.allowVis=vap.getAllowVis();
+		this.randomOrder=vap.getRandom();
 		this.ac=ac;
 		num=NumberFormat.getNumberInstance();
 		num.setMaximumFractionDigits(10);
@@ -107,8 +118,19 @@ public class SimpleVisualComparison extends JPanel implements PropertyChangeList
 		contentpane.add(sound1);
 		contentpane.add(sound2);
 		
-		sg.checkAndLoadRawData(place);
-		song2=songs[place];
+		placeInd=new int[songs.length];
+		for (int i=0; i<songs.length; i++){
+			placeInd[i]=i;
+		}
+		for (int i=0; i<songs.length; i++){
+			int p=random.nextInt(songs.length-i);
+			int q=placeInd[p];
+			placeInd[p]=placeInd[i];
+			placeInd[i]=q;
+		}
+		
+		sg.checkAndLoadRawData(placeInd[place]);
+		song2=songs[placeInd[place]];
 		
 		System.out.println("DONE THIS ONE");
 		
@@ -164,7 +186,7 @@ public class SimpleVisualComparison extends JPanel implements PropertyChangeList
 		play2.addActionListener(this);
 		rightPanel.add(play2, BorderLayout.EAST);
 		
-		comparisonPanel.add(rightPanel);
+		if (allowSound){comparisonPanel.add(rightPanel);}
 
 		update1.addActionListener(this);
 		dynRange1=new JFormattedTextField(num);
@@ -279,8 +301,8 @@ public class SimpleVisualComparison extends JPanel implements PropertyChangeList
 		//repertoireList.remove(cycle);
 		//repertoireList.add(cycle, holder);
 		song2=null;
-		sg.checkAndLoadRawData(place);
-		song2=songs[place];
+		sg.checkAndLoadRawData(placeInd[place]);
+		song2=songs[placeInd[place]];
 		
 		place++;
 		
@@ -313,12 +335,14 @@ public class SimpleVisualComparison extends JPanel implements PropertyChangeList
 		//song1=null;
 		Song song1=(Song)holder.get(0);
 		
-		song1.setFFTParameters();
-		if (song1.getOut()!=null){song1.setUpdateFFT(false);}
-		s1.relaunch(song1, false, true);
-		song1.setUpdateFFT(true);
-		s1.setPreferredSize(new Dimension(s1.getNnx(), s1.getNny()));
 		
+		song1.setFFTParameters();
+		if (allowVis){
+			if (song1.getOut()!=null){song1.setUpdateFFT(false);}
+			s1.relaunch(song1, false, true);
+			song1.setUpdateFFT(true);
+			s1.setPreferredSize(new Dimension(s1.getNnx(), s1.getNny()));
+		}
 		if (updateType){setValues1();}
 		else{setValues2();}	
 		position.setText((cycle)+" of "+repertoireList.size());
@@ -333,8 +357,8 @@ public class SimpleVisualComparison extends JPanel implements PropertyChangeList
 		holder.add(song2);
 		repertoireList.add(holder);
 		//song2=null;
-		sg.checkAndLoadRawData(place);
-		song2=songs[place];
+		sg.checkAndLoadRawData(placeInd[place]);
+		song2=songs[placeInd[place]];
 
 		place++;
 		
@@ -345,8 +369,10 @@ public class SimpleVisualComparison extends JPanel implements PropertyChangeList
 		song2.setFFTParameters();
 		if (updateType){setValues1();}
 		else{setValues2();}
-		s2.relaunch(song2, false, true);
-		s2.setPreferredSize(new Dimension(s2.getNnx(), s2.getNny()));
+		if (allowVis){
+			s2.relaunch(song2, false, true);
+			s2.setPreferredSize(new Dimension(s2.getNnx(), s2.getNny()));
+		}
 		progress++;
 		position.setText((cycle)+" of "+repertoireList.size());
 		listener=true;

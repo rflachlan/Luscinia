@@ -52,7 +52,7 @@ public class AnalysisChoose extends JPanel implements ActionListener, ChangeList
 	private static String NEXTSTEP="next";
 	private static String STOPCOMMAND="stop";
 	
-	JRadioButton dtwAnalysis=new JRadioButton("Computer comparison by dynamic-time warping");
+	JRadioButton dtwAnalysis=new JRadioButton("Computer comparison by time warping");
 	JRadioButton parAnalysis=new JRadioButton("Comparison by parameter");
 	JRadioButton visAnalysis=new JRadioButton("Comparison by inspection");
 	JRadioButton dParAnalysis=new JRadioButton("Export parameter statistics to spreadsheet");
@@ -128,7 +128,7 @@ public class AnalysisChoose extends JPanel implements ActionListener, ChangeList
 	}
 		
 	/**
-	 * This constructur requires a database connection, a defaults object and a user
+	 * This constructor requires a database connection, a defaults object and a user
 	 * @param dbc DataBaseController providing a connection to a database
 	 * @param user a database user id
 	 * @param defaults a Defaults object
@@ -482,7 +482,7 @@ public class AnalysisChoose extends JPanel implements ActionListener, ChangeList
 				if (dtwAnalysis.isSelected()){
 					//dtw=new DTWPanel(dbc, sg, true, defaults);
 					dtw=new DTWPanel(dbc, ag, true, defaults);
-					mainPanel.addTab("DTW settings", dtw);
+					mainPanel.addTab("TW settings", dtw);
 					analysisMode=0;
 				}
 				
@@ -562,10 +562,10 @@ public class AnalysisChoose extends JPanel implements ActionListener, ChangeList
 						mainPanel.addTab("Visual Comparison", visComp);
 					}
 					else{
-						boolean fs=vap.getFitSignalSelected();
+						//boolean fs=vap.getFitSignalSelected();
 						int q=cs.getSimpleSchemeKey();
 						//simpVisComp=new SimpleVisualComparison(sg, q, fs, this);
-						simpVisComp=new SimpleVisualComparison(ag, q, fs, this);
+						simpVisComp=new SimpleVisualComparison(ag, q, vap, this);
 						mainPanel.addTab("Simple Visual Comparison", simpVisComp);
 					}
 					mainPanel.setSelectedIndex(3);
