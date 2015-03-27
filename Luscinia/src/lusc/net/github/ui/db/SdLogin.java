@@ -27,7 +27,6 @@ import lusc.net.github.Luscinia;
 import lusc.net.github.db.DbConnection;
 import lusc.net.github.db.DbConnection2;
 import lusc.net.github.db.DbConnection3;
-import lusc.net.github.dump.ArrayListTransferHandler;
 import lusc.net.github.ui.TabType;
 
 public class SdLogin extends TabType implements ActionListener, ListSelectionListener{

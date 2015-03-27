@@ -10,7 +10,7 @@ package lusc.net.github.analysis.syntax;
 import java.util.*;
 
 import lusc.net.github.analysis.BasicStatistics;
-import lusc.net.github.analysis.SongGroup;
+import lusc.net.github.analysis.AnalysisGroup;
 
 public class SyntaxAnalysis {
 
@@ -1090,7 +1090,7 @@ public class SyntaxAnalysis {
 		return placeholder;
 	}
 	
-	public void fixUpTrans(SongGroup sg){
+	public void fixUpTrans(AnalysisGroup sg){
 		int n=sg.getLookUp(3).length;		
 		int n2=n+exceedMax.length;
 		int[][] lookUp2=new int[n2][4];
@@ -1131,13 +1131,13 @@ public class SyntaxAnalysis {
 			}
 		}
 		
-		sg.setLookUp(3, lookUp2);
-		sg.setLabels(3,  label2);
-		sg.setNames(3, names2);
-		sg.setScoresTrans(matrix);
+		//sg.setLookUp(3, lookUp2);
+		//sg.setLabels(3,  label2);
+		//sg.setNames(3, names2);
+		//sg.setScoresTrans(matrix);
 	}
 	
-	public void calcTransMatrix(SongGroup sg){
+	public void calcTransMatrix(AnalysisGroup sg){
 	
 		float[][] si1=new float[n2][];
 		for (int i=0; i<n2; i++){
@@ -1159,8 +1159,8 @@ public class SyntaxAnalysis {
 		}
 		*/
 		
-		sg.setScoresTrans(si1);
-		sg.setLabels(3, transLabels);	
+		//sg.setScoresTrans(si1);
+		//sg.setLabels(3, transLabels);	
 	}
 	
 	public double compareMatrices(float[][] mat1, float[][] mat2){

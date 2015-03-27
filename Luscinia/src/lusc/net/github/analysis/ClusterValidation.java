@@ -686,10 +686,10 @@ public class ClusterValidation {
 	 * @param sg
 	 * @return
 	 */
-	public double[] runCompositionAnalysis(UPGMA upgma, SongGroup sg){
+	public double[] runCompositionAnalysis(UPGMA upgma, AnalysisGroup sg){
 		TreeDat[] dat=upgma.getDat();
 		int[][] pt=getPartitionMembers(dat);
-		int[] counts=sg.getIDCounts();
+		//int[] counts=sg.getIDCounts();
 		
 		double[] results=new double[pt.length];
 		
@@ -698,11 +698,11 @@ public class ClusterValidation {
 				int[][] od=new int[pt[i].length][];
 			
 				for (int j=0; j<pt[i].length; j++){
-					int[] t=sg.getIDLabels(dat[pt[i][j]].child);
-					od[j]=new int[t.length];
-					System.arraycopy(t, 0, od[j], 0, t.length);
+					//int[] t=sg.getIDLabels(dat[pt[i][j]].child);
+					//od[j]=new int[t.length];
+					//System.arraycopy(t, 0, od[j], 0, t.length);
 				}
-				results[i]=compositionAnalysis(od, counts);
+				//results[i]=compositionAnalysis(od, counts);
 				System.out.println("COMPOSITION: "+i+" "+results[i]);
 			}
 		}

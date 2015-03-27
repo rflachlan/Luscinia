@@ -18,7 +18,7 @@ import java.util.*;
 
 import lusc.net.github.Defaults;
 import lusc.net.github.Song;
-import lusc.net.github.analysis.SongGroup;
+import lusc.net.github.analysis.AnalysisGroup;
 
 public class ComparisonScheme extends JPanel implements ActionListener{
 	
@@ -366,9 +366,9 @@ public class ComparisonScheme extends JPanel implements ActionListener{
 	}
 
 	
-	public SongGroup getSongs(){
+	public AnalysisGroup getSongs(){
 
-		SongGroup sg;
+		AnalysisGroup sg;
 		int tabID=tabpane.getSelectedIndex();
 			
 		if (tabID==1){
@@ -409,7 +409,7 @@ public class ComparisonScheme extends JPanel implements ActionListener{
 					compScheme[pair[0]][pair[1]]=true;
 				}
 
-				sg=new SongGroup(songs, compScheme, defaults, ac.dbc);
+				sg=new AnalysisGroup(songs, compScheme, defaults, ac.dbc);
 				if (selectOneSyllable1.isSelected()){
 					sg.pickJustOneExamplePerPhrase();
 				}
@@ -438,7 +438,7 @@ public class ComparisonScheme extends JPanel implements ActionListener{
 				songs=(Song[])songList.toArray(songs);
 				
 				songList=null;
-				sg=new SongGroup(songs, defaults, ac.dbc);
+				sg=new AnalysisGroup(songs, defaults, ac.dbc);
 				if (selectOneSyllable2.isSelected()){
 					sg.pickJustOneExamplePerPhrase();
 				}

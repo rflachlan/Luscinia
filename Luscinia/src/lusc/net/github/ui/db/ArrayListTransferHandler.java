@@ -1,4 +1,4 @@
-package lusc.net.github.dump;
+package lusc.net.github.ui.db;
 /*
  * ArrayListTransferHandler.java is used by the 1.4
  * DragListDemo.java example.

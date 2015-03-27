@@ -34,7 +34,7 @@ import lusc.net.github.ui.db.DatabaseView;
 import lusc.net.github.ui.db.SdLogin;
 
 //import com.apple.eawt.event.*;
-import com.apple.eawt.*;
+//import com.apple.eawt.*;
 
 /**
  * This is the main class for the application, and contains the main method entry point.
@@ -42,7 +42,8 @@ import com.apple.eawt.*;
  * @author Rob
  *
  */
-public class Luscinia implements WindowListener, ActionListener, ChangeListener, OpenFilesHandler {
+//public class Luscinia implements WindowListener, ActionListener, ChangeListener, OpenFilesHandler {
+public class Luscinia implements WindowListener, ActionListener, ChangeListener{
 
 	//protected ResourceBundle rsc;
 	//SdLogin login;
@@ -60,8 +61,8 @@ public class Luscinia implements WindowListener, ActionListener, ChangeListener,
 	private static String ADD_TAB = "add tab";
 	private static String REMOVE_TAB = "remove tab";
 	
-	String lversion="2.25.03.15.01";
-	String dversion="2.25.03.15.01";
+	String lversion="2.27.03.15.01";
+	String dversion="2.27.03.15.01";
 	
 	
 	
@@ -112,13 +113,13 @@ public class Luscinia implements WindowListener, ActionListener, ChangeListener,
         frame = new JFrame("Luscinia");
         frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		frame.addWindowListener(this);
-		try{
-			Application app=Application.getApplication();
-			app.setOpenFileHandler(this);
-		}
-		catch(Exception e){
-			System.out.println("Non-apple OS");
-		}
+		//try{
+			//Application app=Application.getApplication();
+			//app.setOpenFileHandler(this);
+		//}
+		//catch(Exception e){
+			//System.out.println("Non-apple OS");
+		//}
 		Container container=frame.getContentPane();
 		JMenuBar menuBar=new JMenuBar();
 		JMenu menu=new JMenu("Luscinia");
@@ -386,6 +387,7 @@ public class Luscinia implements WindowListener, ActionListener, ChangeListener,
 	/* (non-Javadoc)
 	 * @see com.apple.eawt.OpenFilesHandler#openFiles(com.apple.eawt.AppEvent.OpenFilesEvent)
 	 */
+	/*
 	public void openFiles(AppEvent.OpenFilesEvent e) {
 		List<File> files=e.getFiles();
 		File f=files.get(0);
@@ -412,6 +414,7 @@ public class Luscinia implements WindowListener, ActionListener, ChangeListener,
 		}
 		
 	}
+	*/
 	
 	/* (non-Javadoc)
 	 * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)

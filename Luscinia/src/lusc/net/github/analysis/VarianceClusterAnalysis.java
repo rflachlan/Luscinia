@@ -22,12 +22,12 @@ public class VarianceClusterAnalysis {
 	Random random=new Random(System.currentTimeMillis());
 	
 	
-	public VarianceClusterAnalysis (float[][] data, float[][] vec, SongGroup sg, int unitType){
+	public VarianceClusterAnalysis (float[][] data, float[][] vec, AnalysisGroup sg, int unitType){
 		
 		int n=data.length;
 		int[] syllPopLabels=sg.getPopulationListArray(unitType);
-		int[] individualLabels=sg.getIndividualListArray(unitType);		
-				
+		//int[] individualLabels=sg.getIndividualListArray(unitType);		
+		int[] individualLabels=null;	
 		int numPops=sg.populations.length;
 		
 		double[][] distToCentroid=new double[n][numK+1];
