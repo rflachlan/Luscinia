@@ -277,7 +277,8 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 			updateProgressLabel("drawing distance matrix");
 			for (int i=0; i<levels.length; i++){
 				if (levels[i]){
-					dp[i]=new DisplaySimilarity(comps[i].getDiss(), i, sg, dbc, xd, yd, defaults);
+					//dp[i]=new DisplaySimilarity(comps[i].getDiss(), i, sg, dbc, xd, yd, defaults);
+					dp[i]=new DisplaySimilarity(comps[i], sg.getSSB(), dbc, xd, yd, defaults);
 					//MRPP mrpp=new MRPP(sg.scoresSyll, popId);
 				}
 			}

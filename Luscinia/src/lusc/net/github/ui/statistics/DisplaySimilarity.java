@@ -20,6 +20,7 @@ import lusc.net.github.Defaults;
 import lusc.net.github.Song;
 //import lusc.net.github.analysis.SongGroup;
 import lusc.net.github.analysis.AnalysisGroup;
+import lusc.net.github.analysis.ComparisonResults;
 import lusc.net.github.db.DataBaseController;
 import lusc.net.github.ui.SaveDocument;
 import lusc.net.github.ui.SaveImage;
@@ -30,7 +31,8 @@ public class DisplaySimilarity extends DisplayPane implements MouseInputListener
 	Defaults defaults;
 	BufferedImage imf;
 	//SongGroup sg;
-	AnalysisGroup sg;
+	//AnalysisGroup sg;
+	ComparisonResults cr;
 	double[][]scores;
 	double score=-1;
 	double unit=1;
@@ -41,15 +43,15 @@ public class DisplaySimilarity extends DisplayPane implements MouseInputListener
 	int height, width, dataType;
 	
 	//public DisplaySimilarity (double[][]scores, int dataType, SongGroup sg, DataBaseController dbc, int width, int height, Defaults defaults){
-	public DisplaySimilarity (double[][]scores, int dataType, AnalysisGroup sg, DataBaseController dbc, int width, int height, Defaults defaults){
-		this.scores=scores;
-		this.sg=sg;
-		ssb=sg.getSSB();
+	public DisplaySimilarity (ComparisonResults cr, SpectrogramSideBar ssb, DataBaseController dbc, int width, int height, Defaults defaults){
+		this.scores=cr.getDiss();
+		this.cr=cr;
+		this.ssb=ssb;
 		this.dbc=dbc;
 		this.height=height;
 		this.width=width;
 		System.out.println("Displaying matrix "+width+" "+height);
-		this.dataType=dataType;
+		this.dataType=cr.getType();
 		this.defaults=defaults;
 		this.addMouseListener(this);
 
@@ -197,12 +199,19 @@ public BufferedImage resizeImage(double ratio){
 		if (readyToWrite){
 			sd.writeString("IndividualName1");
 			sd.writeString("IndividualName2");
-			sd.writeString("Sound1");
-			sd.writeString("Sound2");
+			if (dataType<5){
+				sd.writeString("Sound1");
+				sd.writeString("Sound2");
+			}
+			if (dataType<4){
+				sd.writeString("Unit1");
+				sd.writeString("Unit2");
+			}
+			
 			sd.writeString("DistanceScore");
 			//sd.writeString("GeographicalDistance");
 			sd.writeLine();
-			
+			/*
 			String[] inds=new String[scores.length];
 			String[] sounds=new String[scores.length];
 			
@@ -248,15 +257,25 @@ public BufferedImage resizeImage(double ratio){
 					//}
 					//catch(Exception e){}
 				//}
+			*/
+			
+			String[] individuals=cr.getIndividualNames();
+			Song[] songs=cr.getSongs();
+			int[][] lookUps=cr.getLookUp();
 			
 			for (int i=0; i<scores.length; i++){
-				for (int j=i; j<scores.length; j++){
-					
-					sd.writeString(inds[i]);
-					sd.writeString(inds[j]);
-					sd.writeString(sounds[i]);
-					sd.writeString(sounds[j]);
-					sd.writeDouble(scores[j][i]);
+				for (int j=0; j<i; j++){
+					sd.writeString(songs[lookUps[i][0]].getIndividualName());
+					sd.writeString(songs[lookUps[j][0]].getIndividualName());
+					if (dataType<5){
+						sd.writeString(songs[lookUps[i][0]].getName());
+						sd.writeString(songs[lookUps[j][0]].getName());
+					}
+					if (dataType<4){
+						sd.writeInt((lookUps[i][1]+1));
+						sd.writeInt((lookUps[j][1]+1));
+					}
+					sd.writeDouble(scores[i][j]);
 					//if ((distanceCalculatedX) && (distanceCalculatedY)){sd.writeDouble(dist);}
 					sd.writeLine();
 				}	

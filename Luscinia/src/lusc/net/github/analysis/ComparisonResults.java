@@ -313,6 +313,33 @@ public class ComparisonResults {
 				//eleNumber+=songs[i].getNumElements();
 			}
 		}
+		else if (type==INDIVIDUAL_TYPE){
+			
+			int[] ids=new int[n];
+			int count=0;
+			for (int i=0; i<songs.length; i++){
+				int p=songs[i].getIndividualID();
+				boolean found=false;
+				for (int j=0; j<count; j++){
+					if (ids[j]==p){
+						found=true;
+						j=count;
+					}
+				}
+				if (!found){
+					ids[count]=p;
+					lookUps[count][0]=i;
+					lookUps[count][1]=1;
+					count++;
+				}
+			}
+			
+			if (count!=n){
+				System.out.println("PARSING ERROR!");
+			}
+			
+			
+		}
 	}
 	
 	/**

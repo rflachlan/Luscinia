@@ -61,8 +61,8 @@ public class Luscinia implements WindowListener, ActionListener, ChangeListener{
 	private static String ADD_TAB = "add tab";
 	private static String REMOVE_TAB = "remove tab";
 	
-	String lversion="2.27.03.15.01";
-	String dversion="2.27.03.15.01";
+	String lversion="2.30.03.15.01";
+	String dversion="2.30.03.15.01";
 	
 	
 	
