@@ -22,6 +22,7 @@ import lusc.net.github.Defaults;
 import lusc.net.github.Song;
 //import lusc.net.github.analysis.SongGroup;
 import lusc.net.github.analysis.AnalysisGroup;
+import lusc.net.github.analysis.ComparisonResults;
 import lusc.net.github.analysis.clustering.KMedoids;
 import lusc.net.github.analysis.clustering.SNNDensity;
 import lusc.net.github.analysis.multivariate.MultiDimensionalScaling;
@@ -31,10 +32,10 @@ import lusc.net.github.ui.SaveImage;
 import lusc.net.github.ui.SpectrogramSideBar;
 
 public class DisplayPC  extends DisplayPane implements  ActionListener{	
-	private static String labs[] = {"None","Population", "Position", "K-Medoid Cluster", "Syntax Cluster", "SNN Cluster"};
+	private static String labs[] = {"None","Individual", "Population", "Position", "K-Medoid Cluster", "Syntax Cluster", "SNN Cluster"};
 	
 	Defaults defaults;
-	AnalysisGroup sg;
+	ComparisonResults cr;
 	SpectrogramSideBar ssb;
 
 	Dimension dim=new Dimension(800, 800);
@@ -77,11 +78,11 @@ public class DisplayPC  extends DisplayPane implements  ActionListener{
 	Font font=new Font("Sans-Serif", Font.PLAIN, 9);
 
 	
-	public DisplayPC(MultiDimensionalScaling mds, AnalysisGroup sg, KMedoids km, EntropyAnalysis ent, SNNDensity snn, int dataType, int width, int height, Defaults defaults){
+	public DisplayPC(ComparisonResults cr, SpectrogramSideBar ssb, KMedoids km, EntropyAnalysis ent, SNNDensity snn, int dataType, int width, int height, Defaults defaults){
 		
-		this.mds=mds;
-		this.sg=sg;
-		ssb=sg.getSSB();
+		this.cr=cr;
+		this.mds=cr.getMDS();
+		this.ssb=ssb;
 		this.km=km;
 		this.ent=ent;
 		this.snn=snn;
@@ -149,7 +150,7 @@ public class DisplayPC  extends DisplayPane implements  ActionListener{
 		this.add(newTopPanel, BorderLayout.NORTH);
 		
 		pcp=new PCPane(width, height-150, this, defaults);
-		pcp.paintPanel(sg, data, dimensionX, dimensionY, labelType, dataType, cluster, connected, gridlines, flipX, flipY, linked);
+		pcp.paintPanel(cr, data, dimensionX, dimensionY, labelType, dataType, cluster, connected, gridlines, flipX, flipY, linked);
 		this.add(pcp, BorderLayout.CENTER);
 		
 	}
@@ -176,7 +177,7 @@ public class DisplayPC  extends DisplayPane implements  ActionListener{
 		
 		JLabel pointLabel=new JLabel("Labels for points: ");
 		pointLabel.setFont(font);
-		int p=3;
+		int p=4;
 		if (km!=null){p++;}
 		if (ent!=null){p++;}
 		if (snn!=null){p++;}
@@ -186,17 +187,18 @@ public class DisplayPC  extends DisplayPane implements  ActionListener{
 		labelTypes[0]=labs[0];
 		labelTypes[1]=labs[1];
 		labelTypes[2]=labs[2];
-		p=3;
+		labelTypes[3]=labs[3];
+		p=4;
 		if (km!=null){
-			labelTypes[p]=labs[3];
-			p++;
-		}
-		if (ent!=null){
 			labelTypes[p]=labs[4];
 			p++;
 		}
-		if (snn!=null){
+		if (ent!=null){
 			labelTypes[p]=labs[5];
+			p++;
+		}
+		if (snn!=null){
+			labelTypes[p]=labs[6];
 			p++;
 		}
 					
@@ -518,7 +520,7 @@ public class DisplayPC  extends DisplayPane implements  ActionListener{
 			tcluster=snn.getNumClusts()+1;
 		}
 		
-		pcp.paintPanel(sg, data, dimensionX, dimensionY, labelType, dataType, tcluster, connected, gridlines, flipX, flipY, linked);
+		pcp.paintPanel(cr, data, dimensionX, dimensionY, labelType, dataType, tcluster, connected, gridlines, flipX, flipY, linked);
 		this.revalidate();
 	}
 
@@ -547,9 +549,9 @@ public class DisplayPC  extends DisplayPane implements  ActionListener{
 				entov=ent.getOverallAssignment();
 			}
 			sd.writeLine();
-			Song[] songs=sg.getSongs();
+			Song[] songs=cr.getSongs();
 			for (int i=0; i<data.length; i++){
-				int[] g=sg.getId(dataType, i);
+				int[] g=cr.getID(i);
 				String sn2=songs[g[0]].getPopulation();
 				sd.writeString(sn2);
 				String sn1=(String)songs[g[0]].getIndividualName();

@@ -126,8 +126,8 @@ public class ComplexAnalysisDownload extends JPanel implements PropertyChangeLis
 				Song[] songs=ag.getSongs();
 				//boolean[][] compScheme=sg.getCompScheme();
 				boolean[][] compScheme=ag.getCompScheme();
-				//float[][] scoresSong=sg.getScoresSong();
-				float[][] scoresSong=ag.getScoresSong();
+				//double[][] scoresSong=sg.getScoresSong();
+				double[][] scoresSong=ag.getScores(4).getDiss();
 				
 				for (int i=0; i<ns; i++){
 					for (int j=0; j<ns; j++){
@@ -190,9 +190,9 @@ public class ComplexAnalysisDownload extends JPanel implements PropertyChangeLis
 							count++;
 						}
 					}
-					float[] rVec=new float[count];
+					double[] rVec=new double[count];
 					count=0;
-					float sum=0;
+					double sum=0;
 					for (int j=0; j<scoresSong.length; j++){
 						if (compScheme[i][j]||compScheme[j][i]){
 							if (i>j){
@@ -219,7 +219,7 @@ public class ComplexAnalysisDownload extends JPanel implements PropertyChangeLis
 						double x=count*percentiles[w];
 						double y=Math.floor(x);
 						if (y==x){
-							sd.writeFloat(rVec[(int)x]);
+							sd.writeDouble(rVec[(int)x]);
 						}
 						else{
 							int place=(int)y;
@@ -246,7 +246,7 @@ public class ComplexAnalysisDownload extends JPanel implements PropertyChangeLis
 				int nt=ag.getLengths(3);
 				Song[] songs=ag.getSongs();
 				boolean[][] compScheme=ag.getCompScheme();
-				float[][] scoreTrans=ag.getScoresTrans();
+				double[][] scoreTrans=ag.getScores(3).getDiss();
 				int[][] lookUpTrans=ag.getLookUp(3);
 				
 				for (int i=0; i<nt; i++){
@@ -281,7 +281,7 @@ public class ComplexAnalysisDownload extends JPanel implements PropertyChangeLis
 				int ns=ag.getLengths(2);
 				Song[] songs=ag.getSongs();
 				boolean[][] compScheme=ag.getCompScheme();
-				float[][] scoresSyll=ag.getScoresSyll();
+				double[][] scoresSyll=ag.getScores(2).getDiss();
 				int[][] lookUpSyls=ag.getLookUp(2);
 				
 				for (int i=0; i<ns; i++){
@@ -324,9 +324,9 @@ public class ComplexAnalysisDownload extends JPanel implements PropertyChangeLis
 							count++;
 						}
 					}
-					float[] rVec=new float[count];
+					double[] rVec=new double[count];
 					count=0;
-					float sum=0;
+					double sum=0;
 					for (int j=0; j<scoresSyll.length; j++){
 						int b=lookUpSyls[j][0];
 						if (compScheme[a][b]||compScheme[b][a]){
@@ -355,7 +355,7 @@ public class ComplexAnalysisDownload extends JPanel implements PropertyChangeLis
 						double x=count*percentiles[w];
 						double y=Math.floor(x);
 						if (y==x){
-							sd.writeFloat(rVec[(int)x]);
+							sd.writeDouble(rVec[(int)x]);
 						}
 						else{
 							int place=(int)y;
@@ -380,11 +380,11 @@ public class ComplexAnalysisDownload extends JPanel implements PropertyChangeLis
 				int ns=ag.getLengths(0);
 				Song[] songs=ag.getSongs();
 				boolean[][] compScheme=ag.getCompScheme();
-				float[][] scoresEl=ag.getScoresEleC();
+				double[][] scoresEl=ag.getScores(1).getDiss();
 				int[][] lookUpEls=ag.getLookUp(1);
 				
 				if (!ag.getCompressElements()){
-					scoresEl=ag.getScoresEle();
+					scoresEl=ag.getScores(0).getDiss();
 					lookUpEls=ag.getLookUp(0);
 				}
 				

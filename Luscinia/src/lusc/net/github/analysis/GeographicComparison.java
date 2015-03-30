@@ -20,7 +20,7 @@ public class GeographicComparison {
 	
 	double[][] geographicalDistances;
 	double[][] distanceCategories;
-	float[][] repertoireComparison;
+	double[][] repertoireComparison;
 	double[][] coordinates;
 	int[][] repertoires;
 	int dataType;
@@ -43,40 +43,25 @@ public class GeographicComparison {
 	UPGMA upgma;
 	//SongGroup sg;
 	AnalysisGroup sg;
+	ComparisonResults cr;
 	
 	//public GeographicComparison(SongGroup sg, int dataType, doublse thresholdProp){
 	public GeographicComparison(AnalysisGroup sg, int dataType, double thresholdProp){
 		this.sg=sg;
 		this.dataType=dataType;
-		
-		if ((sg.individualSongs==null)||(sg.individualNumber==0)){
-			sg.calculateIndividuals();
+		cr=sg.getScores(dataType);
+		if ((cr.individuals==null)||(cr.individualNumber==0)){
+			cr.calculateIndividuals();
 		}
 				
 		numCategories=defaultCategoryNumber;
 		if (numCategories>numInds){numCategories=numInds;}
-		numComps=(sg.individualNumber*(sg.individualNumber-1))/2;
+		numComps=(cr.individualNumber*(cr.individualNumber-1))/2;
 		//if (numCategories>numComps){numCategories=numComps;}
 		
-		float[][] songData;
-
-		if (dataType==0){
-			songData=sg.scoresEle;
-		}
-		else if (dataType==1){
-			songData=sg.scoresEleC;
-		}
-		else if (dataType==2){
-			songData=sg.scoresSyll;
-		}
-		else if (dataType==3){
-			songData=sg.scoreTrans;
-		}		
-		else {
-			songData=sg.scoresSong;
-		}
+		double[][] songData=cr.getDiss();
 		
-		int[] lookUps=sg.calculateSongAssignments(dataType);
+		int[] lookUps=cr.lookUpIndividual;
 		threshold=calculateThreshold(songData, thresholdProp);
 		//repertoireComparison=calculateRepertoireSimilarity(songData, lookUps);
 		repertoireComparison=calculateJaccardIndex(songData, lookUps, threshold);
@@ -92,13 +77,14 @@ public class GeographicComparison {
 		this.sg=sg;
 		this.dataType=dataType;
 		this.upgma=dup.getUPGMA();
+		cr=sg.getScores(dataType);
 		
-		if ((sg.individualSongs==null)||(sg.individualNumber==0)){
-			sg.calculateIndividuals();
+		if ((cr.individuals==null)||(cr.individualNumber==0)){
+			cr.calculateIndividuals();
 		}
-		numInds=sg.individualNumber;		
+		numInds=cr.individualNumber;		
 		numCategories=defaultCategoryNumber;
-		numComps=(sg.individualNumber*(sg.individualNumber-1))/2;
+		numComps=(cr.individualNumber*(cr.individualNumber-1))/2;
 		if (numCategories>numComps){numCategories=numComps;}
 		
 
@@ -187,31 +173,9 @@ public class GeographicComparison {
 		
 		numCategories=distcats;
 		int[] categories=calculateCategories(songcats);
-		int[] lookUps=sg.calculateSongAssignments(dataType);
-		calculateRepertoires(categories, lookUps, sg.individualNumber);
-		repertoireComparison=calculateJaccardIndex(categories, lookUps, sg.individualNumber);
-		
-		/*
-		float[][] songData;
-
-		if (dataType==0){
-			songData=sg.scoresEle;
-		}
-		else if (dataType==1){
-			songData=sg.scoresEleC;
-		}
-		else if (dataType==2){
-			songData=sg.scoresSyll;
-		}
-		else if (dataType==3){
-			songData=sg.scoreTrans;
-		}		
-		else {
-			songData=sg.scoresSong;
-		}
-		uberthresh=songcats/(200.0);
-		repertoireComparison=calculateRepertoireSimilarity(songData, lookUps);
-		*/
+		int[] lookUps=cr.lookUpIndividual;
+		calculateRepertoires(categories, lookUps, cr.individualNumber);
+		repertoireComparison=calculateJaccardIndex(categories, lookUps, cr.individualNumber);
 		
 		
 		distanceCategories=calculateDistanceCategories(distcats, geographicalDistances);
@@ -348,7 +312,7 @@ public class GeographicComparison {
 	}
 	
 	
-	public float[][] calculateJaccardIndex(float[][] songData, int[] lookUps, double threshold){
+	public double[][] calculateJaccardIndex(double[][] songData, int[] lookUps, double threshold){
 		int n=lookUps.length;
 		boolean[] leaveOut=new boolean[n];
 		for (int i=0; i<n; i++){
@@ -359,15 +323,15 @@ public class GeographicComparison {
 				}
 			}
 		}
-		float[] counts=new float[sg.individualNumber];
+		double[] counts=new double[cr.individualNumber];
 		for (int i=0; i<n; i++){
 			if(!leaveOut[i]){
 				counts[lookUps[i]]++;
 			}
 		}
-		float[][] results=new float[sg.individualNumber][];
-		for (int i=0; i<sg.individualNumber; i++){
-			results[i]=new float[i+1];
+		double[][] results=new double[cr.individualNumber][];
+		for (int i=0; i<cr.individualNumber; i++){
+			results[i]=new double[i+1];
 		}
 		
 		for (int i=0; i<n; i++){
@@ -387,7 +351,7 @@ public class GeographicComparison {
 				}
 			}
 		}
-		for (int i=0; i<sg.individualNumber; i++){
+		for (int i=0; i<cr.individualNumber; i++){
 			for (int j=0; j<i; j++){
 				//System.out.println(i+" "+j+" "+results[i][j]+" "+counts[i]+" "+counts[j]);
 				results[i][j]/=counts[i]+counts[j]-results[i][j];
@@ -397,7 +361,7 @@ public class GeographicComparison {
 		return results;
 	}
 	
-	public float[][] calculateJaccardIndex(int[] songIndex, int[] lookUps, int ind){
+	public double[][] calculateJaccardIndex(int[] songIndex, int[] lookUps, int ind){
 		int n=lookUps.length;
 		int[][] reps=new int[ind][];
 		int[] counts=new int[ind];
@@ -439,9 +403,9 @@ public class GeographicComparison {
 			System.out.println(reps[i].length);
 		}
 		
-		float[][] results=new float[ind][];
+		double[][] results=new double[ind][];
 		for (int i=0; i<ind; i++){
-			results[i]=new float[i+1];
+			results[i]=new double[i+1];
 		}
 		
 		for (int i=0; i<ind; i++){
@@ -463,7 +427,7 @@ public class GeographicComparison {
 		return results;
 	}
 	
-	public float[][] calculateJaccardIndex2(int[] songIndex, int[] lookUps, int ind){
+	public double[][] calculateJaccardIndex2(int[] songIndex, int[] lookUps, int ind){
 		int n=lookUps.length;
 		boolean[] leaveOut=new boolean[n];
 		for (int i=0; i<n; i++){
@@ -474,15 +438,15 @@ public class GeographicComparison {
 				}
 			}
 		}
-		float[] counts=new float[ind];
+		double[] counts=new double[ind];
 		for (int i=0; i<n; i++){
 			if(!leaveOut[i]){
 				counts[lookUps[i]]++;
 			}
 		}
-		float[][] results=new float[ind][];
+		double[][] results=new double[ind][];
 		for (int i=0; i<ind; i++){
-			results[i]=new float[i+1];
+			results[i]=new double[i+1];
 		}
 		
 		for (int i=0; i<n; i++){
@@ -514,7 +478,7 @@ public class GeographicComparison {
 	}
 		
 	
-	public float[][] calculateRepertoireSimilarity(float[][] songData, int[] lookUps){
+	public double[][] calculateRepertoireSimilarity(double[][] songData, int[] lookUps){
 		
 		int n=lookUps.length;
 		
@@ -522,7 +486,7 @@ public class GeographicComparison {
 		
 		boolean[] leaveOut=new boolean[n];
 
-		float[] counts=new float[sg.individualNumber];
+		double[] counts=new double[cr.individualNumber];
 		
 		
 		for (int i=0; i<n; i++){
@@ -540,7 +504,7 @@ public class GeographicComparison {
 			}
 		}
 		
-		float[][] pt=new float[n][sg.individualNumber];
+		double[][] pt=new double[n][cr.individualNumber];
 		for (int i=0; i<n; i++){
 			int i2=lookUps[i];
 			for (int j=0; j<n; j++){
@@ -558,9 +522,9 @@ public class GeographicComparison {
 			}
 		}
 				
-		float[][] results=new float[sg.individualNumber][];
-		for (int i=0; i<sg.individualNumber; i++){
-			results[i]=new float[i+1];
+		double[][] results=new double[cr.individualNumber][];
+		for (int i=0; i<cr.individualNumber; i++){
+			results[i]=new double[i+1];
 		}
 		
 		for (int i=0; i<n; i++){
@@ -574,7 +538,7 @@ public class GeographicComparison {
 			}
 		}
 		
-		for (int i=0; i<sg.individualNumber; i++){
+		for (int i=0; i<cr.individualNumber; i++){
 			for (int j=0; j<i; j++){
 				if (results[i][j]>Math.min(counts[i],  counts[j])){results[i][j]=Math.min(counts[i],  counts[j]);}
 				results[i][j]/=(counts[i]+counts[j]-results[i][j]);
@@ -584,7 +548,7 @@ public class GeographicComparison {
 		return results;
 	}
 	
-	public float[][] calculateRepertoireSimilarity2(float[][] songData, int[] lookUps){
+	public double[][] calculateRepertoireSimilarity2(double[][] songData, int[] lookUps){
 		
 		int n=lookUps.length;
 		
@@ -607,18 +571,18 @@ public class GeographicComparison {
 			}
 		}
 		*/
-		float[] counts=new float[sg.individualNumber];
+		double[] counts=new double[cr.individualNumber];
 		for (int i=0; i<n; i++){
 			//if(!leaveOut[i]){
 				counts[lookUps[i]]++;
 			//}
 		}
 		
-		//float[][] ps=new float[n][sg.individualNumber];
-		float[][] pt=new float[sg.individualNumber][sg.individualNumber];
+		//double[][] ps=new double[n][cr.individualNumber];
+		double[][] pt=new double[cr.individualNumber][cr.individualNumber];
 		for (int i=0; i<n; i++){
 			//if (!leaveOut[i]){
-				//for (int j=0; j<sg.individualNumber; j++){
+				//for (int j=0; j<cr.individualNumber; j++){
 					//ps[i][j]=1000000f;
 				//}
 				int i2=lookUps[i];
@@ -649,11 +613,11 @@ public class GeographicComparison {
 		
 		//gateDistances(ps, threshold1, threshold2);
 		
-		float[][] results=new float[sg.individualNumber][];
-		for (int i=0; i<sg.individualNumber; i++){
-			results[i]=new float[i+1];
+		double[][] results=new double[cr.individualNumber][];
+		for (int i=0; i<cr.individualNumber; i++){
+			results[i]=new double[i+1];
 		}
-		for (int i=0; i<sg.individualNumber; i++){
+		for (int i=0; i<cr.individualNumber; i++){
 		//for (int i=0; i<n; i++){
 			//if (!leaveOut[i]){
 				//int i2=lookUps[i];
@@ -673,10 +637,10 @@ public class GeographicComparison {
 		return results;
 	}
 	
-	public double calculateThreshold(float[][] data, double prop){
+	public double calculateThreshold(double[][] data, double prop){
 		int n=data.length;
 		int m=n*(n-1)/2;
-		float[] d=new float[m];
+		double[] d=new double[m];
 		int a=0;
 		for (int i=0; i<n; i++){
 			for (int j=0; j<i; j++){
@@ -693,13 +657,13 @@ public class GeographicComparison {
 		return r;
 	}
 	
-	public void gateDistances(float[][] data, double t1, double t2){
+	public void gateDistances(double[][] data, double t1, double t2){
 		
 		for (int i=0; i<data.length; i++){
 			for (int j=0; j<data[i].length; j++){
-				data[i][j]=(float)((data[i][j]-t1)/(t2-t1));
-				if (data[i][j]<0){data[i][j]=0f;}
-				if (data[i][j]>1){data[i][j]=1f;}
+				data[i][j]=(double)((data[i][j]-t1)/(t2-t1));
+				if (data[i][j]<0){data[i][j]=0;}
+				if (data[i][j]>1){data[i][j]=1;}
 			}
 		}
 	}
@@ -750,12 +714,12 @@ public class GeographicComparison {
 	
 	public double[][] calculateGeographicalDistances(){
 		int i,j, k;
-		coordinates=new double [sg.individualNumber][2];
+		coordinates=new double [cr.individualNumber][2];
 		
-		for (i=0; i<sg.individualSongs.length; i++){
-			j=sg.individualSongs[i][0];
-			String sx1=sg.songs[j].getLocationX();
-			String sy1=sg.songs[j].getLocationY();
+		for (i=0; i<cr.individuals.length; i++){
+			j=cr.lookUps[cr.individuals[i][0]][0];
+			String sx1=cr.songs[j].getLocationX();
+			String sy1=cr.songs[j].getLocationY();
 			System.out.println(i+" "+sx1+" "+sy1);
 			if (sx1!=null){
 				try{
@@ -773,8 +737,8 @@ public class GeographicComparison {
 			}
 			//System.out.println(i+" "+coordinates[i][0]+" "+coordinates[i][1]);
 		}
-		double[][] geographicalDistances=new double[sg.individualNumber][sg.individualNumber];
-		for (i=0; i<sg.individualNumber; i++){
+		double[][] geographicalDistances=new double[cr.individualNumber][cr.individualNumber];
+		for (i=0; i<cr.individualNumber; i++){
 			for (j=0; j<i; j++){
 				for (k=0; k<2; k++){
 					geographicalDistances[i][j]+=(coordinates[i][k]-coordinates[j][k])*(coordinates[i][k]-coordinates[j][k]);
@@ -790,9 +754,9 @@ public class GeographicComparison {
 		
 		double[][] distanceCategories=new double[2][numCategories];
 		//double[] distanceAverages=new double[numCategories];
-		double[] distanceSort=new double[sg.individualNumber*(sg.individualNumber-1)/2];
+		double[] distanceSort=new double[cr.individualNumber*(cr.individualNumber-1)/2];
 		int count=0;
-		for (int i=0; i<sg.individualNumber; i++){
+		for (int i=0; i<cr.individualNumber; i++){
 			for (int j=0; j<i; j++){
 				distanceSort[count]=distances[i][j];
 				count++;

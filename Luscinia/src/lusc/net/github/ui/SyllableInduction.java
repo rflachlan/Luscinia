@@ -32,8 +32,8 @@ import lusc.net.github.ui.spectrogram.MainPanel;
 
 public class SyllableInduction extends JFrame implements ActionListener{
 	
-	float[][]scores=new float[1][1];
-	float[][]scores2=new float[1][1];
+	double[][]scores=new double[1][1];
+	double[][]scores2=new double[1][1];
 	int[][]compressedStructure;
 	double [] sd, average;
 	UPGMA syllUpgma;
@@ -118,7 +118,7 @@ public class SyllableInduction extends JFrame implements ActionListener{
 		//dtwsw.addPropertyChangeListener(this);
 		//stopButton.setEnabled(true);
 		dtwsw.analyze();
-		double results1[][]=calculateSimilarities(sg.getScoresEle(), 5);
+		double results1[][]=calculateSimilarities(sg.getScores(0).getDiss(), 5);
 		double results2[][]=calculateRhythm(song, 5, 20);
 		results2=sparsifyResults(results2);
 		results2=combineResults(results2, results1);
@@ -196,7 +196,7 @@ public class SyllableInduction extends JFrame implements ActionListener{
 		dtwsw.execute();
 		//dtwPanel.startAnalysis();
 	
-		scores=sg.getScoresEle();
+		scores=sg.getScores(0).getDiss();
 	
 		double GAP_THRESHOLD=1.0;
 		
@@ -469,7 +469,7 @@ public class SyllableInduction extends JFrame implements ActionListener{
 	
 	
 	
-	public double[][] calculateSimilarities(float[][] mat, int range){
+	public double[][] calculateSimilarities(double[][] mat, int range){
 		
 		int n=mat.length;
 		double[][] results=new double[n][range];

@@ -75,7 +75,7 @@ public class SpectrogramSideBar extends JPanel implements MouseInputListener{
 		else if (dataType==3){
 			drawTransitions(contents);
 		}
-		else{
+		else if (dataType==4){
 			drawSongs(contents);
 		}
 	}
@@ -143,7 +143,7 @@ public class SpectrogramSideBar extends JPanel implements MouseInputListener{
 		g.fillRect(0,0,300,ysize);
 		
 		g.setColor(Color.BLACK);
-		float dx=(float)(imxsize/(sg.getMaxLength(0)+0.0));
+		float dx=(float)(imxsize/(sg.getScores(0).getMaxLength()+0.0));
 		if (dx>1){dx=1;}
 		int x,y1,y2, ys, x1, x2, j2, j3;
 		double ny;
@@ -243,7 +243,7 @@ public class SpectrogramSideBar extends JPanel implements MouseInputListener{
 		g.fillRect(0,ygap,300,ysize);
 		g.setColor(Color.BLACK);
 			
-		float dx=(float)(imxsize/(sg.getMaxLength(2)+0.0));
+		float dx=(float)(imxsize/(sg.getScores(2).getMaxLength()+0.0));
 		if (dx>1){dx=1;}
 		int x,y1,y2, ys, j2, j3, x1, x2;
 		double ny;
@@ -344,7 +344,7 @@ public class SpectrogramSideBar extends JPanel implements MouseInputListener{
 		g.fillRect(0,0,300,ysize);
 		g.setColor(Color.BLACK);
 			
-		float dx=(float)(imxsize/(sg.getMaxLength(3)+0.0));
+		float dx=(float)(imxsize/(sg.getScores(3).getMaxLength()+0.0));
 		if (dx>1){dx=1;}
 		int x,y1,y2, ys;
 		double ny;
@@ -404,7 +404,7 @@ public class SpectrogramSideBar extends JPanel implements MouseInputListener{
 				
 					Element ele2=(Element)songs[songT].getElement(q2[a2][q2[a2].length-1]);
 					
-					endPosition=sg.getMaxLength(3)-(ele2.getBeginTime()+ele2.getLength()-ele1.getBeginTime());
+					endPosition=sg.getScores(3).getMaxLength()-(ele2.getBeginTime()+ele2.getLength()-ele1.getBeginTime());
 					
 				}
 				
@@ -456,7 +456,7 @@ public class SpectrogramSideBar extends JPanel implements MouseInputListener{
 		g.fillRect(0,0,300,ysize);
 		g.setColor(Color.BLACK);
 			
-		float dx=(float)(imxsize/(3*sg.getMaxLength(2)+0.0));
+		float dx=(float)(imxsize/(3*sg.getScores(2).getMaxLength()+0.0));
 		if (dx>1){dx=1;}
 		int x,x1, x2, j2, j3, y1,y2, ys;
 		double ny;
@@ -584,7 +584,7 @@ public class SpectrogramSideBar extends JPanel implements MouseInputListener{
 		g.fillRect(0,0,300,ysize);
 		g.setColor(Color.BLACK);
 			
-		float dx=(float)(imxsize/(sg.getMaxLength(4)+0.0));
+		float dx=(float)(imxsize/(sg.getScores(4).getMaxLength()+0.0));
 		if (dx>1){dx=1;}
 		int x,y1,y2, ys;
 		double ny;

@@ -22,6 +22,7 @@ import java.awt.geom.*;
 
 import lusc.net.github.Defaults;
 import lusc.net.github.analysis.AnalysisGroup;
+import lusc.net.github.analysis.ComparisonResults;
 
 
 public class PCPane extends JPanel implements MouseInputListener{
@@ -35,12 +36,12 @@ public class PCPane extends JPanel implements MouseInputListener{
 	
 	int[][] lineConnectors1;
 	
-	Color[] colorPalette={Color.BLUE, Color.RED, Color.YELLOW.darker(), Color.BLACK, Color.GREEN, Color.CYAN, Color.orange, Color.MAGENTA, Color.PINK, Color.GRAY};
+	Color[] colorPalette={Color.BLUE, Color.RED, Color.YELLOW.darker(), Color.BLACK, Color.GREEN, Color.CYAN.darker(), Color.orange, Color.MAGENTA, Color.PINK, Color.GRAY};
 	
 	int width, height, dimensionX, dimensionY, labelType, dataType, clusterN;
 	
 	double[][] data;
-	AnalysisGroup sg;
+	ComparisonResults cr;
 	boolean connectors,gridlines, flipX, flipY, linked;
 	
 	
@@ -61,7 +62,7 @@ public class PCPane extends JPanel implements MouseInputListener{
 	
 	float lineWeight=1.0f;
 	
-	float scaler=1.0f;
+	float scaler=2.0f;
 	
 	boolean enabled=false;
 	boolean selectionStarted=false;
@@ -71,13 +72,15 @@ public class PCPane extends JPanel implements MouseInputListener{
 	
 	int fontSize=12;
 	
-	public PCPane(int width, int height, DisplayPC dpc, Defaults defaults){
-		this.width=width;
-		this.height=height;
+	public PCPane(int w, int h, DisplayPC dpc, Defaults defaults){
+		this.width=2*w;
+		this.height=2*h;
 		this.dpc=dpc;
 		this.defaults=defaults;
 		dim=new Dimension(width, height);
-		imf=new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+		
+		imf=new BufferedImage(this.width, this.height, BufferedImage.TYPE_INT_ARGB);
+		System.out.println("PCP: "+imf.getWidth()+" "+imf.getHeight()+" "+width+" "+height);
 		//this.addMouseInputListener(this);
 		addMouseListener(this);
 		addMouseMotionListener(this);
@@ -287,7 +290,7 @@ public class PCPane extends JPanel implements MouseInputListener{
 	
 	public void paintIcon(int c, double x, double y, double isi, boolean drawEdge, Graphics2D g){
 		int i=c;
-		while(i>6){i-=6;}
+		while(i>6){i-=7;}
 		
 		if (i==0){
 			Ellipse2D ell=getCircle(x, y, isi);
@@ -346,11 +349,11 @@ public class PCPane extends JPanel implements MouseInputListener{
 	}
 	
 
-	public void paintPanel(AnalysisGroup sg, double[][] data, int dimensionX, int dimensionY, int labelType, int dataType, int clusterN, boolean connectors, boolean gridlines, boolean flipX, boolean flipY, boolean linked){
+	public void paintPanel(ComparisonResults cr, double[][] data, int dimensionX, int dimensionY, int labelType, int dataType, int clusterN, boolean connectors, boolean gridlines, boolean flipX, boolean flipY, boolean linked){
 		
 		this.dimensionX=dimensionX;
 		this.dimensionY=dimensionY;
-		this.sg=sg;
+		this.cr=cr;
 		this.data=data;
 		this.labelType=labelType;
 		this.dataType=dataType;
@@ -420,6 +423,8 @@ public class PCPane extends JPanel implements MouseInputListener{
 		DecimalFormat nf=new DecimalFormat("#.#");
         FontRenderContext frc = g.getFontRenderContext();
         
+        Font labelFont=new Font(fontDef.getName(), fontDef.getStyle(), fsz/2);
+        
         int gridsize=(int)Math.round(gridSizeDefault*scaler);
 		
 		int xsh=(int)Math.round(xshift1*scaler);
@@ -433,12 +438,12 @@ public class PCPane extends JPanel implements MouseInputListener{
 		
 		int barWidth=(int)Math.round(25*scaler);
 		int barHeight=(int)Math.round(200*scaler);
-		int iconSpacer=(int)Math.round(25*scaler);
+		int iconSpacer=(int)Math.round(10*scaler);
 		
 		double x,y;
 		location=new double[n][2];
 		
-		Color[] colors=new Color[101];
+		//Color[] colors=new Color[101];
 		
 		Color[] palette=new Color[clusterN];
 		
@@ -446,7 +451,22 @@ public class PCPane extends JPanel implements MouseInputListener{
 			g.setColor(Color.BLACK);
 		}
 		else if (labelType==1){
-			String[] populations=sg.getPopulations();
+			String[] individuals=cr.getIndividualNames();
+			palette=getColorPalette(individuals.length);
+			for (int i=0; i<individuals.length; i++){
+
+				g.setColor(palette[i]);
+				int xe=xsh+gridsize+legendSpacer;
+				int ye=ysh+i*iconSpacer;
+				paintIcon(i, xe, ye, iconSize, false, g);
+				g.setColor(Color.BLACK);
+				TextLayout layout = new TextLayout(individuals[i], labelFont, frc);
+				Rectangle r = layout.getPixelBounds(null, 0, 0);
+				layout.draw(g, xe+ics*2+textSpacer, ye+0.5f*r.height);
+			}		
+		}
+		else if (labelType==2){
+			String[] populations=cr.getPopulationNames();
 			palette=getColorPalette(populations.length);
 			for (int i=0; i<populations.length; i++){
 
@@ -455,12 +475,12 @@ public class PCPane extends JPanel implements MouseInputListener{
 				int ye=ysh+i*iconSpacer;
 				paintIcon(i, xe, ye, iconSize, false, g);
 				g.setColor(Color.BLACK);
-				TextLayout layout = new TextLayout(populations[i], font, frc);
+				TextLayout layout = new TextLayout(populations[i], labelFont, frc);
 				Rectangle r = layout.getPixelBounds(null, 0, 0);
 				layout.draw(g, xe+ics*2+textSpacer, ye+0.5f*r.height);
 			}		
 		}
-		else if (labelType==2){
+		else if (labelType==3){
 			
 			for (int i=0; i<barHeight; i++){
 				
@@ -492,7 +512,7 @@ public class PCPane extends JPanel implements MouseInputListener{
 			
 		}
 		
-		else if (labelType==3){
+		else if (labelType==4){
 			palette=getColorPalette(clusterN);
 			for (int i=0; i<clusterN; i++){
 				
@@ -509,7 +529,7 @@ public class PCPane extends JPanel implements MouseInputListener{
 			}			
 		}
 		
-		else if (labelType==4){
+		else if (labelType==5){
 			palette=getColorPalette(clusterN);
 			for (int i=0; i<clusterN; i++){
 				
@@ -607,8 +627,8 @@ public class PCPane extends JPanel implements MouseInputListener{
 		double adj1=0.5*(absmax1+absmin1);
 		double adj2=0.5*(absmax2+absmin2);
 		g.setStroke(fs);
-		double[] labels=sg.getLabels(dataType);
-		int[][] lookUp=sg.getLookUp(dataType);
+		double[] labels=cr.getPosition();
+		int[][] lookUp=cr.getLookUp();
 		
 		for (int i=0; i<n; i++){
 			
@@ -627,7 +647,7 @@ public class PCPane extends JPanel implements MouseInputListener{
 			location[i][1]=y;
 			if ((connectors)&&(i>0)){
 				
-				if (labelType==2){
+				if (labelType==3){
 					float p=0;
 					
 					if (labels!=null){
@@ -668,7 +688,7 @@ public class PCPane extends JPanel implements MouseInputListener{
 			if(labelType==0){
 				paintIcon(0, x, y, iconSize, false, g);
 			}
-			else if (labelType==2){
+			else if (labelType==3){
 				double p=0;
 				if (labels!=null){
 					p=labels[i];
@@ -686,24 +706,30 @@ public class PCPane extends JPanel implements MouseInputListener{
 				paintIcon(0, x, y, iconSize, false, g);
 			}
 			else if (labelType==1){
-				int q=sg.lookUpPopulation(dataType, i);
+				int[] q2=cr.getLookUpIndividuals();
+				int q=q2[i];
+				g.setColor(palette[q]);
+				paintIcon(q, x, y, iconSize, false,  g);
+			}
+			else if (labelType==2){
+				int q=cr.lookUpPopulation(i);
 				g.setColor(palette[q]);
 				paintIcon(q, x, y, iconSize, false,  g);
 			}	
-			else if (labelType==3){				
+			else if (labelType==4){				
 				int best=dpc.km.getOverallAssignments()[clusterN-2][i];
 				g.setColor(palette[best]);
 				while(best>6){best-=6;}
 				paintIcon(best, x,y,iconSize, false, g);
 			}
 			
-			else if (labelType==4){
+			else if (labelType==5){
 				int best=dpc.ent.getOverallAssignment()[clusterN-2][i];
 				g.setColor(palette[best]);
 				while(best>6){best-=6;}
 				paintIcon(best, x,y,iconSize, false, g);
 			}	
-			else if (labelType==5){
+			else if (labelType==6){
 				int best=dpc.snn.getDBSCANClusters()[i];
 				g.setColor(palette[best]);
 				while(best>6){best-=6;}
@@ -754,7 +780,7 @@ public class PCPane extends JPanel implements MouseInputListener{
 					if(labelType==0){
 						paintIcon(0, x, y, 2*iconSize, true, g);
 					}
-					else if (labelType==2){
+					else if (labelType==3){
 						double p=0;
 						if (labels!=null){
 							p=labels[i];
@@ -771,24 +797,30 @@ public class PCPane extends JPanel implements MouseInputListener{
 						paintIcon(0, x, y, 2*iconSize, true, g);
 					}
 					else if (labelType==1){
-						int q=sg.lookUpPopulation(dataType, i);
+						int[] q2=cr.getLookUpIndividuals();
+						int q=q2[i];
+						g.setColor(palette[q]);
+						paintIcon(q, x, y, 2*iconSize, true,  g);
+					}
+					else if (labelType==2){
+						int q=cr.lookUpPopulation(i);
 						g.setColor(palette[q]);
 						paintIcon(q, x, y, 2*iconSize, true, g);
 					}	
-					else if (labelType==3){				
+					else if (labelType==4){				
 						int best=dpc.km.getOverallAssignments()[clusterN-2][i];
 						g.setColor(palette[best]);
 						while(best>6){best-=6;}
 						paintIcon(best, x,y,2*iconSize, true, g);
 					}
 					
-					else if (labelType==4){
+					else if (labelType==5){
 						int best=dpc.ent.getOverallAssignment()[clusterN-2][i];
 						g.setColor(palette[best]);
 						while(best>6){best-=6;}
 						paintIcon(best, x,y,2*iconSize, true, g);
 					}	
-					else if (labelType==5){
+					else if (labelType==6){
 						int best=dpc.snn.getDBSCANClusters()[i];
 						g.setColor(palette[best]);
 						while(best>6){best-=6;}
@@ -806,8 +838,8 @@ public class PCPane extends JPanel implements MouseInputListener{
 			selectedPoint=true;
 			selectedArea=false;
 			selectionStarted=false;
-			int x=e.getX();
-			int y=e.getY();
+			int x=e.getX()*2;
+			int y=e.getY()*2;
 			double min=100000000;
 			int loc=0;
 			for (int i=0; i<location.length; i++){
@@ -842,8 +874,8 @@ public class PCPane extends JPanel implements MouseInputListener{
 		selectedArea=false;
 		if (enabled){
 			
-			endx=e.getX();
-			endy=e.getY();
+			endx=e.getX()*2;
+			endy=e.getY()*2;
 			
 			if ((Math.abs(startx-endx)>5)||(Math.abs(starty-endy)>5)){
 				
@@ -912,8 +944,8 @@ public class PCPane extends JPanel implements MouseInputListener{
 		
 		if (enabled){
 			selectionStarted=true;
-			startx=e.getX();
-			starty=e.getY();
+			startx=e.getX()*2;
+			starty=e.getY()*2;
 
 		}	
 	}
@@ -921,8 +953,8 @@ public class PCPane extends JPanel implements MouseInputListener{
 		//System.out.println("Dragged");
 		if (selectionStarted){
 			selectedArea=true;
-			endx=e.getX();
-			endy=e.getY();
+			endx=e.getX()*2;
+			endy=e.getY()*2;
 			minx=Math.min(startx, endx);
 			maxx=Math.max(startx, endx);
 			miny=Math.min(starty, endy);
@@ -935,27 +967,29 @@ public class PCPane extends JPanel implements MouseInputListener{
 	
 	public void paintComponent(Graphics g) {
 		super.paintComponent(g);  //paint background
-		g.drawImage(imf, 0, 0, this);
+		Graphics2D g2=(Graphics2D) g;
+		g2.scale(0.5, 0.5);
+		System.out.println(imf.getWidth()+" "+imf.getHeight());
+		g2.drawImage(imf, 0, 0, this);
 		//System.out.println("here");
 		if(selectedArea==true){
-			Graphics2D g2=(Graphics2D) g;
+			
 			g2.setComposite(ac);
 			g2.setColor(Color.RED);
 			g2.fillRect(minx, miny, maxx-minx, maxy-miny);
-			g2.dispose();
+			
 			
 		}
 		
 		else if (selectedPoint==true){
-			Graphics2D g2=(Graphics2D) g;
 			int x=(int)Math.round(location[selP[0]][0]);
 			int y=(int)Math.round(location[selP[0]][1]);
 			g2.setComposite(ac);
 			g2.setColor(Color.RED);
 			g2.fillRect(x-7, y-7, 15, 15);
-			g2.dispose();
 			
 		}
+		g2.dispose();
 	}
 	
 	

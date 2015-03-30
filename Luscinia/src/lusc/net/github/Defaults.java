@@ -596,7 +596,7 @@ public class Defaults {
 		if (results1!=null){
 			sop.setAnalysisTypes(results1);
 		}
-		boolean[] results2=getBooleanArray("analev", 4);
+		boolean[] results2=getBooleanArray("analev", 5);
 		if (results2!=null){
 			sop.setAnalysisLevels(results2);
 		}

@@ -16,7 +16,7 @@ public class MRPP {
 	Random random=new Random(System.currentTimeMillis());
 	
 	
-	float[][] dat;
+	double[][] dat;
 	int[] marker;
 	
 	int weightingMethod=0;
@@ -24,7 +24,7 @@ public class MRPP {
 	
 	double expectedDelta, empiricalDelta, pvalue, avalue;
 	
-	public MRPP(float[][] d, int[] partition){
+	public MRPP(double[][] d, int[] partition){
 		n=d.length;
 
 		int maxPart=0;
@@ -55,9 +55,9 @@ public class MRPP {
 			}
 		double t2=t;
 		
-			dat=new float[t][];
+			dat=new double[t][];
 			for (int i=0; i<t; i++){
-				dat[i]=new float[i+1];
+				dat[i]=new double[i+1];
 				for (int j=0; j<i; j++){
 					dat[i][j]=d[look[i]][look[j]];
 				}
@@ -84,7 +84,7 @@ public class MRPP {
 		}
 	}
 	
-	public MRPP(float[][] d, int[] partition, int[] group){
+	public MRPP(double[][] d, int[] partition, int[] group){
 		n=d.length;
 		this.dat=d;
 		int maxPart=0;

@@ -24,7 +24,7 @@ public class SNNDensity {
 	int type=0;
 	double MRPPresults[];
 
-	public SNNDensity(float[][] data, int k, int Eps, int MinPts, int type){
+	public SNNDensity(double[][] data, int k, int Eps, int MinPts, int type){
 		this.type=type;
 				
 		int[][] knearest=getKNearest(data, k);
@@ -80,12 +80,12 @@ public class SNNDensity {
 		
 		
 	
-	public void recastSimilaritiesAsDistances(float[][] originalData){
+	public void recastSimilaritiesAsDistances(double[][] originalData){
 		int n=SNNSimilarity.length;
 		
-		float[][] results=new float[n][];
+		double[][] results=new double[n][];
 		for (int i=0; i<n; i++){
-			results[i]=new float[i+1];
+			results[i]=new double[i+1];
 		}
 	
 	
@@ -97,10 +97,10 @@ public class SNNDensity {
 				}
 			}
 		}
-		float maxf=max;
+		double maxf=max;
 		for (int i=0; i<n; i++){
 			for (int j=0; j<i; j++){
-				results[i][j]=(float)((max-SNNSimilarity[i][j])/maxf);
+				results[i][j]=((max-SNNSimilarity[i][j])/maxf);
 				originalData[i][j]+=50*results[i][j];
 			}
 		}
@@ -401,12 +401,12 @@ public class SNNDensity {
 	}
 	
 	
-	public int[][] getKNearest(float[][] data, int k){
+	public int[][] getKNearest(double[][] data, int k){
 		int n=data.length;
 		int[][] knearest=new int[n][k];
 		
-		float[] holder1=new float[n];
-		float[] holder2=new float[n];
+		double[] holder1=new double[n];
+		double[] holder2=new double[n];
 		for (int i=0; i<n; i++){
 			for (int j=0; j<n; j++){
 				int ii=i;
@@ -437,7 +437,7 @@ public class SNNDensity {
 	
 	}
 	
-	public void runMRPP(int[] ids, float[][] tmat){
+	public void runMRPP(int[] ids, double[][] tmat){
 		MRPPresults=new double[numClusts];
 		for (int j=0; j<numClusts; j++){
 			int[] t=new int[ids.length];

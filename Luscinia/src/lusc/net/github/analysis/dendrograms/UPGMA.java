@@ -11,9 +11,9 @@ public class UPGMA {
 	double gamma=0;
 	int le;
 	double maxDist;
-	float[][] input;
+	double[][] input;
 	
-	public UPGMA (float[][] input, int mode){
+	public UPGMA (double[][] input, int mode){
 		this.input=input;
 		this.mode=mode;
 		double E=0;
@@ -21,8 +21,8 @@ public class UPGMA {
 		int numNodes=le*2-1;
 		dat=new TreeDat[numNodes];
 		boolean active[]=new boolean[le];
-		float[][] scores=new float[le][];
-		float[] count=new float[le];
+		double[][] scores=new double[le][];
+		double[] count=new double[le];
 		int index[]=new int[le];
 		for (int i=0; i<le; i++){
 			active[i]=true;
@@ -33,10 +33,10 @@ public class UPGMA {
 		}
 
 		for (int i=0; i<le; i++){
-			scores[i]=new float[i+1];
+			scores[i]=new double[i+1];
 			for (int j=0; j<i; j++){
 				if (mode==1){
-					scores[i][j]=(float)(input[i][j]*input[i][j]);
+					scores[i][j]=(input[i][j]*input[i][j]);
 				}
 				else{
 					scores[i][j]=input[i][j];
@@ -45,7 +45,7 @@ public class UPGMA {
 		}
 		
 		int g,h,i,j, loca, locb;
-		float min=0;
+		double min=0;
 		double score;
 		
 		for (g=le; g<numNodes; g++){
@@ -71,7 +71,7 @@ public class UPGMA {
 			dat[g]=new TreeDat(E, dat[index[loca]].child, dat[index[locb]].child, index[loca], index[locb]);
 			index[loca]=g;
 			active[locb]=false;
-			float newcount=count[loca]+count[locb];
+			double newcount=count[loca]+count[locb];
 			if (mode==0){
 				alphap=(count[loca])/newcount;
 				alphaq=(count[locb])/newcount;
@@ -130,10 +130,10 @@ public class UPGMA {
 					}
 					
 					if (h<loca){
-						scores[loca][h]=(float)(score);
+						scores[loca][h]=(score);
 					}
 					else{
-						scores[h][loca]=(float)(score);
+						scores[h][loca]=(score);
 					}					
 				}
 			}
@@ -172,7 +172,7 @@ public class UPGMA {
 		return le;
 	}
 	
-	public float[][] getInput(){
+	public double[][] getInput(){
 		return input;
 	}
 	
@@ -258,14 +258,14 @@ public class UPGMA {
 		return cats;
 	}
 		
-	public float[][] calculateMeanClusterDistances(int q){
+	public double[][] calculateMeanClusterDistances(int q){
 		int[][] cats=calculateClassificationMembers(q);
 		q=cats[0].length;
-		float[][] r=new float[le][q];
+		double[][] r=new double[le][q];
 		for (int i=0; i<q; i++){
 			for (int j=0; j<le; j++){
-				float s=0;
-				float c=0;
+				double s=0;
+				double c=0;
 				
 				for (int k=0; k<le; k++){
 					if (cats[j][i]==cats[k][i]){

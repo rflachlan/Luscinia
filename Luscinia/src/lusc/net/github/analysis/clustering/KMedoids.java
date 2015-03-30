@@ -25,7 +25,7 @@ public class KMedoids {
 	
 	double[] globalSilhouette, simulatedSilhouette;
 	
-	float[] mat2;
+	double[] mat2;
 	int[] rowheads;
 	int bestK=0;
 	int assignmentLength;
@@ -34,7 +34,7 @@ public class KMedoids {
 	
 	
 	
-	public KMedoids (float[][] dMat, int minK, int maxK, int type, double[] sds, int nsims){
+	public KMedoids (double[][] dMat, int minK, int maxK, int type, double[] sds, int nsims){
 		this.type=0;
 		makeMatrix2(dMat, 1);
 		this.maxK=maxK;
@@ -119,7 +119,7 @@ public class KMedoids {
 		if (nsims>0){
 			for (int i=minK; i<=maxK; i++){
 				for (int ii=0; ii<nsims; ii++){
-					float[][] simmat=simulateMatrix(sds);
+					double[][] simmat=simulateMatrix(sds);
 					makeMatrix2(simmat, 1);
 					int a=0;
 					
@@ -184,12 +184,12 @@ public class KMedoids {
 	}
 	
 	
-	public void makeMatrix2(float[][] dMat, int pow){
+	public void makeMatrix2(double[][] dMat, int pow){
 		int n=dMat.length;
-		mat2=new float[n*n];
+		mat2=new double[n*n];
 		rowheads=new int[n];
 		int k=0;
-		float c=0f;
+		double c=0;
 		for (int i=0; i<n; i++){
 			rowheads[i]=k;
 			for (int j=0; j<n; j++){
@@ -198,10 +198,10 @@ public class KMedoids {
 					c=0f;
 				}
 				else if(i>j){
-					c=(float)Math.pow(dMat[i][j], pow);
+					c=Math.pow(dMat[i][j], pow);
 				}
 				else{
-					c=(float)Math.pow(dMat[j][i], pow);
+					c=Math.pow(dMat[j][i], pow);
 				}
 				mat2[k]=c;
 				k++;
@@ -242,11 +242,11 @@ public class KMedoids {
 	}
 	
 	
-	public float[][] simulateMatrix(double[] sds){
+	public double[][] simulateMatrix(double[] sds){
 		
-		float[][] dMatS=new float[n][];
+		double[][] dMatS=new double[n][];
 		for (int i=0; i<n; i++){
-			dMatS[i]=new float[i+1];
+			dMatS[i]=new double[i+1];
 		}
 		int m=sds.length;
 		double[][] locs=new double[n][m];
@@ -262,7 +262,7 @@ public class KMedoids {
 				for (int k=0; k<m; k++){
 					score+=(locs[i][k]-locs[j][k])*(locs[i][k]-locs[j][k]);
 				}
-				dMatS[i][j]=(float)Math.sqrt(score);
+				dMatS[i][j]=Math.sqrt(score);
 			}
 		}
 		return dMatS;
@@ -273,20 +273,20 @@ public class KMedoids {
 		int kv;
 		int reps;
 		int p=0;
-		float oscore;
-		float bestscore;
+		double oscore;
+		double bestscore;
 		int[] results;
-		float[] dat;
+		double[] dat;
 		int[] rowhead;
 		boolean useBuild=false;
 		
 		
-		public KMedoidsThread(float[] da, int[] rowh, int kv, int reps, boolean useBuild){
+		public KMedoidsThread(double[] da, int[] rowh, int kv, int reps, boolean useBuild){
 			this.reps=reps;
 			this.kv=kv;
 			this.useBuild=useBuild;
 			int m=da.length;
-			dat=new float[m];
+			dat=new double[m];
 			System.arraycopy(da,0, dat, 0, m);
 			p=rowh.length;
 			rowhead=new int[p];
@@ -314,7 +314,7 @@ public class KMedoids {
 					if (!found){
 						tp[i]=j;
 						double d=0;
-						float z=0f;
+						double z=0;
 						double bs=0;
 						for (int r=0; r<n; r++){
 							bs=1000000;
@@ -358,13 +358,13 @@ public class KMedoids {
 			int[] prototypes=new int[kv];
 			int[] protoheads=new int[kv];
 			int[] assignments=new int[p];
-			float[] scores=new float[p];
+			double[] scores=new double[p];
 			boolean[] isPrototype=new boolean[p];
 			int y=0;
-			float totalScore=0f;
+			double totalScore=0;
 		
 			int a;
-			float bestScore,z;
+			double bestScore,z;
 		
 			for (int i=0; i<p; i++){
 				isPrototype[i]=false;
@@ -412,11 +412,11 @@ public class KMedoids {
 			
 				cont=false;
 				for (int i=0; i<kv; i++){
-					float topScore=totalScore;
+					double topScore=totalScore;
 					id1=-1;
 					for (int j=0; j<p; j++){
 						if (!isPrototype[j]){
-							float tempScore=totalScore;
+							double tempScore=totalScore;
 							protoheads[i]=rowhead[j];
 							for (int k=0; k<p; k++){
 								if (assignments[k]==i){
@@ -481,13 +481,13 @@ public class KMedoids {
 		int[] prototypes=new int[kv];
 		int[] protoheads=new int[kv];
 		int[] assignments=new int[p];
-		float[] scores=new float[p];
+		double[] scores=new double[p];
 		boolean[] isPrototype=new boolean[p];
 		int y=0;
-		float totalScore=0f;
+		double totalScore=0;
 		
 		int a;
-		float bestScore,z;
+		double bestScore,z;
 		
 		for (int i=0; i<p; i++){
 			isPrototype[i]=false;
@@ -522,13 +522,13 @@ public class KMedoids {
 		int id2=0;
 		while(id1>=0){
 			//System.out.println(id1+" "+totalScore);
-			float topScore=totalScore;
+			double topScore=totalScore;
 			id1=-1;
 			id2=-1;
 			for (int i=0; i<kv; i++){
 				for (int j=0; j<p; j++){
 					if (!isPrototype[j]){
-						float tempScore=totalScore;
+						double tempScore=totalScore;
 						protoheads[i]=rowhead[j];
 						for (int k=0; k<p; k++){
 							if (assignments[k]==i){
@@ -612,10 +612,10 @@ public class KMedoids {
 		int m=prototypes.length;
 		int[] assignments=new int[n];
 		for (int i=0; i<n; i++){
-			float bestScore=1000000f;
+			double bestScore=1000000;
 			int loc=-1;
 			for (int j=0; j<m; j++){
-				float s=mat2[rowheads[prototypes[j]]+i];
+				double s=mat2[rowheads[prototypes[j]]+i];
 				if(s<bestScore){
 					bestScore=s;
 					loc=j;
@@ -627,7 +627,7 @@ public class KMedoids {
 		return assignments;
 	}
 	
-	public double calculateAverageSilhouetteScore(int[] assignments, int kv, float[][] dMat){
+	public double calculateAverageSilhouetteScore(int[] assignments, int kv, double[][] dMat){
 		double overallAvSil=0;
 		for (int i=0; i<kv; i++){
 			double avSil=0;
@@ -643,7 +643,7 @@ public class KMedoids {
 		return (overallAvSil/(kv+0.0));
 	}
 	
-	public double calculateSilhouetteWidth(int f, int[] assignments, float[][] dMat, int m){
+	public double calculateSilhouetteWidth(int f, int[] assignments, double[][] dMat, int m){
 		
 		double[] avbetweenscore=new double[m];
 		double[] counter=new double[m];
@@ -676,7 +676,7 @@ public class KMedoids {
 		return score;		
 	}	
 	
-	public double[] calculateSilhouetteWidth(int[] assignments, float[][] dMat, int m){
+	public double[] calculateSilhouetteWidth(int[] assignments, double[][] dMat, int m){
 		
 		double[] results=new double[n];
 		for (int i=0; i<n; i++){
@@ -712,7 +712,7 @@ public class KMedoids {
 		return results;		
 	}	
 	
-	public void runMRPP(int[] ids, int[] spids, float[][] tmat){
+	public void runMRPP(int[] ids, int[] spids, double[][] tmat){
 		MRPPresults=new double[overallAssignments.length][];
 		
 		System.out.println("Overall, Non-clustered MRPP - Populations");

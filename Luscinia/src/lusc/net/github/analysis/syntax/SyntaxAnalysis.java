@@ -14,12 +14,12 @@ import lusc.net.github.analysis.AnalysisGroup;
 
 public class SyntaxAnalysis {
 
-	float increment=0.05f;
+	double increment=0.05;
 	int nrepeats=1000;
 	int[] locs={1, 2, 5, 10, 20};
 	boolean[] hasPrevious, hasNext;
 	int[] songLengths;
-	float[][] data;
+	double[][] data;
 	double[] transLabels=null;
 	String[] resultString=null;
 	double minimumSDdev=0;
@@ -31,7 +31,7 @@ public class SyntaxAnalysis {
 	BasicStatistics bs=new BasicStatistics();
 	Random random=new Random(System.currentTimeMillis());
 
-	public SyntaxAnalysis(float[][] input, int[][] lookUps, boolean waste){
+	public SyntaxAnalysis(double[][] input, int[][] lookUps, boolean waste){
 	
 		this.nSongs=nSongs;
 		n=input.length;
@@ -42,27 +42,27 @@ public class SyntaxAnalysis {
 		}
 		n2=n-m;
 		
-		data=new float[n][n];
+		data=new double[n][n];
 		
-		float[][] reald2=new float[n][n];
+		double[][] reald2=new double[n][n];
 		
-		float[][] simd2=new float[n][n];
-		float[][] maxd2=new float[n][n];
-		float[][] maxd=new float[n][n];
-		float[][] mind2=new float[n][n];
+		double[][] simd2=new double[n][n];
+		double[][] maxd2=new double[n][n];
+		double[][] maxd=new double[n][n];
+		double[][] mind2=new double[n][n];
 		
 		for (int i=0; i<n; i++){
 			for (int j=0; j<i; j++){
 				data[i][j]=input[i][j];
 				data[j][i]=input[i][j];
-				mind2[i][j]=1000000f;
+				mind2[i][j]=1000000;
 			}
 		}
 		
 		
-		float[][] si1=new float[n2][];
+		double[][] si1=new double[n2][];
 		for (int i=0; i<n2; i++){
-			si1[i]=new float[i+1];
+			si1[i]=new double[i+1];
 		}
 		int[] order=new int[n];
 		getStraightOrder(order);
@@ -173,7 +173,7 @@ public class SyntaxAnalysis {
 				
 				double meandev=reald2[i][j]-mean1;
 				
-				meandev=(float)(meandev/sd1);
+				meandev=(double)(meandev/sd1);
 				
 				if (meandev>bestdev){
 					if ((checker[j]==-1)||(best[checker[j]]<meandev)){
@@ -223,7 +223,7 @@ public class SyntaxAnalysis {
 		*/
 	}
 	
-	public SyntaxAnalysis(float[][] input, int[][] lookUps){
+	public SyntaxAnalysis(double[][] input, int[][] lookUps){
 				
 		int resamples=1000;
 		n=lookUps.length;
@@ -358,7 +358,7 @@ public class SyntaxAnalysis {
 		}	
 	}
 	
-	public SyntaxAnalysis(int[] sample, float[][] input, int[][] lookUps){
+	public SyntaxAnalysis(int[] sample, double[][] input, int[][] lookUps){
 		
 		int resamples=500;
 		
@@ -450,7 +450,7 @@ public class SyntaxAnalysis {
 		}
 	}
 	
-	public void calculateKNNDistance(int[][] ref1, int[][] ref2, float[][] scores, double[] results, int k){
+	public void calculateKNNDistance(int[][] ref1, int[][] ref2, double[][] scores, double[] results, int k){
 		int n=ref1.length;
 		int m=ref2.length;
 		double[] q=new double[k];
@@ -481,7 +481,7 @@ public class SyntaxAnalysis {
 		}
 	}
 	
-	public void calculateKNNDistance(int[][] ref1, int[][] ref2, float[][] scores, double[][] results, int[] locs, boolean randomDelete){
+	public void calculateKNNDistance(int[][] ref1, int[][] ref2, double[][] scores, double[][] results, int[] locs, boolean randomDelete){
 		int n=ref1.length;
 		int m=ref2.length;
 		int p=locs[locs.length-1];
@@ -546,7 +546,7 @@ public class SyntaxAnalysis {
 		}
 	}
 
-	public void calculateDensityDistance(int[][] ref1, int[][] ref2, float[][] scores, double[] results, double p){
+	public void calculateDensityDistance(int[][] ref1, int[][] ref2, double[][] scores, double[] results, double p){
 		int n=ref1.length;
 		int m=ref2.length;
 		double score;
@@ -573,7 +573,7 @@ public class SyntaxAnalysis {
 		}
 	}
 	
-	public float[][] calculateSampleDistanceMatrix(int[] sample, float[][] input){
+	public double[][] calculateSampleDistanceMatrix(int[] sample, double[][] input){
 		
 		int n=sample.length;
 		int n2=n*n;
@@ -587,9 +587,9 @@ public class SyntaxAnalysis {
 			}
 		}
 		
-		float[][] out=new float[n2][];
+		double[][] out=new double[n2][];
 		for (int i=0; i<n2; i++){
-			out[i]=new float[i+1];
+			out[i]=new double[i+1];
 			
 			for (int j=0; j<i; j++){
 				if (ref[i][0]>ref[j][0]){
@@ -613,7 +613,7 @@ public class SyntaxAnalysis {
 	
 	/*
 	
-	public SyntaxAnalysis(float[][] input, int[][] lookUps, int nrepeats){
+	public SyntaxAnalysis(double[][] input, int[][] lookUps, int nrepeats){
 		n=input.length;
 		setUpNext(lookUps);
 		m=0;
@@ -625,13 +625,13 @@ public class SyntaxAnalysis {
 		}
 		n2=n-m;
 	
-		float [][] d2=new float[n][];
-		data=new float[n][];
-		float [][] dref=new float[n][];
+		double [][] d2=new double[n][];
+		data=new double[n][];
+		double [][] dref=new double[n][];
 		for (int i=0; i<n; i++){
-			d2[i]=new float[i+1];
-			data[i]=new float[i+1];
-			dref[i]=new float[i+1];
+			d2[i]=new double[i+1];
+			data[i]=new double[i+1];
+			dref[i]=new double[i+1];
 			for (int j=0; j<i; j++){
 				d2[i][j]=input[i][j];
 			}
@@ -754,7 +754,7 @@ public class SyntaxAnalysis {
 		}
 	}
 	
-	public void syntaxCompression(float[][] output, int[] order){
+	public void syntaxCompression(double[][] output, int[] order){
 		
 		for (int i=0; i<n; i++){
 			int ii=order[i];
@@ -785,7 +785,7 @@ public class SyntaxAnalysis {
 		}
 	}
 	
-	public void syntaxCompression2(float[][] output, int[] order){
+	public void syntaxCompression2(double[][] output, int[] order){
 		
 		System.out.println("Comp: "+n);
 		
@@ -799,15 +799,15 @@ public class SyntaxAnalysis {
 				for (int j=0; j<i; j++){
 					if (hasPrevious[j]){
 						//output[ic][jc]=data[i1][order[j]]+data[i2][order[j-1]];
-						//output[ic][jc]=(float)Math.sqrt(data[i1][order[j]]*data[i1][order[j]]+data[i2][order[j-1]]*data[i2][order[j-1]]);
-						//output[ic][jc]=(float)Math.sqrt(data[i1][order[j]]*data[i2][order[j-1]]);
+						//output[ic][jc]=(double)Math.sqrt(data[i1][order[j]]*data[i1][order[j]]+data[i2][order[j-1]]*data[i2][order[j-1]]);
+						//output[ic][jc]=(double)Math.sqrt(data[i1][order[j]]*data[i2][order[j-1]]);
 						System.out.println(i+" "+j);
 						System.out.println(data[i][j]);
 						System.out.println(data[i-1][j-1]);
 						System.out.println(ic+" "+jc);
-						output[ic][jc]=(float)Math.sqrt(data[i][j]*data[i-1][j-1]);
+						output[ic][jc]=(double)Math.sqrt(data[i][j]*data[i-1][j-1]);
 						
-						//output[ic][jc]=(float)Math.max(data[i1][order[j]],data[i2][order[j-1]]);
+						//output[ic][jc]=(double)Math.max(data[i1][order[j]],data[i2][order[j-1]]);
 						jc++;
 					}
 				}
@@ -816,8 +816,8 @@ public class SyntaxAnalysis {
 		}
 	}
 	
-	public void syntaxCompression3(float[][] input, float[][] output){
-		float c;
+	public void syntaxCompression3(double[][] input, double[][] output){
+		double c;
 		for (int i=0; i<n; i++){
 			for (int j=0; j<i; j++){
 				output[i][j]=input[i][j];
@@ -915,7 +915,7 @@ public class SyntaxAnalysis {
 		return results;				
 	}	
 	
-	public int[] syntaxComparisonDensity(int[] order, float threshold){
+	public int[] syntaxComparisonDensity(int[] order, double threshold){
 		
 		int[] results=new int[n2];
 		int ii=0;
@@ -937,10 +937,10 @@ public class SyntaxAnalysis {
 		return results;				
 	}	
 	
-	public void syntaxCompareAll(int[] order, float[][] sum){
+	public void syntaxCompareAll(int[] order, double[][] sum){
 
 		int i, j, k;
-		float c, h;
+		double c, h;
 		
 		int[] order1=new int[n2];
 		int[] order2=new int[n2];
@@ -969,7 +969,7 @@ public class SyntaxAnalysis {
 		}
 	}
 	
-	public void syntaxCompareAllDensity(int[] order, int[][] sum, float threshold){
+	public void syntaxCompareAllDensity(int[] order, int[][] sum, double threshold){
 
 		int i, j, k, c;
 				
@@ -999,7 +999,7 @@ public class SyntaxAnalysis {
 	}
 
 
-	public double[] calculateMeanKNearestNeighbour(float[][] data, int[] locs ){
+	public double[] calculateMeanKNearestNeighbour(double[][] data, int[] locs ){
 	
 		
 		double sum=0;
@@ -1030,7 +1030,7 @@ public class SyntaxAnalysis {
 		return averages;
 	}
 	
-	public double[] calculateMeanKNearestNeighbour(float[][] data, int k){
+	public double[] calculateMeanKNearestNeighbour(double[][] data, int k){
 	
 		
 		double sum=0;
@@ -1059,7 +1059,7 @@ public class SyntaxAnalysis {
 		return knearest;
 	}
 	
-	public int[] reorderMatrix(float[][] inmatrix, float[][] outmatrix){
+	public int[] reorderMatrix(double[][] inmatrix, double[][] outmatrix){
 		int n=inmatrix.length;
 		
 		int[] placeholder=new int [n];
@@ -1097,7 +1097,7 @@ public class SyntaxAnalysis {
 		double[] label2=new double[n2];
 		String[] names2=new String[n2];
 		int[][] lu=sg.getLookUp(3);
-		String[] tn=sg.getNames(3);
+		String[] tn=sg.getScores(3).getNames();
 		double[] tl=sg.getLabels(3);
 		
 		for (int i=0; i<n2; i++){
@@ -1118,11 +1118,11 @@ public class SyntaxAnalysis {
 				names2[i]=" ";
 			}
 		}
-		float[][] matrix=new float[n2][];
+		double[][] matrix=new double[n2][];
 		for (int i=0; i<n2; i++){
 			int i1=lookUp2[i][2];
 			int i2=lookUp2[i][3];
-			matrix[i]=new float[i+1];
+			matrix[i]=new double[i+1];
 			for (int j=0; j<i; j++){
 				int j1=lookUp2[j][2];
 				int j2=lookUp2[j][3];
@@ -1139,9 +1139,9 @@ public class SyntaxAnalysis {
 	
 	public void calcTransMatrix(AnalysisGroup sg){
 	
-		float[][] si1=new float[n2][];
+		double[][] si1=new double[n2][];
 		for (int i=0; i<n2; i++){
-			si1[i]=new float[i+1];
+			si1[i]=new double[i+1];
 		}
 		int[] order=new int[n];
 		
@@ -1153,7 +1153,7 @@ public class SyntaxAnalysis {
 		/*
 		for (int i=0; i<n2; i++){
 			for (int j=0; j<i; j++){
-				float p=(float)Math.abs(transLabels[i]-transLabels[j]);
+				double p=(double)Math.abs(transLabels[i]-transLabels[j]);
 				si1[i][j]+=p;
 			}
 		}
@@ -1163,7 +1163,7 @@ public class SyntaxAnalysis {
 		//sg.setLabels(3, transLabels);	
 	}
 	
-	public double compareMatrices(float[][] mat1, float[][] mat2){
+	public double compareMatrices(double[][] mat1, double[][] mat2){
 		int n=mat1.length;
 		
 		double sum=0;
@@ -1177,7 +1177,7 @@ public class SyntaxAnalysis {
 		return (sum/(n*(n-1)*0.5));
 	}
 	
-	public double calculateAverageDensity(float[][] mat, double threshold){
+	public double calculateAverageDensity(double[][] mat, double threshold){
 		int n=mat.length;
 		double sum=0;
 		for (int i=0; i<n; i++){
@@ -1195,9 +1195,9 @@ public class SyntaxAnalysis {
 		return(sum/(n+0.0));
 	}
 	
-	public void normalizeMatrix(float[][] mat){
+	public void normalizeMatrix(double[][] mat){
 		int n=mat.length;
-		float sd=(float)bs.calculateSD(mat, false);
+		double sd=(double)bs.calculateSD(mat, false);
 		for (int i=0; i<n; i++){
 			for (int j=0; j<i; j++){
 				mat[i][j]/=sd;
@@ -1205,7 +1205,7 @@ public class SyntaxAnalysis {
 		}
 	}
 	
-	public void copyMatrix(float[][] input, float[][] output){
+	public void copyMatrix(double[][] input, double[][] output){
 		int n=input.length;
 		
 		for (int i=0; i<n; i++){
@@ -1215,7 +1215,7 @@ public class SyntaxAnalysis {
 		}
 	}
 	
-	public void squareMatrix(float[][] mat){
+	public void squareMatrix(double[][] mat){
 		int n=mat.length;
 		for (int i=0; i<n; i++){
 			for (int j=0; j<i; j++){
@@ -1224,11 +1224,11 @@ public class SyntaxAnalysis {
 		}
 	}
 	
-	public void squareRootMatrix(float[][] mat){
+	public void squareRootMatrix(double[][] mat){
 		int n=mat.length;
 		for (int i=0; i<n; i++){
 			for (int j=0; j<i; j++){
-				mat[i][j]=(float)Math.sqrt(mat[i][j]);
+				mat[i][j]=Math.sqrt(mat[i][j]);
 			}
 		}
 	}

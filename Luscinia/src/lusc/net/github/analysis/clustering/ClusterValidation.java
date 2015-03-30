@@ -1,7 +1,8 @@
-package lusc.net.github.analysis;
+package lusc.net.github.analysis.clustering;
 
 import java.util.*;
 
+import lusc.net.github.analysis.AnalysisGroup;
 import lusc.net.github.analysis.dendrograms.TreeDat;
 import lusc.net.github.analysis.dendrograms.UPGMA;
 
@@ -18,7 +19,6 @@ public class ClusterValidation {
 	//UPGMA upgma;
 	int dmode=1;
 	double[][] pcRep;
-	//float[][] matrix;
 	Random random=new Random(System.currentTimeMillis());
 	
 	
@@ -49,7 +49,7 @@ public class ClusterValidation {
 	 * @param matrix - dissimilarity matrix to be simulated
 	 * @param p - number of dimensions for simulated data to be calculated.
 	 */
-	public void randomizeMatrix(float[][] matrix, int p){
+	public void randomizeMatrix(double[][] matrix, int p){
 	
 		int n=matrix.length;
 		double[][] pcrand=new double[n][p];
@@ -66,7 +66,7 @@ public class ClusterValidation {
 				for (int k=0; k<p; k++){
 					score+=(pcrand[i][k]-pcrand[j][k])*(pcrand[i][k]-pcrand[j][k]);
 				}
-				matrix[i][j]=(float)Math.sqrt(score);
+				matrix[i][j]=Math.sqrt(score);
 			}
 		}
 		
@@ -83,7 +83,7 @@ public class ClusterValidation {
 	 * @return a 2-D double[][] array containing silhouette indices in the first column, and p-values in the second
 	 */
 	
-	public double[][] silhouettePValue(UPGMA upgma, float[][] matrix, double[] sds){
+	public double[][] silhouettePValue(UPGMA upgma, double[][] matrix, double[] sds){
 		
 		int repeat=25;
 		
@@ -100,25 +100,25 @@ public class ClusterValidation {
 		double simResults[];
 		double[][] results=new double[2][dat.length];
 		
-		float[][] mat=new float[matrix.length][p];
-		float[][] dmat=new float[matrix.length][];
+		double[][] mat=new double[matrix.length][p];
+		double[][] dmat=new double[matrix.length][];
 		for (int i=0; i<matrix.length; i++){
-			dmat[i]=new float[i+1];
+			dmat[i]=new double[i+1];
 		}
 		for (int a=0; a<repeat; a++){
 		
 			for (int i=0; i<matrix.length; i++){
 				for (int j=0; j<p; j++){
-					mat[i][j]=(float)(random.nextDouble()*sds[j]);
+					mat[i][j]=(random.nextDouble()*sds[j]);
 				}
 			}
 			for (int i=0; i<matrix.length; i++){
 				for (int j=0; j<i; j++){
-					float tot=0;
+					double tot=0;
 					for (int k=0; k<p; k++){
 						tot+=(mat[i][k]-mat[j][k])*(mat[i][k]-mat[j][k]);
 					}
-					dmat[i][j]=(float)Math.sqrt(tot);
+					dmat[i][j]=Math.sqrt(tot);
 				}
 			}		
 			
@@ -154,7 +154,7 @@ public class ClusterValidation {
 	 * @return
 	 */
 	
-	public double[] calculateValidityPerClusterX(UPGMA upgma, float[][] matrix){
+	public double[] calculateValidityPerClusterX(UPGMA upgma, double[][] matrix){
 		TreeDat[] td=upgma.getDat();
 		int n=td.length;				
 		double[] sil=new double[n];
@@ -215,7 +215,7 @@ public class ClusterValidation {
 	 * @return double[] with Silhouette indices
 	 */
 	
-	public double[] calculateValidityPerCluster2(UPGMA upgma, float[][] matrix){
+	public double[] calculateValidityPerCluster2(UPGMA upgma, double[][] matrix){
 		TreeDat[] td=upgma.getDat();
 		int[][] partitions=getPartitionMembers(td);
 		int n=td.length;				
@@ -281,7 +281,7 @@ public class ClusterValidation {
 	 * @return output array containing mean within-cluster distances
 	 */
 	
-	public double[] calculateWithinClusterDistance(UPGMA upgma, float[][] matrix){
+	public double[] calculateWithinClusterDistance(UPGMA upgma, double[][] matrix){
 		TreeDat[] td=upgma.getDat();
 		int n=td.length;				
 		double[] sil=new double[n];
@@ -327,7 +327,7 @@ public class ClusterValidation {
 	 * @param matrix dissimilarity matrix
 	 * @return output 
 	 */
-	public double[] levineDomanyPValue2(double[] sds, UPGMA upgma, float[][] matrix){
+	public double[] levineDomanyPValue2(double[] sds, UPGMA upgma, double[][] matrix){
 		
 		int repeat=5;
 		
@@ -337,24 +337,24 @@ public class ClusterValidation {
 		
 		double simResults[];
 		
-		float[][] mat=new float[matrix.length][p];
-		float[][] dmat=new float[matrix.length][];
+		double[][] mat=new double[matrix.length][p];
+		double[][] dmat=new double[matrix.length][];
 		for (int i=0; i<matrix.length; i++){
-			dmat[i]=new float[i+1];
+			dmat[i]=new double[i+1];
 		}
 	
 		for (int i=0; i<matrix.length; i++){
 			for (int j=0; j<p; j++){
-				mat[i][j]=(float)(random.nextDouble());
+				mat[i][j]=(random.nextDouble());
 			}
 		}
 		for (int i=0; i<matrix.length; i++){
 			for (int j=0; j<i; j++){
-				float tot=0;
+				double tot=0;
 				for (int k=0; k<p; k++){
 					tot+=(mat[i][k]-mat[j][k])*(mat[i][k]-mat[j][k]);
 				}
-				dmat[i][j]=(float)Math.sqrt(tot);
+				dmat[i][j]=Math.sqrt(tot);
 			}
 		}		
 		upgma=new UPGMA(dmat, dmode);
@@ -370,7 +370,7 @@ public class ClusterValidation {
 	 * @param matrix
 	 * @return
 	 */
-	public double[] levineDomanyPValue(UPGMA upgma, float[][] matrix){
+	public double[] levineDomanyPValue(UPGMA upgma, double[][] matrix){
 		
 		int repeat=20;
 		
@@ -382,25 +382,25 @@ public class ClusterValidation {
 		double[] simTotals=new double[dat.length];
 		double simResults[];
 		
-		float[][] mat=new float[matrix.length][p];
-		float[][] dmat=new float[matrix.length][];
+		double[][] mat=new double[matrix.length][p];
+		double[][] dmat=new double[matrix.length][];
 		for (int i=0; i<matrix.length; i++){
-			dmat[i]=new float[i+1];
+			dmat[i]=new double[i+1];
 		}
 		for (int a=0; a<repeat; a++){
 		
 			for (int i=0; i<matrix.length; i++){
 				for (int j=0; j<p; j++){
-					mat[i][j]=(float)(random.nextDouble());
+					mat[i][j]=(random.nextDouble());
 				}
 			}
 			for (int i=0; i<matrix.length; i++){
 				for (int j=0; j<i; j++){
-					float tot=0;
+					double tot=0;
 					for (int k=0; k<p; k++){
 						tot+=(mat[i][k]-mat[j][k])*(mat[i][k]-mat[j][k]);
 					}
-					dmat[i][j]=(float)Math.sqrt(tot);
+					dmat[i][j]=Math.sqrt(tot);
 				}
 			}		
 			
@@ -436,7 +436,7 @@ public class ClusterValidation {
 	 * @param matrix dissimilarity matrix
 	 * @return array containing the proportion of branches at a depth matching that of the corresponding branch in the input data
 	 */
-	public double[] resamplingMethod(int repeat, UPGMA nupgma, float[][] matrix){
+	public double[] resamplingMethod(int repeat, UPGMA nupgma, double[][] matrix){
 	
 		//int repeat=500;
 		double prop=0.67;
@@ -444,19 +444,19 @@ public class ClusterValidation {
 		int n=matrix.length;
 		
 		int m=(int)Math.round(n*prop);
-		float[][] treeMat=new float[n][];
+		double[][] treeMat=new double[n][];
 		for (int i=0; i<n; i++){
-			treeMat[i]=new float[i+1];
+			treeMat[i]=new double[i+1];
 		}
 		calculateTreeDistance(treeMat, nupgma.getDat());
 				
 		int[] sampled=new int[n];
 		int[] selected=new int[m];
-		float[][] rMat=new float[m][];
-		float[][] rTreeMat=new float[m][];
+		double[][] rMat=new double[m][];
+		double[][] rTreeMat=new double[m][];
 		for (int i=0; i<m; i++){
-			rMat[i]=new float[i+1];
-			rTreeMat[i]=new float[i+1];
+			rMat[i]=new double[i+1];
+			rTreeMat[i]=new double[i+1];
 		}
 		
 		int nl=nupgma.getDat().length;
@@ -537,7 +537,7 @@ public class ClusterValidation {
 	 * @param dat input dendrogram branches
 	 */
 	
-	public void calculateTreeDistance(float[][] mat, TreeDat[] dat){
+	public void calculateTreeDistance(double[][] mat, TreeDat[] dat){
 	
 	
 		int n=dat.length;
@@ -547,12 +547,12 @@ public class ClusterValidation {
 			for (int j=0; j<dat[i].child.length; j++){
 				for (int k=0; k<j; k++){
 					if (dat[i].child[j]>dat[i].child[k]){
-						mat[dat[i].child[j]][dat[i].child[k]]=(float)(dat[i].dist*dat[n-1].dist);
+						mat[dat[i].child[j]][dat[i].child[k]]=(dat[i].dist*dat[n-1].dist);
 						//mat[dat[i].child[j]][dat[i].child[k]]=n-i;
 						
 					}
 					else{
-						mat[dat[i].child[k]][dat[i].child[j]]=(float)(dat[i].dist*dat[n-1].dist);
+						mat[dat[i].child[k]][dat[i].child[j]]=(dat[i].dist*dat[n-1].dist);
 						//mat[dat[i].child[k]][dat[i].child[j]]=n-i;
 					}
 				}

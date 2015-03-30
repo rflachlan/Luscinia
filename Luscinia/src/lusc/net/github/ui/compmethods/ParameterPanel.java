@@ -156,10 +156,7 @@ public class ParameterPanel extends JPanel{
 	
 	public void startAnalysis(){
 	
-		
-		
-		//sg.makeNames();
-		ag.makeNames();	//SHOULD THIS BE CALLED HERE?
+				
 		boolean[][] parameterMatrix=new boolean[8][17];
 		
 		for (int i=0; i<8; i++){

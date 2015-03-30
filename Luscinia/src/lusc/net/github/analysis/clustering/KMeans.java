@@ -11,11 +11,11 @@ public class KMeans {
 	
 	
 	int[] assignments;
-	float[][] centroids;
+	double[][] centroids;
 	
 	
 	
-	public KMeans(float[][] vec, int[] initLabels){
+	public KMeans(double[][] vec, int[] initLabels){
 		
 		int n=0;
 		for (int i=0; i<initLabels.length; i++){
@@ -35,7 +35,7 @@ public class KMeans {
 			
 			assignments=assignToCluster(vec, centroids);
 			
-			float[][] newC=recomputeCentroids(vec, assignments, n);
+			double[][] newC=recomputeCentroids(vec, assignments, n);
 			
 			changed=compareCentroids(centroids, newC);
 			centroids=newC;
@@ -50,12 +50,12 @@ public class KMeans {
 		return assignments;
 	}
 	
-	public float[][] getCentroids(){
+	public double[][] getCentroids(){
 		return centroids;
 	}
 		
 		
-	public int[] assignToCluster(float[][] vec, float[][] centroids){
+	public int[] assignToCluster(double[][] vec, double[][] centroids){
 		
 		
 		int n=centroids.length;
@@ -85,12 +85,12 @@ public class KMeans {
 		return results;
 	}
 	
-	public float[][] recomputeCentroids(float[][] vec, int[] assignments, int n){
+	public double[][] recomputeCentroids(double[][] vec, int[] assignments, int n){
 		int m=vec.length;
 		int z=vec[0].length;
 		
-		float[][] results=new float[n][z];
-		float[] count=new float[n];
+		double[][] results=new double[n][z];
+		double[] count=new double[n];
 		
 		
 		for (int i=0; i<m; i++){
@@ -108,8 +108,8 @@ public class KMeans {
 		return results;
 	}
 	
-	public boolean compareCentroids(float[][] oldC, float[][] newC){
-		float r=0;
+	public boolean compareCentroids(double[][] oldC, double[][] newC){
+		double r=0;
 		for (int i=0; i<oldC.length; i++){
 			for (int j=0; j<oldC[i].length; j++){
 				r+=(oldC[i][j]-newC[i][j])*(oldC[i][j]-newC[i][j]);
@@ -121,7 +121,7 @@ public class KMeans {
 		return result;
 	}
 	
-	public double[] calculatePrototypeDistances(float[][] vec){
+	public double[] calculatePrototypeDistances(double[][] vec){
 		
 		int m=vec.length;
 		int n=centroids.length;

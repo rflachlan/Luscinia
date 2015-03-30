@@ -79,17 +79,17 @@ public class DisplaySimilarityProportions extends DisplayPane {
 			catresults1=new int[numcats][numCols+1];
 			catresults2=new int[numcats][numCols+1];
 		}
-		float max=0;
+		double max=0;
 		double tot=0;
 		double count=0;
 		int place;
-		float score=0;
+		double score=0;
 		
 		int scoreLength=0;
 		int[]popIds={0};
 		scoreLength=sg.getLengths(type);
 		popIds=sg.getPopulationListArray(type);
-		float[][] scores=sg.getScores(type);
+		double[][] scores=sg.getScores(type).getDiss();
 		int[][] lookUp=sg.getLookUp(type);
 
 		
@@ -142,15 +142,15 @@ public class DisplaySimilarityProportions extends DisplayPane {
 	
 	public void calculateLabelledValues(){
 		labelledResults=new float[numCols+1][numCategories+1];
-		float max=0;
+		double max=0;
 		double tot=0;
 		double count=0;
 		int place;
 		int locDiff=0;
-		float score=0;
+		double score=0;
 		
 		int scoreLength=sg.getLengths(type);
-		float[][] scores=sg.getScores(type);
+		double[][] scores=sg.getScores(type).getDiss();
 		int[][] lookUp=sg.getLookUp(type);
 		double[] labels=sg.getLabels(type);
 

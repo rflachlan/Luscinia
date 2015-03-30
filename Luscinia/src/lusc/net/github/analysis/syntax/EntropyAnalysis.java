@@ -1,6 +1,8 @@
 package lusc.net.github.analysis.syntax;
 
 import java.util.LinkedList;
+
+import lusc.net.github.analysis.ComparisonResults;
 //
 //  EntropyAnalysis.java
 //  Luscinia
@@ -9,15 +11,10 @@ import java.util.LinkedList;
 //  Copyright 2011 __MyCompanyName__. All rights reserved.
 //
 
-
-
-
-
-
 public class EntropyAnalysis {
 	
 	int type=0;
-	float[][] mat;
+	double[][] mat;
 	int n=0;
 	int mode=2;
 	int maxK=0;
@@ -26,11 +23,13 @@ public class EntropyAnalysis {
 	MarkovChain[] mkc;
 	int[][] overallAssignments;
 	
-	public EntropyAnalysis (float[][] dMat, int maxK, int[][] individuals, int[][] lookUps, int type, int mode){
-		this.type=type;
+	//public EntropyAnalysis (double[][] dMat, int maxK, int[][] individuals, int[][] lookUps, int type, int mode){
+
+	public EntropyAnalysis (ComparisonResults cr, int maxK, int mode){
+		this.type=cr.getType();
 		this.maxK=maxK;
 		this.mode=mode;
-		makeMatrix(dMat);		
+		makeMatrix(cr.getDissT());		
 		
 		n=mat.length;
 		
@@ -38,8 +37,8 @@ public class EntropyAnalysis {
 			maxK=n/2;
 		}
 		
-		int[][] songLabels=getSongLabels(lookUps);
-		
+		int[][] songLabels=getSongLabels(cr.getLookUp());
+		int[][] individuals=cr.getIndividualSongs();
 		
 		
 		if (mode>0){
@@ -58,7 +57,7 @@ public class EntropyAnalysis {
 			System.out.println();
 		}
 		
-		System.out.println("SONGS "+dMat.length);
+		System.out.println("SONGS "+mat.length);
 		for (int i=0; i<songLabels.length; i++){
 			System.out.print((i+1)+" ");
 			for (int j=0; j<songLabels[i].length; j++){
@@ -132,12 +131,12 @@ public class EntropyAnalysis {
 		}	
 	}
 	
-	public void makeMatrix(float[][] dMat){
+	public void makeMatrix(double[][] dMat){
 		int n=dMat.length;
-		mat=new float[n][n];
+		mat=new double[n][n];
 		for (int i=0; i<n; i++){
 			for (int j=0; j<i; j++){
-				float c=dMat[i][j]*dMat[i][j];
+				double c=dMat[i][j]*dMat[i][j];
 				mat[i][j]=c;
 				mat[j][i]=c;
 			}

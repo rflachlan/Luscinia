@@ -4,30 +4,32 @@ import java.util.*;
 
 import lusc.net.github.analysis.BasicStatistics;
 import lusc.net.github.analysis.AnalysisGroup;
+import lusc.net.github.analysis.ComparisonResults;
 
 public class EntropyPopulationComp {
 
 	
-	public EntropyPopulationComp(AnalysisGroup sg, int h, int maxSyntaxK){
+	//public EntropyPopulationComp(ComparisonResults cr, int h, int maxSyntaxK){
+	public EntropyPopulationComp(ComparisonResults cr, int maxSyntaxK){
 		
 		
-		int[] popId=sg.getPopulationListArray(h);
-		int[] popId2=sg.getPopulationListArray(4);
-		String[] popNames=sg.getPopulations();
+		int[] popId=cr.getPopulationListArray();
+		//int[] popId2=sg.getPopulationListArray(4);
+		String[] popNames=cr.getPopulationNames();
 		int numPops=0;
 		for (int i=0; i<popId.length; i++){
 			if (popId[i]>numPops){numPops=popId[i];}
 		}
 		numPops++;
 		EntropyAnalysis[] ea=new EntropyAnalysis[numPops];
-		
+				
 		for (int i=0; i<numPops; i++){
-			System.out.println("Analyzing population: "+popNames[i]);
-			float[][] dat=sg.splitMatrix(popId, h, i);
-			int[][] indS=sg.splitIndSongs(popId2, i);
-			int[][] lookUps=sg.splitLookUps(popId, h, i);
+			//System.out.println("Analyzing population: "+popNames[i]);
+			
+			ComparisonResults crn=cr.splitCompResults(i);
+			
 
-			ea[i]=new EntropyAnalysis(dat, maxSyntaxK, indS, lookUps, 1, 0);	
+			ea[i]=new EntropyAnalysis(crn, maxSyntaxK, 0);	
 		}
 		
 		//medianComp

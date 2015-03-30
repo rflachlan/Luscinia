@@ -109,7 +109,7 @@ public class AnalysisChoose extends JPanel implements ActionListener, ChangeList
 	MultiDimensionalScaling mdsSyll=null;
 	MultiDimensionalScaling mdsSyTr=null;
 	MultiDimensionalScaling mdsSong=null;
-	
+	MultiDimensionalScaling mdsInd=null;
 	JFrame f;
 	
 	

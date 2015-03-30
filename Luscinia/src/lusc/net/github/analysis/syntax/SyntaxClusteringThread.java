@@ -30,7 +30,7 @@ public class SyntaxClusteringThread extends Thread{
 	double redundancy=0;
 	double overallRedundancy=0;
 	
-	float[][] matd;
+	double[][] matd;
 	int[] assignments;
 	
 	Random random;
@@ -45,7 +45,7 @@ public class SyntaxClusteringThread extends Thread{
 	
 	int mode=2;
 	
-	public SyntaxClusteringThread(int kv, float[][] mat, int[][] individuals, int[][] songs, int mode){
+	public SyntaxClusteringThread(int kv, double[][] mat, int[][] individuals, int[][] songs, int mode){
 		this.kv=kv;
 		this.mode=mode;
 		this.individuals=individuals;
@@ -54,7 +54,7 @@ public class SyntaxClusteringThread extends Thread{
 		
 		n=mat.length;
 		
-		this.matd=new float[n][n];
+		this.matd=new double[n][n];
 		for (int i=0; i<n; i++){
 			System.arraycopy(mat[i], 0, matd[i], 0, mat[i].length);
 		}
@@ -145,7 +145,7 @@ public class SyntaxClusteringThread extends Thread{
 	public boolean getAssignments(int[] prototypes, int[] assignments, int[] countAssignments, double threshold){
 		double bestScore=0;
 		int a;
-		float b;
+		double b;
 		for (int i=0; i<kv; i++){
 			countAssignments[i]=0;
 		}

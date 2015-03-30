@@ -240,7 +240,7 @@ public class PrepareDTW {
 		double s2;
 		for (int i=0; i<songs.length; i++){
 			int eleSizeS=songs[i].getNumElements();
-
+			//System.out.println(eleSizeS);
 			for (int j=0; j<eleSizeS; j++){
 				Element ele=(Element)songs[i].getElement(j);
 				double[][] measu=ele.getMeasurements();
@@ -348,7 +348,7 @@ public class PrepareDTW {
 	public void stitchSyllables(){		//a method to stitch together elements to generate one submatrix for each syllable
 	
 		Song[] songs=ag.getSongs();
-		int[][] lookUpEls=ag.getLookUp(0);
+		//int[][] lookUpEls=ag.getLookUp(0);
 		
 		int countSyls=0;
 		for (int i=0; i<songs.length; i++){
@@ -393,11 +393,16 @@ public class PrepareDTW {
 					
 					elementPos[countSyls]=new int[sylLength];
 					sylLength=0;
-					Element ele=(Element)songs[lookUpEls[countEls][0]].getElement(lookUpEls[countEls][1]);
+					
+					int q=0;
+					while (p[k][q]<0){q++;}
+					
+					Element ele=(Element)songs[i].getElement(p[k][q]);
+					
 					double startPos=ele.getBeginTime()*ele.getTimeStep();
 					for (int g=0; g<p[k].length; g++){
 						if (p[k][g]>=0){
-							Element ele2=(Element)songs[lookUpEls[countEls][0]].getElement(lookUpEls[countEls][1]);
+							Element ele2=(Element)songs[i].getElement(p[k][g]);
 							
 							double adjust=(ele2.getTimeStep()*ele2.getBeginTime())-startPos;
 							for (int b=0; b<data[countEls][0].length; b++){
@@ -510,7 +515,7 @@ public class PrepareDTW {
 	
 	
 	
-	public synchronized float[][] runDTW(DTWSwingWorker dtws, boolean stitch){
+	public synchronized double[][] runDTW(DTWSwingWorker dtws, boolean stitch){
 		
 		int ncores=Runtime.getRuntime().availableProcessors();
 		
@@ -532,14 +537,14 @@ public class PrepareDTW {
 			System.out.println("STITCHING ENABLED");
 		}
 		
-		float[][] scores=new float[eleSize][eleSize];
+		double[][] scores=new double[eleSize][eleSize];
 		
 		for (int i=0; i<sdReal.length; i++){
 			System.out.println(i+" "+sdReal[i]);
 		}
 		double[] sdOver=new double[15];
 
-		float[][] scoresX=new float[ncores][eleSize];
+		double[][] scoresX=new double[ncores][eleSize];
 		
 		CompareThread ct[]=new CompareThread[ncores];
 		
@@ -595,15 +600,15 @@ public class PrepareDTW {
 			}
 		}
 		
-		float[][] scoresH=new float[e][];
+		double[][] scoresH=new double[e][];
 		for (int i=0; i<e; i++){
-			scoresH[i]=new float[i+1];
+			scoresH[i]=new double[i+1];
 			for (int j=0; j<i; j++){
 				//scoresH[i][j]=Math.min(scores[i][j], scores[j][i]);
 				scoresH[i][j]=Math.max(scores[i][j], scores[j][i]);
 				//scoresH[i][j]=0.5f*(scores[i][j]+scores[j][i]);
-				if ((Float.isNaN(scores[i][j]))||(Float.isNaN(scores[j][i]))){
-					//System.out.println("NaN TROUBLE:"+" "+scores[i][j]+" "+scores[j][i]);
+				if ((Double.isNaN(scores[i][j]))||(Double.isNaN(scores[j][i]))){
+					System.out.println("NaN TROUBLE:"+" "+scores[i][j]+" "+scores[j][i]);
 					//System.out.println(songs[lookUpEls[i][0]].getIndividualName()+" "+songs[lookUpEls[i][0]].getName()+" "+lookUpEls[i][1]);
 					//System.out.println(songs[lookUpEls[j][0]].getIndividualName()+" "+songs[lookUpEls[j][0]].getName()+" "+lookUpEls[j][1]);
 				}

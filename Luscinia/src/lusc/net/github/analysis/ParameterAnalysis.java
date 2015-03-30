@@ -137,7 +137,7 @@ public class ParameterAnalysis {
 		}
 	}	
 	
-	public float[][] calculateDistancesFromParameters(){
+	public double[][] calculateDistancesFromParameters(){
 
 		int numParams=0;
 		int[] countPerType=new int[parameterMatrix[0].length];
@@ -169,9 +169,9 @@ public class ParameterAnalysis {
 			}
 		}
 								
-		float[][] results=new float[eleNumber][];
+		double[][] results=new double[eleNumber][];
 		for (int i=0; i<eleNumber; i++){
-			results[i]=new float[i+1];
+			results[i]=new double[i+1];
 		}
 		
 		

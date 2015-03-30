@@ -92,7 +92,7 @@ public class DendrogramPanel extends DisplayPane implements ChangeListener{
 	
 	void makeImage(){
 		int dwidth=width/2;
-		String[] name=sg.getNames(dataType);
+		String[] name=sg.getScores(dataType).getNames();
 		
 		
 		if (decorateNodes){

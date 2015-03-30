@@ -16,7 +16,7 @@ public class CompareThread extends Thread{
 	double maximumWarp=0.25;
 	int numTempPars=0;
 	boolean stitch;
-	float[] scores;
+	double[] scores;
 	double[] validParameters, sds, seg2, point2, vec1sq;
 	double sdsT, validTempPars;
 	double[][] p, q, r, s, t, seg1a, seg1b, vec1;
@@ -57,7 +57,7 @@ public class CompareThread extends Thread{
 	 * @param f
 	 */
 	
-	public CompareThread(int maxlength, double[][][]data, double[][][]dataT, double[][][]dataE, int[][]elPos, double[] sds, double sdRatio,  double[] validParameters, boolean weightByAmp, float[] scores, int start, int stop, int f){
+	public CompareThread(int maxlength, double[][][]data, double[][][]dataT, double[][][]dataE, int[][]elPos, double[] sds, double sdRatio,  double[] validParameters, boolean weightByAmp, double[] scores, int start, int stop, int f){
 		
  		this.data=data;
  		//this.dataT=dataT;
@@ -106,7 +106,7 @@ public class CompareThread extends Thread{
 	 * @param stop	 position to stop comparing
 	 * @param f
 	 */
-	public CompareThread(int maxlength, PrepareDTW pdtw, boolean stitch, float[] scores, int start, int stop, int f){
+	public CompareThread(int maxlength, PrepareDTW pdtw, boolean stitch, double[] scores, int start, int stop, int f){
 		
 		numTempPars=pdtw.getNumTempPars();
 		this.stitch=stitch;
@@ -206,13 +206,13 @@ public class CompareThread extends Thread{
 	 * Method called from Thread's run method.
 	 * This carries out three DTW algorithms, one with the shorter array centre-aligned, one with
 	 * it left-aligned, and one with it right-aligned
-	 * @return a float dissimarity score.
+	 * @return a double dissimarity score.
 	 */
 			
-	public float derTimeWarpingAsym (){
-		float scoreb=10000000f;
+	public double derTimeWarpingAsym (){
+		double scoreb=10000000;
 		if ((alignPoints==0)||(alignPoints>2)||(numTempPars==0)){
-			float score1=runComp();
+			double score1=runComp();
 			if (score1<scoreb){
 				scoreb=score1;
 			}
@@ -224,7 +224,7 @@ public class CompareThread extends Thread{
 				for (int i=0; i<dataFocalT.length; i++){
 					dataFocalT[i]-=diff;
 				}
-				float score3=runComp();
+				double score3=runComp();
 				if (score3<scoreb){scoreb=score3;}
 			}
 		
@@ -234,7 +234,7 @@ public class CompareThread extends Thread{
 				for (int i=0; i<dataFocalT.length; i++){
 					dataFocalT[i]+=diff;
 				}
-				float score5=runComp();
+				double score5=runComp();
 				if (score5<scoreb){scoreb=score5;}
 			}
 		
@@ -244,13 +244,13 @@ public class CompareThread extends Thread{
 				for (int i=0; i<dataFocalT.length; i++){
 					dataFocalT[i]+=diff2;
 				}
-				float score5=runComp();
+				double score5=runComp();
 				if (score5<scoreb){scoreb=score5;}
 				double diff3=diff*0.75;
 				for (int i=0; i<dataFocalT.length; i++){
 					dataFocalT[i]+=diff3;
 				}
-				float score6=runComp();
+				double score6=runComp();
 				if (score6<scoreb){scoreb=score6;}
 			}
 		}
@@ -264,10 +264,10 @@ public class CompareThread extends Thread{
 	/**
 	 * This method is called by  derTimeWarpingAsym. It calculates the standard deviations
 	 * for the various parameters in the matrix. It then runs the actual comparison.
-	 * @return a float value for dissimilarity
+	 * @return a double value for dissimilarity
 	 */
 	
-	public float runComp(){
+	public double runComp(){
 		
 		double[] sd=new double[sds.length];
 		
@@ -302,7 +302,7 @@ public class CompareThread extends Thread{
 				sd[i]=validParameters[i]/(totweight);
 			}
 		}
-		float score1=0;
+		double score1=0;
 		if (interpolateWarp){
 			score1=derTimeWarpingPointInterpol(sdT, sd);
 		}
@@ -321,9 +321,9 @@ public class CompareThread extends Thread{
 	 * It can detect break-points in the time series (i.e. different elements) and doesn't interpolate over break-points
 	 * @param sdt standard deviation for time parameter
 	 * @param sdf standard deviation for other parameters
-	 * @return float value of dissimilarity between two time series.
+	 * @return double value of dissimilarity between two time series.
 	 */
-	public float derTimeWarpingPointInterpol (double sdt, double[] sdf){
+	public double derTimeWarpingPointInterpol (double sdt, double[] sdf){
 		
 		
 		int length1=l1;
@@ -452,7 +452,7 @@ public class CompareThread extends Thread{
 			}
 		}
 				
-		float score=0f;
+		double score=0;
 		if (dynamicWarp){
 			score=timeWarping(length1, length3);
 		}
@@ -469,9 +469,9 @@ public class CompareThread extends Thread{
 	 * It can detect break-points in the time series (i.e. different elements) and doesn't interpolate over break-points
 	 * @param sdt standard deviation for time parameter
 	 * @param sdf standard deviation for other parameters
-	 * @return float value of dissimilarity between two time series.
+	 * @return double value of dissimilarity between two time series.
 	 */
-	public float derTimeWarpingPoint (double sdt, double[] sdf){
+	public double derTimeWarpingPoint (double sdt, double[] sdf){
 		
 		int length1=l1;
 		int length2=l2;
@@ -500,7 +500,7 @@ public class CompareThread extends Thread{
 			}
 		}
 		
-		float score=0f;
+		double score=0;
 		if (dynamicWarp){
 			score=timeWarping(length1, length2);
 		}
@@ -517,10 +517,10 @@ public class CompareThread extends Thread{
 	 * dissimilarity matrix (stored in s).
 	 * @param length1 length of first input time series
 	 * @param length2 length of second input time series
-	 * @return float score of dissimilarity.
+	 * @return double score of dissimilarity.
 	 */
 	
-	public float timeWarping(int length1, int length2){
+	public double timeWarping(int length1, int length2){
 		int x, y, i, j, k, locx, locy;
 		double min, sc, s2, f;
 		double thresh=length1*maximumWarp;
@@ -574,7 +574,7 @@ public class CompareThread extends Thread{
 				
 				
 		//float result=(float)(r[length1-1][length3-1]/Math.max(length1, length3));
-		float result=(float)(q[length1-1][length2-1]/p[length1-1][length2-1]);
+		double result=(q[length1-1][length2-1]/p[length1-1][length2-1]);
 		//float result=(float)(r[ba][bb]/den);
 		//float result=(float)Math.exp(r[ba][bb]/den);
 		//float result=(float)Math.sqrt(r[ba][bb]/den);
@@ -582,8 +582,8 @@ public class CompareThread extends Thread{
 	}
 	
 	
-	public float linearComp(int length1, int length2){
-		float score=0f;
+	public double linearComp(int length1, int length2){
+		double score=0;
 		double thresh=length1*maximumWarp;
 		double nthresh=-1*thresh;
 		double sl=1/Math.sqrt(length2*length2+length1*length1);
@@ -637,7 +637,7 @@ public class CompareThread extends Thread{
 			if (y>p){y=p;}
 			tot+=s[i][y];
 		}
-		score=(float)(tot/(length1+0.0));
+		score=(tot/(length1+0.0));
 		
 		return score;
 	}

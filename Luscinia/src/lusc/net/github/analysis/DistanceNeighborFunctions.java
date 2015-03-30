@@ -4,18 +4,18 @@ import java.util.*;
 
 public class DistanceNeighborFunctions {
 	
-	float[][] data;
+	double[][] data;
 	int n;
 	int type=1;
-	float[][] densities, nNeighbors;
+	double[][] densities, nNeighbors;
 	double[] densityThresholds;
 	
-	float[] meanDens, meanNN;
+	double[] meanDens, meanNN;
 	
 	int dBins=10;
 	int nBins=20;
 	
-	public DistanceNeighborFunctions(float[][] indata, int type){
+	public DistanceNeighborFunctions(double[][] indata, int type){
 		this.data=indata;
 		this.type=type;
 		n=data.length;
@@ -39,11 +39,11 @@ public class DistanceNeighborFunctions {
 		return dBins;
 	}
 	
-	public float[][] getDensities(){
+	public double[][] getDensities(){
 		return densities;
 	}
 	
-	public float[][] getNNeighbors(){
+	public double[][] getNNeighbors(){
 		return nNeighbors;
 	}
 	
@@ -51,11 +51,11 @@ public class DistanceNeighborFunctions {
 		return densityThresholds;
 	}
 	
-	public float[] getMeanDens(){
+	public double[] getMeanDens(){
 		return meanDens;
 	}
 	
-	public float[] getMeanNN(){
+	public double[] getMeanNN(){
 		return meanNN;
 	}
 	
@@ -66,10 +66,10 @@ public class DistanceNeighborFunctions {
 		for (int i=0; i<dBins; i++){
 			densityThresholds[i]=av/(i+1.0);
 		}
-		densities=new float[n][dBins];
+		densities=new double[n][dBins];
 		
 		for (int i=0; i<n; i++){
-			float s=0f;
+			double s=0;
 			for (int j=0; j<n; j++){
 				if (i!=j){
 					if (i>j){s=data[i][j];}
@@ -82,7 +82,7 @@ public class DistanceNeighborFunctions {
 				}
 			}
 			for (int j=0; j<dBins; j++){
-				densities[i][j]/=n-1f;
+				densities[i][j]/=n-1;
 			}
 		}
 		meanDens=calculateAverages(densities);
@@ -91,9 +91,9 @@ public class DistanceNeighborFunctions {
 	public void calculateNNDist(){
 		double av=calculateAvDist();
 
-		nNeighbors=new float[n][nBins];
+		nNeighbors=new double[n][nBins];
 		
-		float[] t=new float[n-1];
+		double[] t=new double[n-1];
 		
 		for (int i=0; i<n; i++){
 			int c=0;
@@ -122,18 +122,18 @@ public class DistanceNeighborFunctions {
 		return av;
 	}
 	
-	public float[] calculateAverages(float[][] dat){
+	public double[] calculateAverages(double[][] dat){
 		
 		int m=dat[0].length;
 		
-		float[]out=new float[m];
+		double[]out=new double[m];
 		for (int i=0; i<n; i++){
 			for (int j=0; j<m; j++){
 				out[j]+=dat[i][j];
 			}
 		}
 		for (int i=0; i<m; i++){
-			out[i]/=n+0.0f;
+			out[i]/=n+0.0;
 		}
 		return out;
 		

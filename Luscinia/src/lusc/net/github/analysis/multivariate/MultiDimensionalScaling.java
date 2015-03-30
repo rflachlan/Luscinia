@@ -69,7 +69,7 @@ public class MultiDimensionalScaling {
 		return eigenValues;
 	}
 	
-	public void RunNonMetricAnalysis(float[][] data, int anpcs, AnalysisSwingWorker asw){
+	public void RunNonMetricAnalysis(double[][] data, int anpcs, AnalysisSwingWorker asw){
 		n=data.length;
 		npcs=anpcs;
 		if (npcs>n){npcs=n;}
@@ -88,7 +88,7 @@ public class MultiDimensionalScaling {
 		calculateSDs(configuration, n, npcs);
 	}
 	
-	public void RunMetricAnalysis(float[][] data, int anpcs, boolean fixTriangleInequality, boolean calculateSummaries){
+	public void RunMetricAnalysis(double[][] data, int anpcs, boolean fixTriangleInequality, boolean calculateSummaries){
 		n=data.length;
 		npcs=anpcs;
 		if (npcs>n){npcs=n;}
@@ -383,7 +383,7 @@ public class MultiDimensionalScaling {
 		}
 		
 		for (int i=0; i<m; i++){
-			float meantemp=0;
+			double meantemp=0;
 			for (int j=0; j<n; j++){
 				for (int k=0; k<j; k++){
 					double p=0;
@@ -431,7 +431,7 @@ public class MultiDimensionalScaling {
 		}
 	}
 	
-	public double[][] getSquareDistanceMatrix(float[][] data){
+	public double[][] getSquareDistanceMatrix(double[][] data){
 		double[][] dist=new double[n][n];		//turn the triangular input matrix into a square symmetric distance matrix
 		for (int i=0; i<n; i++){
 			for (int j=0; j<i; j++){
@@ -483,10 +483,10 @@ public class MultiDimensionalScaling {
 		return r;
 	}
 	
-	public float[][] getDistanceMatrix(){
-		float[][] r=new float[n][];
+	public double[][] getDistanceMatrix(){
+		double[][] r=new double[n][];
 		for (int i=0; i<n; i++){
-			r[i]=new float[i+1];
+			r[i]=new double[i+1];
 		}
 		for (int i=0; i<n; i++){
 			for (int j=0; j<i; j++){
@@ -496,7 +496,7 @@ public class MultiDimensionalScaling {
 					if (eigenValues[k]<0){s=-1;}
 					q+=s*(configuration[i][k]-configuration[j][k])*(configuration[i][k]-configuration[j][k]);
 				}
-				r[i][j]=(float)Math.sqrt(q);
+				r[i][j]=Math.sqrt(q);
 			}
 		}
 		return r;

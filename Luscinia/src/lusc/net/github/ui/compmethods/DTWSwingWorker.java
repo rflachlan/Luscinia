@@ -48,8 +48,7 @@ public class DTWSwingWorker extends SwingWorker{
 		
 		
 		try{		
-			System.out.println("DTWPanel: Labeling elements");
-			ag.makeNames();
+			
 			System.out.println("DTWPanel: Setting parameters");
 			defaults.setDTWParameters(dtwp);
 
@@ -66,8 +65,8 @@ public class DTWSwingWorker extends SwingWorker{
 				ag.compressSyllables();
 			}
 			else{
-				ag.setScores(0, null);
-				ag.setScores(2, null);
+				//ag.setScores(0, null);
+				//ag.setScores(2, null);
 			}
 			if (dtwp.stitch.getSelectedIndex()!=0){
 				System.out.println("DTWPanel: stitching syllables");
@@ -75,7 +74,7 @@ public class DTWSwingWorker extends SwingWorker{
 				System.out.println("DTWPanel: normalizing");
 				pdtw.prepareToNormalizeStitch();
 				System.out.println("DTWPanel: syllable DTW running");
-				ag.setScores(5, pdtw.runDTW(this, true));
+				ag.setScores(6, pdtw.runDTW(this, true));
 			
 				if (dtwp.stitch.getSelectedIndex()==1){
 					ag.compressSyllablesStitch();
@@ -85,7 +84,7 @@ public class DTWSwingWorker extends SwingWorker{
 				}
 			}
 			else{
-				ag.setScores(5,null);
+				//ag.setScores(5,null);
 			}
 			if (ag.getSyllableRepetitionWeighting()>0){
 				ag.augmentSyllDistanceMatrixWithSyllableReps();

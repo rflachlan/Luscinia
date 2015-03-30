@@ -13,15 +13,15 @@ public class Dendrogram {
 	double gamma=0;
 	int le;
 
-	public Dendrogram (float[][] input, int mode){
+	public Dendrogram (double[][] input, int mode){
 		
 		double E=0;
 		le=input.length;
 		int numNodes=le*2-1;
 		dat=new TreeDat[numNodes];
 		boolean active[]=new boolean[le];
-		float[][] scores=new float[le][];
-		float[] count=new float[le];
+		double[][] scores=new double[le][];
+		double[] count=new double[le];
 		int index[]=new int[le];
 		for (int i=0; i<le; i++){
 			active[i]=true;
@@ -32,14 +32,14 @@ public class Dendrogram {
 		}
 
 		for (int i=0; i<le; i++){
-			scores[i]=new float[i+1];
+			scores[i]=new double[i+1];
 			for (int j=0; j<i; j++){
-				scores[i][j]=(float)(input[i][j]*input[i][j]);
+				scores[i][j]=(input[i][j]*input[i][j]);
 			}
 		}
 		
 		int g,h,i,j, loca, locb;
-		float min=0;
+		double min=0;
 		double score;
 
 		for (g=le; g<numNodes; g++){
@@ -65,7 +65,7 @@ public class Dendrogram {
 			dat[g]=new TreeDat(E, dat[index[loca]].child, dat[index[locb]].child, index[loca], index[locb]);
 			index[loca]=g;
 			active[locb]=false;
-			float newcount=count[loca]+count[locb];
+			double newcount=count[loca]+count[locb];
 			for (h=0; h<le; h++){
 				if ((active[h])&&(h!=loca)){
 					
@@ -125,10 +125,10 @@ public class Dendrogram {
 					}
 					
 					if (h<loca){
-						scores[loca][h]=(float)(score);
+						scores[loca][h]=(score);
 					}
 					else{
-						scores[h][loca]=(float)(score);
+						scores[h][loca]=(score);
 					}					
 				}
 			}

@@ -22,7 +22,7 @@ public class VarianceClusterAnalysis {
 	Random random=new Random(System.currentTimeMillis());
 	
 	
-	public VarianceClusterAnalysis (float[][] data, float[][] vec, AnalysisGroup sg, int unitType){
+	public VarianceClusterAnalysis (double[][] data, double[][] vec, AnalysisGroup sg, int unitType){
 		
 		int n=data.length;
 		int[] syllPopLabels=sg.getPopulationListArray(unitType);
@@ -32,13 +32,13 @@ public class VarianceClusterAnalysis {
 		
 		double[][] distToCentroid=new double[n][numK+1];
 	
-		float[][][][] centroids=new float[numPops][numK+1][][];
+		double[][][][] centroids=new double[numPops][numK+1][][];
 		
 		for (int i=0; i<numPops; i++){
 			
-			float[][] subdata=createSubMatrix(data, i, syllPopLabels);
+			double[][] subdata=createSubMatrix(data, i, syllPopLabels);
 			
-			float[][] subdata2=createSubMatrix2(vec, i, syllPopLabels);
+			double[][] subdata2=createSubMatrix2(vec, i, syllPopLabels);
 			
 			UPGMA upgma=new UPGMA(subdata, 1);
 			
@@ -52,7 +52,7 @@ public class VarianceClusterAnalysis {
 			prototypes[0]=calculateDistanceToMean(subdata2);
 			
 			
-			centroids[i][0]=new float[1][1];
+			centroids[i][0]=new double[1][1];
 			
 			
 			
@@ -309,7 +309,7 @@ public class VarianceClusterAnalysis {
 	
 	
 	
-	public double calculateDistance(float[] d1, float[] d2){
+	public double calculateDistance(double[] d1, double[] d2){
 		
 		int n=d1.length;
 		
@@ -355,7 +355,7 @@ public class VarianceClusterAnalysis {
 		return r;
 	}
 
-	public float[][] createSubMatrix2(float[][] mainMatrix, int population, int[] labels){
+	public double[][] createSubMatrix2(double[][] mainMatrix, int population, int[] labels){
 		
 		int n=labels.length;
 		System.out.println(n+" "+mainMatrix.length);
@@ -368,7 +368,7 @@ public class VarianceClusterAnalysis {
 		
 		int d=mainMatrix[0].length;
 		
-		float[][] subMatrix=new float[c][d];
+		double[][] subMatrix=new double[c][d];
 		
 		int a=0;
 		for (int i=0; i<n; i++){
@@ -383,7 +383,7 @@ public class VarianceClusterAnalysis {
 	}
 	
 	
-	public float[][] createSubMatrix(float[][] mainMatrix, int population, int[] labels){
+	public double[][] createSubMatrix(double[][] mainMatrix, int population, int[] labels){
 		
 		int n=labels.length;
 		System.out.println(n+" "+mainMatrix.length);
@@ -394,9 +394,9 @@ public class VarianceClusterAnalysis {
 			}
 		}
 		
-		float[][] subMatrix=new float[c][];
+		double[][] subMatrix=new double[c][];
 		for (int i=0; i<c; i++){
-			subMatrix[i]=new float[i+1];
+			subMatrix[i]=new double[i+1];
 		}
 		
 		int a=0;
@@ -416,7 +416,7 @@ public class VarianceClusterAnalysis {
 		return subMatrix;
 	}
 	
-	public double[] calculateDistanceToMean(float[][] vec){
+	public double[] calculateDistanceToMean(double[][] vec){
 		
 		int n=vec.length;
 		int m=vec[0].length;

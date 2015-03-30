@@ -3,6 +3,7 @@ package lusc.net.github.analysis.multivariate;
 import java.util.*;
 
 import lusc.net.github.analysis.BasicStatistics;
+import lusc.net.github.analysis.ComparisonResults;
 import lusc.net.github.analysis.dendrograms.UPGMA;
 
 public class MultivariateDispersionTest {
@@ -15,21 +16,22 @@ public class MultivariateDispersionTest {
 	double[][][] popScore, indScore2;
 	double[][] indScore, clusterDev;
 	int type=0;
-	float[][] data;
+	double[][] data;
 	int n;
 	int permutations=10000;
 	Random random=new Random(System.currentTimeMillis());
 	
-	public MultivariateDispersionTest(float[][] data, int[] pop, int type, String[] popNames, int[][] individuals){
-		this.data=data;
-		this.type=type;
-		this.popNames=popNames;
+	public MultivariateDispersionTest(ComparisonResults cr){
+
+	//public MultivariateDispersionTest(ComparisonResults crdouble[][] data, int[] pop, int type, String[] popNames, int[][] individuals){
+		this.data=cr.getDiss();
+		this.type=cr.getType();
+		this.popNames=cr.getPopulationNames();
+		int[] pop=cr.getPopulationListArray();
+		int[][] individuals=cr.getIndividuals();
 		n=data.length;
 		int n1=n;
-		
-		//pop=new int[pop.length];
-		//popNames=new String[1];
-		//popNames[0]="temp";
+
 		
 		MultiDimensionalScaling mds=new MultiDimensionalScaling();
 		boolean completed=false;
@@ -48,13 +50,7 @@ public class MultivariateDispersionTest {
 		double[][] config=mds.configuration;
 		double[] eig=mds.eigenValues;
 		
-		int[] indLabels=new int[n];
-		for (int i=0; i<individuals.length; i++){
-			for (int j=0; j<individuals[i].length; j++){
-				indLabels[individuals[i][j]]=i;
-				//System.out.println(i+" "+individuals[i][j]);
-			}
-		}	
+		int[] indLabels=cr.getLookUpIndividuals();
 		
 		int npop=0;
 		for (int i=0; i<pop.length; i++){
@@ -190,7 +186,7 @@ public class MultivariateDispersionTest {
 		
 	}
 	
-	public MultivariateDispersionTest(float[][] data, UPGMA tree){
+	public MultivariateDispersionTest(double[][] data, UPGMA tree){
 		this.data=data;
 		n=data.length;
 		int n1=n;
@@ -698,7 +694,7 @@ public class MultivariateDispersionTest {
 		return dists;
 	}
 	
-	public double calculateNewF(float[][] dist, int[] pop, int npop){
+	public double calculateNewF(double[][] dist, int[] pop, int npop){
 		int n=dist.length;
 		
 		double[] dk=new double[npop];

@@ -130,12 +130,12 @@ public class DisplaySummary  extends DisplayPane {
 			texter.append("Densities and NN Dists for Songs");
 		}
 		texter.append(returner);
-		float[] meanNN=dnf.getMeanNN();
+		double[] meanNN=dnf.getMeanNN();
 		for (int i=0; i<meanNN.length; i++){
 			texter.append(meanNN[i]+tabc);
 		}
 		texter.append(returner);
-		float[] meanDens=dnf.getMeanDens();
+		double[] meanDens=dnf.getMeanDens();
 		for (int i=0; i<meanDens.length; i++){
 			texter.append(meanDens[i]+tabc);
 		}
@@ -422,14 +422,14 @@ public class DisplaySummary  extends DisplayPane {
 					int n=dnf.getN();
 					int nBins=dnf.getNBins();
 					int dBins=dnf.getDBins();
-					float[][] nNeighbors=dnf.getNNeighbors();
-					float[][] densities=dnf.getDensities();
+					double[][] nNeighbors=dnf.getNNeighbors();
+					double[][] densities=dnf.getDensities();
 					for (int j=0; j<n; j++){
 						for (int k=0; k<nBins; k++){
-							sd.writeFloat(nNeighbors[j][k]);
+							sd.writeDouble(nNeighbors[j][k]);
 						}
 						for (int k=0; k<dBins; k++){
-							sd.writeFloat(densities[j][k]);
+							sd.writeDouble(densities[j][k]);
 						}
 						sd.writeLine();
 					}

@@ -31,7 +31,7 @@ public class DisplaySimilarity extends DisplayPane implements MouseInputListener
 	BufferedImage imf;
 	//SongGroup sg;
 	AnalysisGroup sg;
-	float[][]scores;
+	double[][]scores;
 	double score=-1;
 	double unit=1;
 	boolean enabled=false;
@@ -40,8 +40,8 @@ public class DisplaySimilarity extends DisplayPane implements MouseInputListener
 	JPanel mainPanel=new JPanel(new BorderLayout());
 	int height, width, dataType;
 	
-	//public DisplaySimilarity (float[][]scores, int dataType, SongGroup sg, DataBaseController dbc, int width, int height, Defaults defaults){
-	public DisplaySimilarity (float[][]scores, int dataType, AnalysisGroup sg, DataBaseController dbc, int width, int height, Defaults defaults){
+	//public DisplaySimilarity (double[][]scores, int dataType, SongGroup sg, DataBaseController dbc, int width, int height, Defaults defaults){
+	public DisplaySimilarity (double[][]scores, int dataType, AnalysisGroup sg, DataBaseController dbc, int width, int height, Defaults defaults){
 		this.scores=scores;
 		this.sg=sg;
 		ssb=sg.getSSB();

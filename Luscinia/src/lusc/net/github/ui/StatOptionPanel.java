@@ -47,6 +47,7 @@ public class StatOptionPanel extends JPanel implements PropertyChangeListener {
 	JRadioButton syllable=new JRadioButton("By syllable", true);
 	JRadioButton syllableTransition=new JRadioButton("By syllable transition", true);
 	JRadioButton song=new JRadioButton("By song", false);
+	JRadioButton individual=new JRadioButton("By individual", false);
 	
 	
 	JRadioButton elementCompression=new JRadioButton("Compress element distance", true);
@@ -60,7 +61,7 @@ public class StatOptionPanel extends JPanel implements PropertyChangeListener {
 	JFormattedTextField numdims, syntKs, clustKs, clustKsb, snnKF, snnMinPtsF, snnEpsF, songUpperProp, songLowerProp, geogProp;
 	
 	boolean[] analysisTypes=new boolean[11];
-	boolean[] analysisLevels=new boolean[4];
+	boolean[] analysisLevels=new boolean[5];
 	boolean[] miscOptions=new boolean[3];
 	
 
@@ -168,15 +169,17 @@ public class StatOptionPanel extends JPanel implements PropertyChangeListener {
 		hiersettings.add(syllable);
 		hiersettings.add(syllableTransition);
 		hiersettings.add(song);
+		hiersettings.add(individual);
 		
 		element.setSelected(analysisLevels[0]);
-		if (ag.getScoresEle()==null){
+		if (ag.getScores(0)==null){
 			element.setSelected(false);
 			element.setEnabled(false);
 		}
 		syllable.setSelected(analysisLevels[1]);
 		syllableTransition.setSelected(analysisLevels[2]);
 		song.setSelected(analysisLevels[3]);
+		song.setSelected(analysisLevels[4]);
 		
 				
 		JPanel variablesPanel=new JPanel(new GridLayout(0,1));
@@ -464,6 +467,7 @@ public class StatOptionPanel extends JPanel implements PropertyChangeListener {
 		analysisLevels[1]=syllable.isSelected();
 		analysisLevels[2]=syllableTransition.isSelected();
 		analysisLevels[3]=song.isSelected();
+		analysisLevels[4]=individual.isSelected();
 		
 		miscOptions[0]=elementCompression.isSelected();
 		miscOptions[1]=useTransForSong.isSelected();

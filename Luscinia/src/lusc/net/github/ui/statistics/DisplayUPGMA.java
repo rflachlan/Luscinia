@@ -29,6 +29,7 @@ import java.text.*;
 
 import lusc.net.github.Defaults;
 import lusc.net.github.analysis.AnalysisGroup;
+import lusc.net.github.analysis.ComparisonResults;
 import lusc.net.github.analysis.dendrograms.TreeDat;
 import lusc.net.github.analysis.dendrograms.UPGMA;
 import lusc.net.github.analysis.multivariate.MultivariateDispersionTest;
@@ -76,6 +77,7 @@ public class DisplayUPGMA extends DisplayPane implements MouseInputListener, Pro
 	UPGMA upgma;
 	BufferedImage imf;
 	int dataType=0; 
+	ComparisonResults cr;
 	AnalysisGroup sg;
 	SpectrogramSideBar ssb;
 	DrawSilhouetteGraph dsg=new DrawSilhouetteGraph();
@@ -86,11 +88,12 @@ public class DisplayUPGMA extends DisplayPane implements MouseInputListener, Pro
 	boolean RECALC=true;
 	double maxDist;
 	
-	public DisplayUPGMA (UPGMA upgma, AnalysisGroup sg, int dataType, int width, int height, Defaults defaults){
+	public DisplayUPGMA (UPGMA upgma, ComparisonResults cr, AnalysisGroup sg, int width, int height, Defaults defaults){
 		this.upgma=upgma;
+		this.cr=cr;
 		this.sg=sg;
 		ssb=sg.getSSB();
-		this.dataType=dataType;
+		this.dataType=cr.getType();
 		this.width=width;
 		this.height=height;
 		this.defaults=defaults;
@@ -99,11 +102,12 @@ public class DisplayUPGMA extends DisplayPane implements MouseInputListener, Pro
 		startDisplaying();
 	}	
 		
-	public DisplayUPGMA (UPGMA upgma, AnalysisGroup sg, int dataType, int width, int height, double[] silhouettes, double[][] avsils, Defaults defaults){
+	public DisplayUPGMA (UPGMA upgma, ComparisonResults cr, AnalysisGroup sg, int width, int height, double[] silhouettes, double[][] avsils, Defaults defaults){
 		this.upgma=upgma;
 		this.sg=sg;
+		this.cr=cr;
 		ssb=sg.getSSB();
-		this.dataType=dataType;
+		this.dataType=cr.getType();
 		this.width=width;
 		this.height=height;
 		this.silhouettes=silhouettes;
@@ -409,7 +413,7 @@ public class DisplayUPGMA extends DisplayPane implements MouseInputListener, Pro
 			else if (cutoff==0){
 				g.setColor(Color.BLACK);
 				g.setFont(bodyFont);
-				String[] names=sg.getNames(dataType);
+				String[] names=cr.getNames();
 				g.drawString(names[dat[i].child[0]], xpl1+5, ypl1+5);
 			}
 		}
@@ -674,7 +678,7 @@ public class DisplayUPGMA extends DisplayPane implements MouseInputListener, Pro
 	
 	public void export(){
 		
-		String[] names=sg.getNames(dataType);
+		String[] names=cr.getNames();
 		
 		JPanel optionPanel=new JPanel();
 		

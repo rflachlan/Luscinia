@@ -7,7 +7,7 @@ import lusc.net.github.analysis.clustering.KMedoids;
 public class CompositionAnalyzer {
 	
 	int[] classification;
-	float[][] dmat;
+	double[][] dmat;
 	//SongGroup sg;
 	AnalysisGroup sg;
 	Random random=new Random(System.currentTimeMillis());
@@ -19,9 +19,9 @@ public class CompositionAnalyzer {
 	int n, ns, npops;
 	int[][]q;
 	
-	//public CompositionAnalyzer(int[] classification, SongGroup sg, int k, int type, float[][] dmat){
+	//public CompositionAnalyzer(int[] classification, SongGroup sg, int k, int type, double[][] dmat){
 		
-	public CompositionAnalyzer(int[] classification, AnalysisGroup sg, int k, int type, float[][] dmat){
+	public CompositionAnalyzer(int[] classification, AnalysisGroup sg, int k, int type, double[][] dmat){
 		this.classification=classification;
 		this.sg=sg;
 		this.k=k;
@@ -31,9 +31,9 @@ public class CompositionAnalyzer {
 		calculateTransitionMat();
 	}
 	
-	//public CompositionAnalyzer(KMedoids km, int x, SongGroup sg, int k, int type, float[][] dmat){
+	//public CompositionAnalyzer(KMedoids km, int x, SongGroup sg, int k, int type, double[][] dmat){
 		
-	public CompositionAnalyzer(KMedoids km, int x, AnalysisGroup sg, int k, int type, float[][] dmat){
+	public CompositionAnalyzer(KMedoids km, int x, AnalysisGroup sg, int k, int type, double[][] dmat){
 		this.classification=km.getOverallAssignments()[x];
 		this.sg=sg;
 		this.k=k;
@@ -44,19 +44,9 @@ public class CompositionAnalyzer {
 	}
 	
 	public void setUp(int type){
+		look=sg.getLookUp(type);
+		popIds=sg.getPopulationListArray(type);
 		
-		if (type==0){
-			look=sg.lookUpEls;
-			popIds=sg.getPopulationListArray(0);
-		}
-		if (type==2){
-			look=sg.lookUpSyls;
-			popIds=sg.getPopulationListArray(2);
-		}
-		if (type==3){
-			look=sg.lookUpTrans;
-			popIds=sg.getPopulationListArray(3);
-		}
 		
 		ns=sg.songs.length;
 		n=popIds.length;
@@ -104,7 +94,7 @@ public class CompositionAnalyzer {
 		System.out.println("COMPOSITION ANALYSIS: "+realx+" "+simx[lower]+" "+simx[med]+" "+simx[upper]);
 	}
 	
-	public boolean[] excludeIds(float[][] dmat, double thresh, int[][] ids){
+	public boolean[] excludeIds(double[][] dmat, double thresh, int[][] ids){
 		
 		int n=ids.length;
 		boolean[] results=new boolean[n];
