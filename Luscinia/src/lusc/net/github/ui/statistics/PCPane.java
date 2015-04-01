@@ -284,7 +284,10 @@ public class PCPane extends JPanel implements MouseInputListener{
 		bluec/=1.5f;
 		bluec=1.0f-bluec;
 		
-		float[] results={redc, greenc, bluec};
+		Color c = Color.getHSBColor(p*0.8f, 0.85f, 1.0f);
+		float[] results=c.getColorComponents(null);
+		
+		//float[] results={redc, greenc, bluec};
 		return results;
 	}
 	
@@ -511,8 +514,39 @@ public class PCPane extends JPanel implements MouseInputListener{
 			layoutM.draw(g, xsh+gridsize+legendSpacer+barWidth+textSpacer, ysh+barHeight*0.5f+0.5f*r2.height);
 			
 		}
-		
 		else if (labelType==4){
+			
+			for (int i=0; i<barHeight; i++){
+				
+				float ii=i/(barHeight-1.0f);
+				float[]f=getColorScore(ii);
+				Color tc=new Color(f[0], f[1], f[2]);
+				g.setColor(tc);
+				g.fillRect(xsh+gridsize+legendSpacer, i+ysh, barWidth, 1);
+				
+			}
+			
+			g.setColor(Color.BLACK);
+			g.drawRect(xsh+gridsize+legendSpacer, ysh, barWidth, barHeight);
+			
+			for (int i=0; i<=10; i++){
+				int ypl=(int)Math.round(ysh+i*barHeight*0.1);
+				g.drawLine(xsh+gridsize+legendSpacer+barWidth, ypl, xsh+gridsize+legendSpacer+barWidth+tickLength, ypl); 
+			}
+			
+			//TextLayout layoutS = new TextLayout("Start", font, frc);
+			//Rectangle r1 = layoutS.getPixelBounds(null, 0, 0);
+			//layoutS.draw(g, xsh+gridsize+legendSpacer+barWidth+textSpacer, ysh+0.5f*r1.height);
+			//TextLayout layoutE = new TextLayout("End", font, frc);
+			//Rectangle r2 = layoutE.getPixelBounds(null, 0, 0);
+			//layoutE.draw(g, xsh+gridsize+legendSpacer+barWidth+textSpacer, ysh+barHeight+0.5f*r2.height);
+			//TextLayout layoutM = new TextLayout("Mid", font, frc);
+			//Rectangle r3 = layoutM.getPixelBounds(null, 0, 0);
+			//layoutM.draw(g, xsh+gridsize+legendSpacer+barWidth+textSpacer, ysh+barHeight*0.5f+0.5f*r2.height);
+			
+		}
+		
+		else if (labelType==5){
 			palette=getColorPalette(clusterN);
 			for (int i=0; i<clusterN; i++){
 				
@@ -529,7 +563,7 @@ public class PCPane extends JPanel implements MouseInputListener{
 			}			
 		}
 		
-		else if (labelType==5){
+		else if (labelType==6){
 			palette=getColorPalette(clusterN);
 			for (int i=0; i<clusterN; i++){
 				
@@ -627,7 +661,14 @@ public class PCPane extends JPanel implements MouseInputListener{
 		double adj1=0.5*(absmax1+absmin1);
 		double adj2=0.5*(absmax2+absmin2);
 		g.setStroke(fs);
-		double[] labels=cr.getPosition();
+		
+		double[] labels=null;
+		if (labelType==3){
+			labels=cr.getPosition();
+		}
+		if (labelType==4){
+			labels=cr.getRelativeTimes();
+		}
 		int[][] lookUp=cr.getLookUp();
 		
 		for (int i=0; i<n; i++){
@@ -647,7 +688,7 @@ public class PCPane extends JPanel implements MouseInputListener{
 			location[i][1]=y;
 			if ((connectors)&&(i>0)){
 				
-				if (labelType==3){
+				if ((labelType==3)||(labelType==4)){
 					float p=0;
 					
 					if (labels!=null){
@@ -688,7 +729,7 @@ public class PCPane extends JPanel implements MouseInputListener{
 			if(labelType==0){
 				paintIcon(0, x, y, iconSize, false, g);
 			}
-			else if (labelType==3){
+			else if ((labelType==3)||(labelType==4)){
 				double p=0;
 				if (labels!=null){
 					p=labels[i];
@@ -716,20 +757,20 @@ public class PCPane extends JPanel implements MouseInputListener{
 				g.setColor(palette[q]);
 				paintIcon(q, x, y, iconSize, false,  g);
 			}	
-			else if (labelType==4){				
+			else if (labelType==5){				
 				int best=dpc.km.getOverallAssignments()[clusterN-2][i];
 				g.setColor(palette[best]);
 				while(best>6){best-=6;}
 				paintIcon(best, x,y,iconSize, false, g);
 			}
 			
-			else if (labelType==5){
+			else if (labelType==6){
 				int best=dpc.ent.getOverallAssignment()[clusterN-2][i];
 				g.setColor(palette[best]);
 				while(best>6){best-=6;}
 				paintIcon(best, x,y,iconSize, false, g);
 			}	
-			else if (labelType==6){
+			else if (labelType==7){
 				int best=dpc.snn.getDBSCANClusters()[i];
 				g.setColor(palette[best]);
 				while(best>6){best-=6;}
@@ -780,7 +821,7 @@ public class PCPane extends JPanel implements MouseInputListener{
 					if(labelType==0){
 						paintIcon(0, x, y, 2*iconSize, true, g);
 					}
-					else if (labelType==3){
+					else if ((labelType==3)||(labelType==4)){
 						double p=0;
 						if (labels!=null){
 							p=labels[i];
@@ -807,20 +848,20 @@ public class PCPane extends JPanel implements MouseInputListener{
 						g.setColor(palette[q]);
 						paintIcon(q, x, y, 2*iconSize, true, g);
 					}	
-					else if (labelType==4){				
+					else if (labelType==5){				
 						int best=dpc.km.getOverallAssignments()[clusterN-2][i];
 						g.setColor(palette[best]);
 						while(best>6){best-=6;}
 						paintIcon(best, x,y,2*iconSize, true, g);
 					}
 					
-					else if (labelType==5){
+					else if (labelType==6){
 						int best=dpc.ent.getOverallAssignment()[clusterN-2][i];
 						g.setColor(palette[best]);
 						while(best>6){best-=6;}
 						paintIcon(best, x,y,2*iconSize, true, g);
 					}	
-					else if (labelType==6){
+					else if (labelType==7){
 						int best=dpc.snn.getDBSCANClusters()[i];
 						g.setColor(palette[best]);
 						while(best>6){best-=6;}

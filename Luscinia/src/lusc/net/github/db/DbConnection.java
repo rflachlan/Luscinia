@@ -868,6 +868,7 @@ public class DbConnection {
 	public  Song loadSongFromDatabase (int id, int info){
 		Song song=new Song();
 		String query="SELECT songid, filename, wav, samplerate, framesize, stereo, bigend, ssizeinbits, time, signed FROM wavs WHERE songid = "+id;
+		String queryb="SELECT time FROM wavs WHERE songid = "+id;
 		String query2="SELECT name, echocomp, echorange, noise1, noise2, noise3, dyncomp, dynrange, maxfreq, framelength, timestep, filtercutoff, windowmethod, dx, dy, IndividualID FROM songdata WHERE id = "+id;
 		
 		String query3="SELECT call_location FROM songdata WHERE id = "+id;
@@ -880,6 +881,17 @@ public class DbConnection {
 		ResultSet rs = null; 
 		try {
 			song.setLoaded(true);
+			if (info==1){
+				stmt = con.prepareStatement(queryb);
+				rs = stmt.executeQuery( );
+				if( !rs.next( ) ) {
+					System.out.println("No such file stored. "+id);
+					song.setLoaded(false);
+				}
+				else {		
+					song.setTDate(rs.getLong("time"));
+				}
+			}
 			if (info!=1){
 				stmt = con.prepareStatement(query);
 				rs = stmt.executeQuery( );

@@ -32,7 +32,7 @@ import lusc.net.github.ui.SaveImage;
 import lusc.net.github.ui.SpectrogramSideBar;
 
 public class DisplayPC  extends DisplayPane implements  ActionListener{	
-	private static String labs[] = {"None","Individual", "Population", "Position", "K-Medoid Cluster", "Syntax Cluster", "SNN Cluster"};
+	private static String labs[] = {"None","Individual", "Population", "Position", "Time", "K-Medoid Cluster", "Syntax Cluster", "SNN Cluster"};
 	
 	Defaults defaults;
 	ComparisonResults cr;
@@ -177,7 +177,7 @@ public class DisplayPC  extends DisplayPane implements  ActionListener{
 		
 		JLabel pointLabel=new JLabel("Labels for points: ");
 		pointLabel.setFont(font);
-		int p=4;
+		int p=5;
 		if (km!=null){p++;}
 		if (ent!=null){p++;}
 		if (snn!=null){p++;}
@@ -188,17 +188,18 @@ public class DisplayPC  extends DisplayPane implements  ActionListener{
 		labelTypes[1]=labs[1];
 		labelTypes[2]=labs[2];
 		labelTypes[3]=labs[3];
-		p=4;
+		labelTypes[4]=labs[4];
+		p=5;
 		if (km!=null){
-			labelTypes[p]=labs[4];
-			p++;
-		}
-		if (ent!=null){
 			labelTypes[p]=labs[5];
 			p++;
 		}
-		if (snn!=null){
+		if (ent!=null){
 			labelTypes[p]=labs[6];
+			p++;
+		}
+		if (snn!=null){
+			labelTypes[p]=labs[7];
 			p++;
 		}
 					
@@ -255,7 +256,7 @@ public class DisplayPC  extends DisplayPane implements  ActionListener{
 		connectors.setFont(font);
 		JCheckBox grids=new JCheckBox("Show grid lines");
 		grids.setFont(font);
-		if (dataType==4){connectors.setEnabled(false);}
+		if (dataType>=4){connectors.setEnabled(false);}
 		connectors.setSelected(false);
 		connectors.addActionListener(this);
 		connectors.setActionCommand(CONNECT);

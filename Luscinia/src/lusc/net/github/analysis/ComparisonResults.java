@@ -25,6 +25,8 @@ public class ComparisonResults {
 	int[] lookUpIndividual;
 	int n, maxLength, songNumber, individualNumber, tndi;
 	String[] names, individualNames, populations, species;
+	long[] times;
+	long maxTime, minTime;
 	
 	public ComparisonResults(Song[] songs, double[][] diss, int type){
 		this.songs=songs;
@@ -40,6 +42,7 @@ public class ComparisonResults {
 		
 		makePopulationNames();
 		makeSpeciesNames();
+		makeTimes();
 		System.out.println("made comparison results "+type);
 	}
 	
@@ -230,6 +233,15 @@ public class ComparisonResults {
 		return species;
 	}
 	
+	
+	public double[] getRelativeTimes(){
+		double[] out=new double[n];
+		for (int i=0; i<n; i++){
+			out[i]=(times[i]-minTime)/(maxTime-minTime+0.0);
+			System.out.println(out[i]);
+		}
+		return out;
+	}
 	
 	
 	public void makeLookUps(){
@@ -615,6 +627,21 @@ public class ComparisonResults {
 		
 		species=speciesName.toArray(species);
 	}
+	
+	
+	public void makeTimes(){
+		times=new long[n];
+		maxTime=-1;
+		minTime=100000000000000l;
+		for (int i=0; i<n; i++){
+			times[i]=songs[lookUps[i][0]].getTDate();
+			if (times[i]>maxTime){maxTime=times[i];}
+			if (times[i]<minTime){minTime=times[i];}
+			System.out.println(times[i]+" "+maxTime+" "+minTime);
+		}	
+	}
+	
+	
 	
 	public int lookUpPopulation(int b){
 		int c=lookUps[b][0];
