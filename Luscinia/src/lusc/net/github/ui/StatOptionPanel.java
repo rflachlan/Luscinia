@@ -52,6 +52,8 @@ public class StatOptionPanel extends JPanel implements PropertyChangeListener {
 	
 	JRadioButton elementCompression=new JRadioButton("Compress element distance", true);
 	JRadioButton useTransForSong=new JRadioButton("Use syllable transitions for song distance", true);
+	JRadioButton cycle=new JRadioButton("Cycle at end of song: ", true);
+	JRadioButton dtwComp=new JRadioButton("Use DTW to compress songs: ", true);
 	JRadioButton popComp=new JRadioButton("Population comparison", true);
 	
 	String[] syntaxOptions={"Markov Chain", "Match length", "Both"};
@@ -62,7 +64,7 @@ public class StatOptionPanel extends JPanel implements PropertyChangeListener {
 	
 	boolean[] analysisTypes=new boolean[11];
 	boolean[] analysisLevels=new boolean[5];
-	boolean[] miscOptions=new boolean[3];
+	boolean[] miscOptions=new boolean[4];
 	
 
 	JPanel resultsPanel;
@@ -78,7 +80,7 @@ public class StatOptionPanel extends JPanel implements PropertyChangeListener {
 	int maxSyntaxK=10;
 	double gapWeighting=0;
 	double syllRepWeighting=0;
-	double songUpperLimit=0.5;
+	double songUpperLimit=50;
 	double songLowerLimit=20;
 	double geogPropLimit=5;
 		
@@ -179,7 +181,7 @@ public class StatOptionPanel extends JPanel implements PropertyChangeListener {
 		syllable.setSelected(analysisLevels[1]);
 		syllableTransition.setSelected(analysisLevels[2]);
 		song.setSelected(analysisLevels[3]);
-		song.setSelected(analysisLevels[4]);
+		individual.setSelected(analysisLevels[4]);
 		
 				
 		JPanel variablesPanel=new JPanel(new GridLayout(0,1));
@@ -298,7 +300,9 @@ public class StatOptionPanel extends JPanel implements PropertyChangeListener {
 		
 		
 		variablesPanel.add(elementCompression);
+		variablesPanel.add(dtwComp);
 		variablesPanel.add(useTransForSong);
+		variablesPanel.add(cycle);
 		variablesPanel.add(popComp);
 		variablesPanel.add(ndpan);
 		variablesPanel.add(kcpan);
@@ -314,7 +318,8 @@ public class StatOptionPanel extends JPanel implements PropertyChangeListener {
 		elementCompression.setSelected(miscOptions[0]);
 		useTransForSong.setSelected(miscOptions[1]);
 		popComp.setSelected(miscOptions[2]);
-		
+		cycle.setSelected(miscOptions[3]);
+		dtwComp.setSelected(miscOptions[4]);
 		
 		JPanel hpane=new JPanel();
 		hpane.setLayout(new BorderLayout());
@@ -472,6 +477,8 @@ public class StatOptionPanel extends JPanel implements PropertyChangeListener {
 		miscOptions[0]=elementCompression.isSelected();
 		miscOptions[1]=useTransForSong.isSelected();
 		miscOptions[2]=popComp.isSelected();
+		miscOptions[3]=cycle.isSelected();
+		miscOptions[4]=dtwComp.isSelected();
 		
 		defaults.setAnalysisOptions(this);
 		defaults.writeProperties();

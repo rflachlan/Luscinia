@@ -631,19 +631,52 @@ public class AnalysisGroup {
 	 * @param upperProp This is a parameter for a gating function
 	 */
 	
-	public void compressSongs(boolean useTrans, double lowerProp, double upperProp){
+	public void compressSongs(boolean dtwComp, boolean useTrans, boolean cycle, double upperProp, double lowerProp){
 		try{
-			System.out.println("Compressing songs");
+			System.out.println("Compressing songs: "+dtwComp+" "+useTrans+" "+cycle);
 			CompressComparisons cc=new CompressComparisons();
 			//float[][]sy=logisticTransform(scoresSyll, true, 0.02, 10);
 			//float[][]sy=gateScores(scoresSyll, 0.5, 20);
-			if (!useTrans){
-				double[][] b=cc.compareSongsDigram(scoresSyll.getDiss(), songs, useTrans);
+			if (!dtwComp){
+				//double[][] b=cc.compareSongsDigram(scoresSyll.getDiss(), songs, useTrans);
+				double q=0;
+				if (lowerProp>0){
+					q=scoresSyll.calculatePercentile(lowerProp);
+				}
+				double r=1000000000;
+				if (upperProp<100){
+					r=scoresSyll.calculatePercentile(upperProp);
+				}
+				
+				double[][] b=cc.compareSongsDigram(scoresSyll, useTrans, cycle, q, r);
 				scoresSong=new ComparisonResults(songs, b, 4);
 			}
 			else{
-				double[][]b=cc.compareSongsDTW(scoresSyll.getDiss(), songs);
-				scoresSong=new ComparisonResults(songs, b, 4);
+				//double[][]b=cc.compareSongsDTW(scoresSyll.getDiss(), songs);
+				if (useTrans&&(scoreTrans!=null)){
+					double q=0;
+					if (lowerProp>0){
+						q=scoreTrans.calculatePercentile(lowerProp);
+					}
+					double r=1000000000;
+					if (upperProp<100){
+						r=scoreTrans.calculatePercentile(upperProp);
+					}
+					double[][]b=cc.compareSongsDTW(scoreTrans, cycle, q, r);
+					scoresSong=new ComparisonResults(songs, b, 4);
+				}
+				else{
+					double q=0;
+					if (lowerProp>0){
+						q=scoresSyll.calculatePercentile(lowerProp);
+					}
+					double r=1000000000;
+					if (upperProp<100){
+						r=scoresSyll.calculatePercentile(upperProp);
+					}
+					double[][]b=cc.compareSongsDTW(scoresSyll, cycle, q, r);
+					scoresSong=new ComparisonResults(songs, b, 4);
+				}
 			}
 		}
 		catch(Exception e){e.printStackTrace();}

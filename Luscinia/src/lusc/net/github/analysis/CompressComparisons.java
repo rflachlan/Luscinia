@@ -11,6 +11,7 @@ import java.util.*;
 
 import lusc.net.github.Element;
 import lusc.net.github.Song;
+import lusc.net.github.ui.ComparisonScheme;
 
 public class CompressComparisons {
 	
@@ -1287,7 +1288,7 @@ public class CompressComparisons {
 	*/
 
 	
-	public double[][] compareSongsDigram(double[][] scores, Song[] songs, boolean useTrans){
+	public double[][] compareSongsDigram(double[][] scores, Song[] songs, boolean useTrans, boolean cycle){
 
 		
 		int songNumber=songs.length;
@@ -1361,6 +1362,107 @@ public class CompressComparisons {
 		return results;
 	}
 
+	public double[][] compareSongsDigram(ComparisonResults cs, boolean useTrans, boolean cycle, double min, double max){
+
+		int[][] id=cs.calculateSongs();
+		
+		int songNumber=id.length;
+		double[][] scores=cs.getDiss();
+		double[][] scoreSong=new double[songNumber][songNumber];
+		double[][] results=new double[songNumber][];
+		for (int i=0; i<songNumber; i++){
+			results[i]=new double[i+1];
+		}
+		
+		for (int i=0; i<songNumber; i++){
+			int[] p1=id[i];
+			for (int j=0; j<songNumber; j++){
+				int[]p2=id[j];
+				
+				double x=0;
+				double y=0;
+				double score=0;
+				double score2=0;
+				double songMax=0;
+				
+				int p1l=p1.length;
+				if ((useTrans)&&(!cycle)){
+					p1l--;
+				}
+				
+				for (int g=0; g<p1l; g++){
+					double bestscore=100000000;
+					int p2l=p2.length;
+					if ((useTrans)&&(!cycle)){
+						p2l--;
+					}
+					for (int h=0; h<p2l; h++){
+						if (p1[g]>=p2[h]){
+							score=scores[p1[g]][p2[h]];
+							if (score<min){score=min;}
+							if (score>max){score=max;}
+							if (useTrans){
+								int g2=g+1;
+								int h2=h+1;
+								if (cycle){
+									if (g==p1.length-1){
+										g2=0;
+									}
+									if (h==p2.length-1){
+										h2=0;
+									}
+								}
+								score2=scores[p1[g2]][p2[h2]];
+								if (score2<min){score2=min;}
+								if (score2>max){score2=max;}
+								score+=score2;
+							}
+						}
+						else{
+							score=scores[p2[h]][p1[g]];
+							if (score<min){score=min;}
+							if (score>max){score=max;}
+							if (useTrans){
+								int g2=g+1;
+								int h2=h+1;
+								if (cycle){
+									if (g==p1.length-1){
+										g2=0;
+									}
+									if (h==p2.length-1){
+										h2=0;
+									}
+								}
+								score2=scores[p2[h2]][p1[g2]];
+								if (score2<min){score2=min;}
+								if (score2>max){score2=max;}
+								score+=score2;
+							}
+						}
+						if (score<bestscore){bestscore=score;}
+					}
+					x+=bestscore;
+					y++;
+					
+					if (bestscore>songMax){songMax=bestscore;}
+
+				}
+				scoreSong[i][j]=(x/y);
+			}
+		}
+		
+		for (int i=0; i<songNumber; i++){
+			for (int j=0; j<i; j++){
+				results[i][j]=Math.max(scoreSong[i][j], scoreSong[j][i]);
+			}
+		}
+		
+		return results;
+	}
+
+	
+	
+	
 	public  double[][] compareSongsDTW(double[][] scores, Song[] songs){
 				
 		int songNumber=songs.length;
@@ -1443,6 +1545,105 @@ public class CompressComparisons {
 		
 	}
 	
+	public  double[][] compareSongsDTW(ComparisonResults cr, boolean cycle, double min, double max){
+		
+		int[][] id=cr.calculateSongs();	
+		int songNumber=id.length;
+		double[][] scores=cr.getDiss();		
+		/*
+		double tot=0;
+		double minScore=1000000;
+		for (int i=0; i<scores.length; i++){
+			for (int j=0; j<i; j++){
+				tot+=scores[i][j];
+				if (scores[i][j]<minScore){minScore=scores[i][j];}
+			}
+		}
+		tot/=scores.length*(scores.length-1)*0.5;
+		double penalty=(tot*0.25);
+		penalty=0.0;
+		*/
+		double penalty=cr.calculatePercentile(5);
+		
+		
+		//System.out.println("Mismatch penalty: "+tot+" "+minScore);
+		
+		double[][] results=new double[songNumber][];
+		for (int i=0; i<songNumber; i++){
+			results[i]=new double[i+1];
+		}
+		
+		double[][] dtw;
+		double bestscore;
+		for (int i=0; i<songNumber; i++){
+			int[] r1=id[i];
+			int r1l=r1.length;
+			int r3=0;
+			if (cycle){r3=r1l;}
+			for (int j=0; j<i; j++){
+				int[]r2=id[j];
+				int r2l=r2.length;
+				int r4=0;
+				if (cycle){r4=r2l;}
+				dtw=new double[r1l][r2l];
+				double oscore=100000000;
+				for (int c=0; c<r3; c++){
+					for (int a=0; a<r1l; a++){
+						int aa=a+c;
+						if (aa>=r1l){aa-=r1l;}
+						for (int d=0; d<r4; d++){
+						
+						
+							for (int b=0; b<r2l; b++){
+								int bb=b+d;
+								if (bb>=r2l){bb-=r2l;}
+							
+								if (r1[aa]>=r2[bb]){
+									dtw[a][b]=scores[r1[aa]][r2[bb]];
+								}
+								else{
+									dtw[a][b]=scores[r2[bb]][r1[aa]];	
+								}
+							
+								if (dtw[a][b]<min){dtw[a][b]=min;}
+								if (dtw[a][b]>max){dtw[a][b]=max;}
+							
+								bestscore=1000000;
+								if (a>0){
+									bestscore=dtw[a-1][b]+penalty;
+								}
+								if ((b>0)&&(dtw[a][b-1]+penalty<bestscore)){
+									bestscore=dtw[a][b-1]+penalty;
+								}
+								if ((b>0)&&(a>0)&&(dtw[a-1][b-1]<bestscore)){
+									bestscore=dtw[a-1][b-1];
+								}
+								if (bestscore<1000000){
+									//if (bestscore>max){bestscore=max;}
+									dtw[a][b]=bestscore+dtw[a][b];
+								}
+							}
+						}
+					}
+					double d=dtw[r1l-1][r2l-1];
+					if (d<oscore){
+						oscore=d;
+					}
+				}
+				//double d=Math.sqrt(dtw[r1l-1][r2l-1]);
+				
+				//results[i][j]=(double)(d/(0.0+Math.min(r1l,r2l)));
+				results[i][j]=(oscore/(0.0+Math.max(r1l,r2l)));
+				//results[i][j]=(oscore/(0.5*(r1l+r2l)));
+				//results[i][j]=(float)(d/(0.5*(r1l+r2l)));
+				
+			}
+				
+		}
+		
+		return results;	
+	}
+	
 	public double[][] compareIndividuals(double[][] songDiffs, int[][] indIds){
 		
 		
@@ -1487,7 +1688,7 @@ public class CompressComparisons {
 						}
 						v+=sc;
 					}
-					v/=indIds[i].length+0.0;
+					v/=indIds[j].length+0.0;
 					out[i][j]=u+v;
 					System.out.println(i+" "+j+" "+out[i][j]);
 					

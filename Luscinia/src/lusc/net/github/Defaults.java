@@ -241,6 +241,9 @@ public class Defaults {
 	public boolean[] getBooleanArray(String key, int length){
 		String s=props.getProperty(key);
 		boolean[] results=new boolean[length];
+		for (int i=0; i<results.length; i++){
+			results[i]=false;
+		}
 		if (s!=null){
 			int n=s.length();
 			//results=new boolean[length];
@@ -600,7 +603,7 @@ public class Defaults {
 		if (results2!=null){
 			sop.setAnalysisLevels(results2);
 		}
-		boolean[] results3=getBooleanArray("anamis", 3);
+		boolean[] results3=getBooleanArray("anamis", 5);
 		if (results3!=null){
 			sop.setMiscOptions(results3);
 		}

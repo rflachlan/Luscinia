@@ -1,5 +1,6 @@
 package lusc.net.github.analysis;
 
+import java.util.Arrays;
 import java.util.LinkedList;
 
 import lusc.net.github.Element;
@@ -117,7 +118,7 @@ public class ComparisonResults {
 	 * @return
 	 */
 	public int[][] getIndividuals(){
-		System.out.println("get inds: "+individuals.length);
+		//System.out.println("get inds: "+individuals.length);
 		return individuals;
 	}
 	
@@ -238,7 +239,7 @@ public class ComparisonResults {
 		double[] out=new double[n];
 		for (int i=0; i<n; i++){
 			out[i]=(times[i]-minTime)/(maxTime-minTime+0.0);
-			System.out.println(out[i]);
+			//System.out.println(out[i]);
 		}
 		return out;
 	}
@@ -575,6 +576,61 @@ public class ComparisonResults {
 		
 		
 	}
+	
+	/**
+	 *This method calculates which units belong to each song in the array 
+	 */
+	
+	public int[][] calculateSongs(){
+		
+		
+		int count=0;
+		int[] songIds=new int[n];
+		int[] songCounts=new int[n];
+		System.out.println("1");
+		for (int i=0; i<n; i++){
+			boolean found=false;
+			for (int j=0; j<count; j++){
+				if (lookUps[i][0]==songIds[j]){
+					songCounts[j]++;
+					found=true;
+					j=count;
+				}
+			}
+			if (!found){
+				songIds[count]=lookUps[i][0];
+				songCounts[count]=1;
+				count++;
+			}
+		}
+		//System.out.println("2");
+		int[][] out=new int[count][];
+		for (int i=0; i<count; i++){
+			out[i]=new int[songCounts[i]];
+		}
+		songCounts=new int[n];
+		
+		for (int i=0; i<n; i++){
+			for (int j=0; j<count; j++){
+				if (lookUps[i][0]==songIds[j]){
+					out[j][songCounts[j]]=i;
+					songCounts[j]++;
+					j=count;
+				}
+			}
+		}
+		//System.out.println("3");
+		/*for (int i=0; i<count; i++){
+			for (int j=0; j<out[i].length; j++){
+				System.out.print(out[i][j]+" ");
+			}
+			System.out.println();
+		}
+		*/
+		
+		return out;
+	}
+	
 
 	/**
 	 * calculates population names - extracting all the population names found in the sample of songs to be analyzed.
@@ -637,7 +693,7 @@ public class ComparisonResults {
 			times[i]=songs[lookUps[i][0]].getTDate();
 			if (times[i]>maxTime){maxTime=times[i];}
 			if (times[i]<minTime){minTime=times[i];}
-			System.out.println(times[i]+" "+maxTime+" "+minTime);
+			//System.out.println(times[i]+" "+maxTime+" "+minTime);
 		}	
 	}
 	
@@ -952,6 +1008,24 @@ public class ComparisonResults {
 				diss[i][j]=Math.sqrt(s);
 			}
 		}
+	}
+	
+	public double calculatePercentile(double x){
+		int m=n*(n-1)/2;
+		int y=(int)Math.round(m*x*0.01);
+		double[] temp=new double[m];
+		
+		int c=0;
+		for (int i=0; i<n; i++){
+			for (int j=0; j<i; j++){
+				temp[c]=diss[i][j];
+				c++;
+			}
+		}
+		Arrays.sort(temp);
+		double out=temp[y];
+		temp=null;
+		return out;	
 	}
 	
 	

@@ -65,8 +65,8 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 	int snnK=10;
 	int snnMinPts=4;
 	int snnEps=6;
-	double songUpperLimit=0.5;
-	double songLowerLimit=20;
+	double songUpperLimit=20;
+	double songLowerLimit=5;
 	double geogPropLimit=5;
 	
 	//DisplayPane dsE, dsSy, dsSt, dsSo, dsInd;
@@ -89,6 +89,8 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 	boolean popcomp=true;
 	
 	boolean useTransForSong=true;
+	boolean cycle=true;
+	boolean dtwComp=true;
 	
 	JLabel progressLabel=new JLabel("Waiting to start");
 	//SongGroup sg;
@@ -135,8 +137,11 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 			if (levels[i]){analysisLevels++;}
 		}
 		
+		dtwComp=sop.dtwComp.isSelected();
 		useTransForSong=sop.useTransForSong.isSelected();
+		cycle=sop.cycle.isSelected();
 		popcomp=sop.popComp.isSelected();
+		
 		
 		matrixcomp=sop.matrix.isSelected();
 		treecomp=sop.upgmaTree.isSelected();
@@ -247,7 +252,7 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 			comps[3]=sg.getScores(3);
 		}
 		if ((levels[4])||(levels[5])){
-			sg.compressSongs(useTransForSong, songUpperLimit, songLowerLimit);
+			sg.compressSongs(dtwComp, useTransForSong, cycle, songUpperLimit, songLowerLimit);
 			comps[4]=sg.getScores(4);
 		}
 		System.out.println("levels5: "+ levels[5]);

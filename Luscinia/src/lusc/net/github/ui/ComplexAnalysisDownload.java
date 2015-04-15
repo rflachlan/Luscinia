@@ -33,7 +33,9 @@ public class ComplexAnalysisDownload extends JPanel implements PropertyChangeLis
 	JRadioButton syllableTransition=new JRadioButton("By syllable transition: ", true);
 	JRadioButton song=new JRadioButton("By song: ", true);
 	JRadioButton elementCompression=new JRadioButton("Compress element distance: ", true);
+	JRadioButton dtwComp=new JRadioButton("Use DTW to compress songs: ", true);
 	JRadioButton useTransForSong=new JRadioButton("Use syllable transitions for song distance: ", true);
+	JRadioButton cycle=new JRadioButton("Cycle at end of song: ", true);
 	JFormattedTextField thresholdFactor;
 	double threshold;
 	AnalysisGroup ag;
@@ -57,7 +59,9 @@ public class ComplexAnalysisDownload extends JPanel implements PropertyChangeLis
 		this.add(syllableTransition);
 		this.add(song);
 		this.add(elementCompression);
+		this.add(dtwComp);
 		this.add(useTransForSong);
+		this.add(cycle);
 		
 		JLabel thresholdLabel=new JLabel("Threshold: ");
 		JPanel thresholdPanel=new JPanel(new BorderLayout());
@@ -101,7 +105,7 @@ public class ComplexAnalysisDownload extends JPanel implements PropertyChangeLis
 		
 		if (anaso){
 			//sg.compressSongs(useTransForSong, songUpperLimit, songLowerLimit);
-			ag.compressSongs(useTransForSong.isSelected(), songUpperLimit, songLowerLimit);
+			ag.compressSongs(dtwComp.isSelected(), useTransForSong.isSelected(), cycle.isSelected(), songUpperLimit, songLowerLimit);
 			//sg.compressSongsAsymm();
 		}
 	}

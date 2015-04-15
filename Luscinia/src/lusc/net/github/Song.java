@@ -91,6 +91,7 @@ public class Song {
 	double maxTrillWavelength=20; 
 	int brushSize=5;
 	int brushType=1; 
+	boolean clickDrag=false;
 	int maxBrush=10;
 	int minBrush=0; 
 	int playbackDivider=1; 
@@ -534,7 +535,7 @@ public class Song {
 	public void setNy(int a){
 		ny=a;
 	}
-
+	
 	/**
 	 * gets the brushType parameter - an int index for different types of brush for
 	 * measuring elements

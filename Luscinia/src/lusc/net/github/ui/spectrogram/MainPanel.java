@@ -132,6 +132,7 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 	private static String TICK_LABEL_FONT_STYLE="tick label font style";
 	private static String AXIS_LABEL_FONT_STYLE="axis label font style";
 	private static String FONT_FACE="font face";
+	private static String CLICK_DRAG="click drag";
 	
 	String [] brushSizes={"2", "5", "10", "20", "50", "all", "custom"};
 	int[] brushSizeInd={2, 5, 10, 20, 50};
@@ -226,6 +227,8 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 	JCheckBox showMinorTimeTickMark=new JCheckBox("Show minor time tick-marks");
 	JCheckBox showMajorFreqTickMark=new JCheckBox("Show major frequency tick-marks");
 	JCheckBox showMinorFreqTickMark=new JCheckBox("Show minor frequency tick-marks");
+	
+	JCheckBox clickDrag=new JCheckBox("Click and drag");
 	
 	JComboBox fontFace, axisLabelFontStyle, tickLabelFontStyle;
 	JSpinner majorTickMarkLength, minorTickMarkLength, axisLabelFontSize, tickLabelFontSize, lineWeight;
@@ -377,7 +380,7 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		}
 		
 		
-		
+		s.clickDrag=defaults.getBooleanProperty("clickdrag", false);
 		guidePanelMaxFrequency=defaults.getIntProperty("GPMAXF", 10000);
 		
 		gp=new GuidePanel(100);
@@ -520,6 +523,12 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		gpMaxF.addPropertyChangeListener("value", this);
 		gpMaxF.setValue(new Double(guidePanelMaxFrequency));
 		gpMaxF.setFont(font);
+		
+		clickDrag.setSelected(s.clickDrag);
+		clickDrag.setActionCommand(CLICK_DRAG);
+		clickDrag.addActionListener(this);
+		clickDrag.setFont(font);
+		
 				
 		zoomTimeAll.setActionCommand(ZOOM_TO_ALL_COMMAND);
 		zoomTimeAll.addActionListener(this);
@@ -832,6 +841,7 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		controlPane.add(displayMode);
 		controlPane.add(guidePanelL);
 		controlPane.add(gpMaxF);
+		controlPane.add(clickDrag);
 		
 		slayout1.putConstraint(SpringLayout.WEST, save, spring, SpringLayout.WEST, controlPane);
 		slayout1.putConstraint(SpringLayout.NORTH, save, 2, SpringLayout.NORTH, controlPane);
@@ -871,6 +881,9 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		
 		slayout1.putConstraint(SpringLayout.WEST, gpMaxF, spring, SpringLayout.EAST, guidePanelL);
 		slayout1.putConstraint(SpringLayout.NORTH, gpMaxF, 2, SpringLayout.NORTH, controlPane);
+		
+		slayout1.putConstraint(SpringLayout.WEST, clickDrag, 0, SpringLayout.WEST, gpMaxF);
+		slayout1.putConstraint(SpringLayout.NORTH, clickDrag, spring, SpringLayout.SOUTH, gpMaxF);
 		
 		slayout1.putConstraint(SpringLayout.SOUTH, controlPane, spring, SpringLayout.SOUTH, saveImage);
 
@@ -2005,6 +2018,10 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 					*/
 				}
 			}
+			if (CLICK_DRAG.equals(command)){
+				s.setClickDrag(clickDrag.isSelected());
+				
+			}
 		}
 		
 		if (DISPLAY_MODE.equals(command)) {
@@ -2259,6 +2276,7 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 			defaults.setDoubleProperty("stretchX", s.stretchX, 1000);
 			defaults.setDoubleProperty("stretchY", s.stretchY, 1000);
 			defaults.setIntProperty("GPMAXF", guidePanelMaxFrequency);
+			defaults.setBooleanProperty("clickdrag", s.clickDrag);
 			defaults.setSongParameters(song);
 			defaults.setParameterViews(s);
 			defaults.writeProperties();

@@ -39,7 +39,8 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 	boolean customCursor=false;
 	boolean automaticMerge=false;
 	boolean paintOver=true;
-	
+	boolean clickDrag=false;
+			
 	boolean[]viewParameters=new boolean[19];
 	
 	boolean readyToUpdateGP=false;
@@ -394,6 +395,10 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 	
 	public Song getSong(){
 		return song;
+	}
+	
+	public void setClickDrag(boolean b){
+		clickDrag=b;
 	}
 	
 	
@@ -2536,6 +2541,12 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 
 	public void mouseReleased(MouseEvent e) {
 		//updateElement();
+		if (clickDrag&&editable&&started){
+			started=false;
+			if (syllable){updateSyllable();}
+			//else{updateElement();}
+			else{updateElement();}
+		}
 	}
 	
 	public void mouseEntered(MouseEvent e) { 
@@ -2575,7 +2586,32 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 
 	}
 	public void mouseDragged(MouseEvent e) { 
-		
+		//System.out.print("hello");
+		if (clickDrag){
+			if(started){
+				oldx=newx;
+				oldy=newy;
+				newx = e.getX()-xspace;
+				newy = e.getY()-yspace;
+					   //if you drag the cursor off the spectrogram area, element is finshed
+				if ((newx>tnx)||(newy>tny)||(newx<0)||(newy<0)){
+					started=false;
+					if (syllable){updateSyllable();}
+					else{updateElement();}
+				}
+				else{
+					updatePoint();
+				}
+			}
+				
+			newx = e.getX()-xspace;
+			newy = e.getY()-yspace;
+			if ((newx<tnx)&&(newy<tny)&&(newx>0)&&(newy>0)){bounds=1;}
+			else{bounds=0;}
+			//System.out.print("PAINTING");
+			repaint();
+			//System.out.println("goodbye");
+		}
 	}
 	
 	public void updatePList(int x, int miny, int maxy){
