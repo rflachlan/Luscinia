@@ -558,14 +558,14 @@ public class AnalysisChoose extends JPanel implements ActionListener, ChangeList
 					if (schemeType==1){
 						int q=cs.getComplexSchemeKey();
 						//visComp=new VisualComparison(sg, vap, q, this, dbc);
-						visComp=new VisualComparison(ag, vap, q, this, dbc);
+						visComp=new VisualComparison(ag, vap, q, this, defaults, dbc);
 						mainPanel.addTab("Visual Comparison", visComp);
 					}
 					else{
 						//boolean fs=vap.getFitSignalSelected();
 						int q=cs.getSimpleSchemeKey();
 						//simpVisComp=new SimpleVisualComparison(sg, q, fs, this);
-						simpVisComp=new SimpleVisualComparison(ag, q, vap, this);
+						simpVisComp=new SimpleVisualComparison(ag, q, vap, this, defaults);
 						mainPanel.addTab("Simple Visual Comparison", simpVisComp);
 					}
 					mainPanel.setSelectedIndex(3);

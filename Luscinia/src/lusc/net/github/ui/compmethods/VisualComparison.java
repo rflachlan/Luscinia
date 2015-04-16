@@ -18,6 +18,7 @@ import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeEvent;
 import java.text.*;
 
+import lusc.net.github.Defaults;
 import lusc.net.github.Song;
 //import lusc.net.github.analysis.SongGroup;
 import lusc.net.github.analysis.AnalysisGroup;
@@ -100,10 +101,11 @@ public class VisualComparison extends JPanel implements PropertyChangeListener, 
 	Song[] songs;
 	AnalysisChoose ac;
 	DataBaseController dbc;
+	Defaults defaults;
 	
 	
 	//public VisualComparison(SongGroup sg,  VisualAnalysisPane vap, int sckey, AnalysisChoose ac, DataBaseController dbc){
-	public VisualComparison(AnalysisGroup sg,  VisualAnalysisPane vap, int sckey, AnalysisChoose ac, DataBaseController dbc){
+	public VisualComparison(AnalysisGroup sg,  VisualAnalysisPane vap, int sckey, AnalysisChoose ac, Defaults defaults, DataBaseController dbc){
 			
 	//public VisualComparison(LinkedList<Song> songlist, LinkedList<int[]> idlist, int compareSteps, 
 		//	boolean randomOrder, boolean bySyllable, boolean bySong, DataBaseController dbc, String user, int sckey){
@@ -123,6 +125,7 @@ public class VisualComparison extends JPanel implements PropertyChangeListener, 
 		this.ac=ac;
 		this.dbc=dbc;
 		this.sckey=sckey;
+		this.defaults=defaults;
 		
 		idlist=new LinkedList<int[]>();
 		boolean[][] compScheme=sg.getCompScheme();
@@ -141,8 +144,8 @@ public class VisualComparison extends JPanel implements PropertyChangeListener, 
 		width=(int)(d.getWidth()-60);
 		spectHeight=(int)((d.getHeight()-200)*0.5)-35;
 		//int[] spair=(int[])idlist.get(progress);
-		s1=new SpectrPane();
-		s2=new SpectrPane();
+		s1=new SpectrPane(defaults);
+		s2=new SpectrPane(defaults);
 		//s1.viewParameters[3]=false;
 		s1.setCompressYToFit(spectHeight);
 		if (compressToFit){

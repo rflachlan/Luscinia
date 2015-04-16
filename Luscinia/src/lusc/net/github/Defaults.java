@@ -32,6 +32,7 @@ public class Defaults {
 	public Properties props=new Properties();
 	
 	static LookAndFeel lnf;
+	int scaleFactor;
 	
 	/**
 	 * constructor
@@ -761,4 +762,21 @@ public class Defaults {
 		setBooleanArray("scalOut", chooserS);
 		setBooleanArray("sylOut", chooserSy);
 	}
+	
+	/**
+	 * This method sets the graphics scaling factor (e.g. for retina screens)
+	 * @param a scaling factor
+	 */
+	public void setScaleFactor(int a){
+		scaleFactor=a;
+	}
+	
+	/**
+	 * This method gets the graphics scaling factor (e.g. for retina screens)
+	 * @return an int value scaling factor
+	 */
+	public int getScaleFactor(){
+		return scaleFactor;
+	}
+	
 }

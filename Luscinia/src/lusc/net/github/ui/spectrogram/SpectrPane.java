@@ -7,10 +7,10 @@ package lusc.net.github.ui.spectrogram;
 //  Copyright 2005 Robert Lachlan. All rights reserved.
 //	This program is provided under the GPL 2.0 software licence. Please see accompanying material for details.
 
-import javax.swing.event.*;
 
 import java.awt.geom.AffineTransform;
 import java.awt.font.FontRenderContext;
+import java.awt.font.GlyphVector;
 import java.awt.font.TextLayout;
 import java.awt.*;
 import java.awt.event.*;
@@ -18,10 +18,10 @@ import java.awt.image.BufferedImage;
 import java.text.DecimalFormat;
 import java.util.*;
 
+import lusc.net.github.Defaults;
 import lusc.net.github.Element;
 import lusc.net.github.Song;
 import lusc.net.github.SpectrogramMeasurement;
-import lusc.net.github.analysis.BasicStatistics;
 import lusc.net.github.ui.statistics.DisplayPane;
 
 public class SpectrPane extends DisplayPane implements MouseListener, MouseMotionListener{
@@ -72,16 +72,20 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 	
 	int tickLabelFontSize=12;
 	int axisLabelFontSize=14;
+	int labelFontSize=12;
 	
 	String fontFace="Arial";
 	
 	int tickLabelFontStyle=Font.PLAIN;
 	int axisLabelFontStyle=Font.PLAIN;
+	int labelFontStyle=Font.PLAIN;
 	
 	Font timeAxisFont=new Font(fontFace, tickLabelFontStyle, tickLabelFontSize);
 	Font freqAxisFont=new Font(fontFace, tickLabelFontStyle, tickLabelFontSize);	
 	Font timeLabelFont=new Font(fontFace, axisLabelFontStyle, axisLabelFontSize);
 	Font freqLabelFont=new Font(fontFace, axisLabelFontStyle, axisLabelFontSize);
+	Font eleLabelFont=new Font(fontFace, labelFontStyle, labelFontSize);
+	Font syllLabelFont=new Font(fontFace, labelFontStyle, labelFontSize);
 	
 	
 	int majorTickMarkLength=5;
@@ -105,8 +109,8 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 	float lineWeight=1;
 	
 	
-	
-	BasicStroke fs=new BasicStroke(lineWeight, BasicStroke.CAP_SQUARE, BasicStroke.JOIN_MITER);
+	double multiplier=1.0;
+	BasicStroke fs=new BasicStroke((float)(lineWeight), BasicStroke.CAP_SQUARE, BasicStroke.JOIN_MITER);
 	
 	double stretchX=1;
 	double stretchY=1;
@@ -126,6 +130,7 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 	//spectrogram variables:
 	int nnx=(int)d.getWidth()-50;
 	int nny=0;
+	int nnx2, nny2;
 	int tnx=0;
 	int unx=0;
 	int oldx=0;
@@ -139,7 +144,7 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 	int archiveMaxX=0;
 	int xspace=75;
 	int xspace2=10;
-	int yspace=50;
+	int yspace=75;
 	int maxsl=0;
 	double dx,dy, tdx, tdy;
 	int nx, ny, tny;
@@ -177,17 +182,34 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 	AlphaComposite ac2 = AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1f);
 	
 	
+	
+	
 	//JComboBox deleteList=null;
 	
 	public SpectrPane(Song song, boolean editable, boolean start, MainPanel mp){
 		this.mp=mp;
 		songMeas=song.getMeasurer();
+		
+		
+		int re=mp.defaults.getScaleFactor();
+		multiplier=re;
+		
+		
+		resetFonts();
+		resetMultiplier();
 		relaunch(song, editable, start);
 	}
 	
-	public SpectrPane(){
-	
+	public SpectrPane(Defaults defaults){
+		
+		int re=defaults.getScaleFactor();
+		multiplier=re;
+		
+		resetFonts();
+		resetMultiplier();
 	}
+	
+	
 	
 	public void relaunch(Song song, boolean editable, boolean start){
 		
@@ -430,7 +452,8 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 	
 	public void restart(){
 		
-		System.out.println("PROGRESS: Setting the bounds");
+		System.out.println("PROGRESS: Setting the bounds");		
+		
 		
 		nnx=(int)d.getWidth()-100;
 		dx=song.getDx();
@@ -459,11 +482,18 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 			}
 		}
 		if (tnx>nnx-xspace-xspace2){tnx=nnx-xspace-xspace2;}
+		
+		tnx=(int)Math.round(tnx*multiplier);
+		tny=(int)Math.round(tny*multiplier);
+		tdx=tdx/multiplier;
+		tdy=tdy/multiplier;
 			
 		unx=(int)Math.round(tnx/stretchX);
 		this.setPreferredSize(new Dimension(nnx, nny));
 		this.revalidate();
-		imf=new BufferedImage(nnx, nny, BufferedImage.TYPE_INT_ARGB);
+		nnx2=(int)Math.round(nnx*multiplier);
+		nny2=(int)Math.round(nny*multiplier);
+		imf=new BufferedImage(nnx2, nny2, BufferedImage.TYPE_INT_ARGB);
 		im=new BufferedImage(unx, ny, BufferedImage.TYPE_INT_ARGB);
 		//paintFrame();
 		pList=new int[tnx][2];
@@ -1077,14 +1107,20 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 		lastPointList=new int[pointList.length][];
 		for (int i=0; i<pointList.length; i++){
 			lastPointList[i]=new int[pointList[i].length];
-			System.arraycopy(pointList[i], 0, lastPointList[i], 0, lastPointList[i].length);
+			//System.arraycopy(pointList[i], 0, lastPointList[i], 0, lastPointList[i].length);
+			for (int j=0; j<lastPointList[i].length; j++){
+				lastPointList[i][j]=(int)Math.round(pointList[i][j]/multiplier);
+				if (lastPointList[i][j]<0){lastPointList[i][j]=0;}
+				if (lastPointList[i][j]>=ny){lastPointList[i][j]=ny-1;}
+				
+			}
 		}
 	}
 		
 	private void updateElement(){
 		if (pointList!=null){
 			getLastPointList();
-			LinkedList<int[][]> signals=songMeas.getSignal(pointList, unx);
+			LinkedList<int[][]> signals=songMeas.getSignal(lastPointList, unx);
 			if (signals.size()>0){
 				archiveMinX=currentMinX;
 				archiveMaxX=currentMaxX;
@@ -1362,11 +1398,21 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 
 	
 	void resetFonts(){
-		timeAxisFont=new Font(fontFace, tickLabelFontStyle, tickLabelFontSize);
-		freqAxisFont=new Font(fontFace, tickLabelFontStyle, tickLabelFontSize);	
-		timeLabelFont=new Font(fontFace, axisLabelFontStyle, axisLabelFontSize);
-		freqLabelFont=new Font(fontFace, axisLabelFontStyle, axisLabelFontSize);
-		fs=new BasicStroke(lineWeight, BasicStroke.CAP_SQUARE, BasicStroke.JOIN_MITER);
+		int x=(int)(tickLabelFontSize*multiplier);
+		int y=(int)(axisLabelFontSize*multiplier);
+		int z=(int)(labelFontSize*multiplier);
+		timeAxisFont=new Font(fontFace, tickLabelFontStyle, x);
+		freqAxisFont=new Font(fontFace, tickLabelFontStyle, x);	
+		timeLabelFont=new Font(fontFace, axisLabelFontStyle, y);
+		freqLabelFont=new Font(fontFace, axisLabelFontStyle, y);
+		eleLabelFont=new Font(fontFace, labelFontStyle, z);
+		syllLabelFont=new Font(fontFace, labelFontStyle, z);
+		fs=new BasicStroke((float)(lineWeight*multiplier), BasicStroke.CAP_SQUARE, BasicStroke.JOIN_MITER);
+	}
+	
+	void resetMultiplier(){
+		xspace=(int)Math.round(xspace*multiplier);
+		yspace=(int)Math.round(yspace*multiplier);
 	}
 	
 	
@@ -1421,14 +1467,16 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 		double yt1000=majorFreqTick/tdy;
 		double ytick=yspace+tny+1;
 		int yt=(int)Math.round(ytick);
+		
+		int mtl=(int)Math.round(minorTickMarkLength*multiplier);
+		if (interiorTickMarks){mtl+=xspace;}
+		else{mtl=xspace-mtl;}
+		
 		if (showMinorFreqTickMarks){
 			while (ytick>yspace){
-				if (interiorTickMarks){
-					h.drawLine(xspace, yt, xspace+minorTickMarkLength, yt);
-				}
-				else{
-					h.drawLine(xspace, yt, xspace-minorTickMarkLength, yt);
-				}
+				
+				h.drawLine(xspace, yt, mtl, yt);
+				
 				ytick-=yt250;
 				yt=(int)Math.round(ytick);
 			}
@@ -1443,7 +1491,11 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 		
 		int labelInc=fm.getMaxAscent()/2;	
 		
-		int tickAdjust=majorTickMarkLength+2;;
+		int tickAdjust=(int)Math.round((majorTickMarkLength+2)*multiplier);
+		
+		mtl=(int)Math.round(majorTickMarkLength*multiplier);
+		if (interiorTickMarks){mtl+=xspace;}
+		else{mtl=xspace-mtl;}
 		
 		if ((!showMajorFreqTickMarks)||(interiorTickMarks)){
 			tickAdjust=2;
@@ -1456,7 +1508,7 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 				
 		while (ytick>yspace){
 			//Integer p=new Integer(ym);
-			Integer p=new Integer((int)Math.round(kiloCorrector*ym));
+			//Integer p=new Integer((int)Math.round(kiloCorrector*ym));
 			
 			if (showFreqTickMarkLabels){
 				String pl=df.format(kiloCorrector*ym);
@@ -1467,12 +1519,7 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 				h.drawString(pl, xspace-tickAdjust-plwidth, yt+labelInc);
 			}
 			if (showMajorFreqTickMarks){
-				if (interiorTickMarks){
-					h.drawLine(xspace, yt, xspace+majorTickMarkLength, yt);
-				}
-				else{
-					h.drawLine(xspace, yt, xspace-majorTickMarkLength, yt);
-				}
+				h.drawLine(xspace, yt, mtl, yt);
 			}
 			ytick-=yt1000;
 			ym+=majorFreqTick;
@@ -1510,7 +1557,7 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 		h.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
                 RenderingHints.VALUE_ANTIALIAS_ON);
 		h.setColor(Color.WHITE);
-		h.fillRect(0,0, nnx, nny);
+		h.fillRect(0,0, nnx2, nny2);
 		h.setColor(Color.BLACK);
 		if (showFrame){			
 			h.drawRect(xspace, yspace, tnx+1, tny+1);
@@ -1641,7 +1688,7 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 		h.setStroke(fs);
 		h.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
                 RenderingHints.VALUE_ANTIALIAS_ON);
-		int tickMarkOffset=majorTickMarkLength+2;
+		int tickMarkOffset=(int)Math.round((majorTickMarkLength+2)*multiplier);
 		if ((interiorTickMarks)||(!showMajorTimeTickMarks)){
 			tickMarkOffset=2;
 		}
@@ -1653,30 +1700,42 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 		FontMetrics fm=h.getFontMetrics(timeAxisFont);
 		int heightSpace=fm.getMaxAscent()+tickMarkOffset;
 		
-		int begin100=(int)(100*Math.ceil((currentMinX*stretchX)*tdx*0.01));
-		double xtick=xspace+(begin100/tdx)-(currentMinX*stretchX);
+		int begin100=(int)(100*Math.ceil((currentMinX*stretchX*multiplier)*tdx*0.01));
+		double xtick=xspace+(begin100/tdx)-(currentMinX*stretchX*multiplier);
 		int xt=(int)Math.round(xtick);
+		
+		int mtl=(int)Math.round(minorTickMarkLength*multiplier);
+		if (interiorTickMarks){
+			mtl=yspace+tny-mtl;
+		}
+		else{
+			mtl=yspace+tny+mtl;
+		}
+		
 		if (showMinorTimeTickMarks){
 			while (xtick<xspace+tnx){
-				if (interiorTickMarks){
-					h.drawLine(xt, yspace+tny+1, xt, yspace+tny-minorTickMarkLength);
-				}
-				else{
-					h.drawLine(xt, yspace+tny+1, xt, yspace+tny+minorTickMarkLength);
-				}
+				h.drawLine(xt, yspace+tny+1, xt, mtl);
 				xtick+=100/tdx;
 				xt=(int)Math.round(xtick);
 			}
 		}
 		
-		int begin500=(int)(500*Math.ceil((currentMinX*stretchX)*tdx*0.002));
-		xtick=xspace+(begin500/tdx)-(currentMinX*stretchX);
+		int begin500=(int)(500*Math.ceil((currentMinX*stretchX*multiplier)*tdx*0.002));
+		xtick=xspace+(multiplier*begin500/tdx)-(currentMinX*stretchX*multiplier);
 		xt=(int)Math.round(xtick);
 		int xm=begin500;
 		
 		double timeCorrector=1;
 		if (timeUnit){
 			timeCorrector=0.001;
+		}
+		
+		mtl=(int)Math.round(majorTickMarkLength*multiplier);
+		if (interiorTickMarks){
+			mtl=yspace+tny-mtl;
+		}
+		else{
+			mtl=yspace+tny+mtl;
 		}
 		
 		while (xtick<xspace+tnx){
@@ -1691,14 +1750,9 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 				h.drawString(pl, xpl, yspace+tny+heightSpace);
 			}
 			if (showMajorTimeTickMarks){
-				if (interiorTickMarks){
-					h.drawLine(xt, yspace+tny+1, xt, yspace+tny-majorTickMarkLength);
-				}
-				else{
-					h.drawLine(xt, yspace+tny+1, xt, yspace+tny+majorTickMarkLength);
-				}
+				h.drawLine(xt, yspace+tny+1, xt, mtl);
 			}
-			xtick+=500/tdx;
+			xtick+=500/(multiplier*tdx);
 			xt=(int)Math.round(xtick);
 			xm+=500;
 		}
@@ -2071,19 +2125,26 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 		double pf=Math.log(ny*song.getDy())*logCorrect;
 		double pe=(pf-pm)/(ny+0.0);
 		
-		BufferedImage imt=new BufferedImage(unx, song.getNy(), BufferedImage.TYPE_INT_ARGB);
+		int xx=(int)Math.round(multiplier*unx);
+		int yy=(int)Math.round(multiplier*song.getNy());
+		
+		BufferedImage imt=new BufferedImage(xx, yy, BufferedImage.TYPE_INT_ARGB);
 		Graphics2D g=imt.createGraphics();
 		g.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
                 RenderingHints.VALUE_ANTIALIAS_ON);
 		
-		g.drawImage(im, 0, 0, this);
+		xx=(int)Math.round(multiplier*im.getWidth());
+		yy=(int)Math.round(multiplier*im.getHeight());
+		
+		g.drawImage(im, 0, 0, xx, yy, this);
 		AlphaComposite ac = AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1f);
 		AlphaComposite ac2 = AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.5f);
 		int inv=(int)Math.ceil(1/stretchY);
-		BasicStroke bs1=new BasicStroke(1.0f*inv, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
-		BasicStroke bs2=new BasicStroke(1.0f*inv, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
-		BasicStroke bs3=new BasicStroke(2.0f*inv, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
+		BasicStroke bs1=new BasicStroke((float)(multiplier*inv), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
+		BasicStroke bs2=new BasicStroke((float)(multiplier*inv), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
+		BasicStroke bs3=new BasicStroke((float)(multiplier*2.0*inv), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
 		int i, j, k, sx, sy, ex, ty, by;
+		int ny2=(int)Math.round(multiplier*ny);
 		if (im!=null){
 			int ne=song.getNumElements();
 			if ((ne>0)&&(viewParameters[1])){
@@ -2097,7 +2158,7 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 					
 					if ((eleLength>0)&&(signal[eleLength-1][0]>currentMinX)&&(signal[0][0]<currentMaxX)){
 						
-						sx=signal[0][0]-currentMinX;
+						sx=(int)Math.round(multiplier*(signal[0][0]-currentMinX));
 						double correct=1/(song.getFrameSize()*48.0);
 						int [][] eleholder=new int[eleLength][16];
 						for (j=0; j<eleLength; j++){
@@ -2109,25 +2170,25 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 									double m2=((Math.log(measurements[jj][k])*logCorrect)-pm)/pe;
 									m1=m2;
 								}
-								eleholder[j][k]=(int)Math.round(ny-m1-1);
+								eleholder[j][k]=(int)Math.round(multiplier*(ny-m1-1));
 							}
 	
 							for (k=4; k<8; k++){
-								eleholder[j][k]=(int)(ny-(measurements[jj][k]*ny));
+								eleholder[j][k]=(int)(ny2-(measurements[jj][k]*ny2));
 							}
-							eleholder[j][8]=(int)(measurements[jj][8]*ny);
+							eleholder[j][8]=(int)Math.round(measurements[jj][8]*ny2);
 							if (eleholder[j][8]<0){eleholder[j][8]=0;}
-							eleholder[j][8]=ny-eleholder[j][8];
+							eleholder[j][8]=ny2-eleholder[j][8];
 							eleholder[j][9]=(int)(measurements[jj][9]);
 							//eleholder[j][9]=(int)(ny-((10+ele.measurements[jj][9])*0.1*ny));
-							if (eleholder[j][9]>=ny){eleholder[j][9]=ny-1;}
+							if (eleholder[j][9]>=ny2){eleholder[j][9]=ny2-1;}
 							eleholder[j][10]=(int)Math.round(measurements[jj][10]/ele.getDy());
-							eleholder[j][11]=(int)Math.round((measurements[jj][11]*correct*ny));
-							eleholder[j][12]=(int)Math.round(ny-(measurements[jj][12]*ny));
+							eleholder[j][11]=(int)Math.round((measurements[jj][11]*correct*ny2));
+							eleholder[j][12]=(int)Math.round(ny2-(measurements[jj][12]*ny2));
 							//eleholder[j][13]=(int)Math.round(ny-((ele.measurements[jj][13])*0.0001*ny));
 							//if (eleholder[j][13]>=ny){eleholder[j][13]=ny-1;}
-							eleholder[j][13]=(int)Math.round(ny-((Math.log(Math.max(1, measurements[jj][13])))*0.02*ny));
-							eleholder[j][14]=(int)Math.round(ny-(measurements[jj][14]*(0.02)*ny));
+							eleholder[j][13]=(int)Math.round(ny2-((Math.log(Math.max(1, measurements[jj][13])))*0.02*ny2));
+							eleholder[j][14]=(int)Math.round(ny2-(measurements[jj][14]*(0.02)*ny2));
 						}	
 						
 						if (viewParameters[0]){
@@ -2135,19 +2196,19 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 							g.setComposite(ac2);
 						
 							for (j=0; j<eleLength; j++){
-								ex=signal[j][0]-currentMinX;
-								if ((ex>0)&&(ex<currentMaxX)){								
+								ex=(int)Math.round(multiplier*(signal[j][0]-currentMinX));
+								if ((ex>0)&&(ex<currentMaxX*multiplier)){								
 									int st=1;
 									while ((st<signal[j].length-1)&&(signal[j][st]!=0)){
-										ty=signal[j][st];
-										by=signal[j][st+1];
+										ty=(int)Math.round(multiplier*signal[j][st]);
+										by=(int)Math.round(multiplier*signal[j][st+1]);
 										if (displayMode==2){
 											double tya=(ny-ty-1)*dy;
 											double bya=(ny-by-1)*dy;
 											double m1=((Math.log(tya)*logCorrect)-pm)/pe;
 											double m2=((Math.log(bya)*logCorrect)-pm)/pe;
-											ty=(int)Math.round(ny-m1-1);
-											by=(int)Math.round(ny-m2-1);
+											ty=(int)Math.round(multiplier*(ny-m1-1));
+											by=(int)Math.round(multiplier*(ny-m2-1));
 										}
 										g.drawLine(ex, ty, ex, by);
 										st+=2;
@@ -2159,8 +2220,8 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 						g.setComposite(ac);
 						g.setStroke(bs2);
 						for (j=1; j<eleLength; j++){
-							ex=signal[j][0]-currentMinX;
-							if ((sx>0)&&(ex<currentMaxX)){
+							ex=(int)Math.round(multiplier*(signal[j][0]-currentMinX));
+							if ((sx>0)&&(ex<currentMaxX*multiplier)){
 								int j1=j-1;
 								if (viewParameters[4]){
 									g.setColor(peakFreqColor);
@@ -2237,35 +2298,41 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 		Graphics2D h=imf.createGraphics();
 		h.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
                 RenderingHints.VALUE_ANTIALIAS_ON);
-		h.fillRect(0, 0, nnx, nny);
+		h.fillRect(0, 0, nnx2, nny2);
+		
 		if ((stretchX!=1)||(stretchY!=1)){
 			h.drawImage(imt, xspace+1, yspace+1, tnx, tny, this);
 			imt=null;
 		}
 		else{
-			h.drawImage(imt, xspace+1, yspace+1, this);
+			h.drawImage(imt, xspace+1, yspace+1, tnx, tny, this);
 			imt=null;
 		}
 		h.setColor(Color.WHITE);
 		h.setComposite(ac);
 		//h.fillRect(xspace, yspace-51, unx, 50);
 		
-		
+		h.setFont(eleLabelFont);
+		FontMetrics fm=h.getFontMetrics(eleLabelFont);
+		//String tester="0123456789";
+		int ph=fm.getHeight();
 		
 		h.setComposite(ac);
 		int ne=song.getNumElements();
 		if ((ne>0)&&(viewParameters[1])){
+			
+			
 			h.setStroke(fs);
 			int disp=yspace/10;
 			for (i=0; i<ne; i++){
 				Element ele=(Element) song.getElement(i);
 				int[][] signal=ele.getSignal();
 				int eleLength=ele.getLength();
-				double[][] measurements=ele.getMeasurements();
+				//double[][] measurements=ele.getMeasurements();
 				if ((eleLength>0)&&(signal[eleLength-1][0]>currentMinX)&&(signal[0][0]<currentMaxX)){
 					
 					if (unitStyle==0){
-						sy=yspace-1;
+						sy=yspace-ph/2;
 						double av=(signal[0][0]+signal[eleLength-1][0])*0.5;
 						sx=(int)Math.round((((av*ele.getTimeStep()/dx)-currentMinX)*stretchX)+xspace);
 						if ((sx>xspace)&&(sx<tnx)){
@@ -2295,14 +2362,28 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 		if ((ns>0)&&(viewParameters[2])){
 			
 			
+			h.setFont(syllLabelFont);
+			fm=h.getFontMetrics(syllLabelFont);
+			String tester="0123456789";
+			FontRenderContext frc = h.getFontRenderContext();
+	        GlyphVector gv = syllLabelFont.createGlyphVector(frc, tester);
+	        int pj=(int)gv.getPixelBounds(null, 0, 0).getHeight();
 			
+			
+			
+			//int pj=fm.getHeight();
+			int pj2=(int)Math.round(pj*1.2);
+			int pj3=(int)Math.round(pj*1.4);
+			int pj4=(int)Math.round(pj*0.1);
+			
+			System.out.println(pj+" "+pj2+" "+pj3+" "+pj4);
 			
 			if (unitStyle==0){
 				h.setStroke(fs);
 				h.setColor(syllableColor);
 				h.setComposite(ac);
-				int shift1=22;
-				int shift2=4;
+				int shift1=yspace-2*ph-pj3;
+				int shift2=yspace-2*ph-2*pj3;
 			
 				for (i=0; i<ns; i++){
 					int[] ele=(int[])song.getSyllable(i);
@@ -2321,7 +2402,7 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 								j=ns;
 							}
 						}
-					
+						/*
 						if (shift==shift2){
 							if (shift==4){
 								shift+=2;
@@ -2342,16 +2423,17 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 								shift1=shift;
 							}
 						}
+						*/
 					
 						x2+=xspace;
 						x1+=xspace;
 						int x3=(int)Math.round(0.5*(x1+x2)-5);
 						h.setColor(syllableColor);
-						h.fillRect(x1, shift, (x2-x1), 12);
+						h.fillRect(x1, shift, (x2-x1), pj2);
 						h.setColor(Color.WHITE);
 						Integer p=new Integer(i+1);
 						String pl=p.toString();
-						h.drawString(pl, x3, shift+11);
+						h.drawString(pl, x3, shift+pj2-pj4);
 					}
 				}
 			}
@@ -2423,12 +2505,22 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 	public void paintComponent(Graphics g) {
 	
         super.paintComponent(g);  //paint background
+        
+        
+		Graphics2D g2=(Graphics2D)g;
+		
 		//System.out.println("painting");
 		if (paintOver){
 		
 		if (bounds<2){
-			g.drawImage(imf, 0, 0, this);
-			Graphics2D g2=(Graphics2D) g;
+			
+			//Graphics2D g2=(Graphics2D) g;
+			
+			
+			
+			g2.scale(1/multiplier, 1/multiplier);
+			g2.drawImage(imf, 0, 0, this);
+			//g2.scale(1,1);
 			g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
 	                RenderingHints.VALUE_ANTIALIAS_ON);
 			/*if (pointList!=null){
@@ -2442,7 +2534,7 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 			}*/
 
 			if (bounds==1){
-				g2.drawImage(imf, 0, 0, this);
+				//g2.drawImage(imf, 0, 0, this);
 				g2.setColor(Color.BLACK);
 				g2.setComposite(ac);
 				g2.drawLine(newx+xspace, yspace, newx+xspace, yspace+tny);
@@ -2453,11 +2545,23 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 				g2.fillRect(xspace-40, newy+yspace-10, 35, 20);
 				g2.fillRect(newx+xspace-5, yspace+tny+3, 35, 15);
 				g2.setColor(Color.RED);
+				g2.setFont(timeAxisFont);
+				int tickMarkOffset=(int)Math.round((majorTickMarkLength+2)*multiplier);
+				if ((interiorTickMarks)||(!showMajorTimeTickMarks)){
+					tickMarkOffset=2;
+				}
+				
+				FontMetrics fm=g2.getFontMetrics(timeAxisFont);
+				
 				if (displayMode==0){
 					int ym=(int)Math.round((tny-newy+1)*tdy);
 					Integer p=new Integer(ym);
 					String pl=p.toString();
-					g2.drawString(pl, xspace-40, newy+yspace+5);
+					int xq=xspace-fm.stringWidth(pl)-5;
+					g2.setColor(Color.WHITE);
+					g2.fillRect(xq, newy+yspace+5-fm.getHeight(), fm.stringWidth(pl), fm.getHeight());
+					g2.setColor(Color.RED);
+					g2.drawString(pl, xq, newy+yspace+5);
 				}
 				else if (displayMode==1){
 					int max=(int)Math.pow(10, -1*maxsl);
@@ -2467,7 +2571,11 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 					if (pl.length()>5){
 						pl=pl.substring(0, 5);
 					}
-					g2.drawString(pl, xspace-40, newy+yspace+5);
+					int xq=xspace-fm.stringWidth(pl)-5;
+					g2.setColor(Color.WHITE);
+					g2.fillRect(xq, newy+yspace+5-fm.getHeight(), fm.stringWidth(pl), fm.getHeight());
+					g2.setColor(Color.RED);
+					g2.drawString(pl, xq, newy+yspace+5);
 				}
 				else if (displayMode==2){
 				
@@ -2478,24 +2586,35 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 					int ym=(int)Math.round(Math.pow(2, pm+((tny-newy+1)*pe)));
 					Integer p=new Integer(ym);
 					String pl=p.toString();
-					g2.drawString(pl, xspace-40, newy+yspace+5);
+					int xq=xspace-fm.stringWidth(pl)-5;
+					g2.setColor(Color.WHITE);
+					g2.fillRect(xq, newy+yspace+5-fm.getHeight(), fm.stringWidth(pl), fm.getHeight());
+					g2.setColor(Color.RED);
+					g2.drawString(pl, xq, newy+yspace+5);
 				}		
-				int xm=(int)Math.round((newx+(currentMinX*stretchX))*tdx);
+				int xm=(int)Math.round(multiplier*(newx+(currentMinX*stretchX))*tdx);
 				
 				//int begin500=(int)(500*Math.ceil((currentMinX*stretchX)*tdx*0.002));
 				
 				
 				Integer p=new Integer(xm);
 				String pl=p.toString();
-				g2.drawString(pl,  newx+xspace-3, yspace+tny+15);
+				
+				int heightSpace=fm.getMaxAscent()+tickMarkOffset;
+				g2.setColor(Color.WHITE);
+				g2.fillRect(newx+xspace-3, yspace+tny+heightSpace-fm.getHeight(), fm.stringWidth(pl), fm.getHeight());
+				g2.setColor(Color.RED);
+				g2.drawString(pl,  newx+xspace-3, yspace+tny+heightSpace);
 			}
 			g2.dispose();
 			imf.flush();
 		}
 		else{
-			g.drawImage(imf, 0, 0, this);
-			g.setColor(Color.BLACK);
-			g.drawLine(soundposition+xspace-currentMinX, yspace, soundposition+xspace-currentMinX, yspace+tny);
+			g2.scale(1/multiplier, 1/multiplier);
+			g2.drawImage(imf, 0, 0, this);
+			//g.drawImage(imf, 0, 0, this);
+			g2.setColor(Color.BLACK);
+			g2.drawLine(soundposition+xspace-currentMinX, yspace, soundposition+xspace-currentMinX, yspace+tny);
 		}
 		
 		readytopaint=true;
@@ -2512,8 +2631,8 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 		if(started){
 			oldx=newx;
 			oldy=newy;
-			newx = e.getX()-xspace;
-			newy = e.getY()-yspace;
+			newx = (int)(multiplier*e.getX())-xspace;
+			newy = (int)(multiplier*e.getY())-yspace;
 			   //if you drag the cursor off the spectrogram area, element is finshed
 			if ((newx>tnx)||(newy>tny)||(newx<0)||(newy<0)){
 				started=false;
@@ -2525,8 +2644,8 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 			}
 		}
 		
-		newx = e.getX()-xspace;
-		newy = e.getY()-yspace;
+		newx = (int)(multiplier*e.getX())-xspace;
+		newy = (int)(multiplier*e.getY())-yspace;
 		if ((newx<tnx)&&(newy<tny)&&(newx>0)&&(newy>0)){bounds=1;}
 		else{bounds=0;}
 		//System.out.print("PAINTING");
@@ -2567,8 +2686,8 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 			}
 			else{
 				started=true;
-				newx = e.getX()-xspace;
-				newy = e.getY()-yspace;
+				newx = (int)(multiplier*e.getX())-xspace;
+				newy = (int)(multiplier*e.getY())-yspace;
 				if ((newx<tnx)&&(newy<tny)){
 					pointList=new int[unx][2];
 					pList=new int[tnx][2];
@@ -2591,8 +2710,8 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 			if(started){
 				oldx=newx;
 				oldy=newy;
-				newx = e.getX()-xspace;
-				newy = e.getY()-yspace;
+				newx = (int)(multiplier*e.getX())-xspace;
+				newy = (int)(multiplier*e.getY())-yspace;
 					   //if you drag the cursor off the spectrogram area, element is finshed
 				if ((newx>tnx)||(newy>tny)||(newx<0)||(newy<0)){
 					started=false;
@@ -2604,8 +2723,8 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 				}
 			}
 				
-			newx = e.getX()-xspace;
-			newy = e.getY()-yspace;
+			newx = (int)(multiplier*e.getX())-xspace;
+			newy = (int)(multiplier*e.getY())-yspace;
 			if ((newx<tnx)&&(newy<tny)&&(newx>0)&&(newy>0)){bounds=1;}
 			else{bounds=0;}
 			//System.out.print("PAINTING");
@@ -2624,15 +2743,16 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 		int startx=x;
 		int endx=x;
 		if (stretchX!=1){
-			startx=(int)Math.round((x-0.5)*stretchX);
+			startx=(int)Math.round((x-0.5)*(stretchX));
 			if (startx<0){startx=0;}
-			endx=(int)Math.round((x+0.5)*stretchX);
+			endx=(int)Math.round((x+0.5)*(stretchX));
 			if (endx>=tnx){endx=tnx-1;}
 		}
 		if (stretchY!=1){
-			miny=(int)Math.round(miny*stretchY);
-			maxy=(int)Math.round(maxy*stretchY);
+			miny=(int)Math.round(miny*(stretchY));
+			maxy=(int)Math.round(maxy*(stretchY));
 		}
+		//System.out.println(startx+" "+endx+" "+miny+" "+maxy);
 		int i2;
 		for (int i=startx; i<=endx; i++){
 			i2=i+xspace;
@@ -2659,7 +2779,7 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 	public void updatePoint(){					//updates the list of points for the element the user is currently selecting
 		
 		//System.out.println(stretchX);
-		
+		int ny2=(int)Math.round(ny*multiplier);
 		int bt=song.getBrushType();
 		if (pointList!=null){
 			int maxy=2;
@@ -2667,28 +2787,28 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 			
 			if (bt==1){
 				int bs=song.getBrushSize();
-				maxy=(int)Math.round((newy+bs)/stretchY);			//maxy and miny are the current positions of the cursor
-				if (maxy>=ny){maxy=ny-1;}
-				miny=(int)Math.round((newy-bs)/stretchY);
+				maxy=(int)Math.round((newy+multiplier*bs)/(stretchY));			//maxy and miny are the current positions of the cursor
+				if (maxy>=ny2){maxy=ny2-1;}
+				miny=(int)Math.round((newy-multiplier*bs)/(stretchY));
 				if (miny<=0){miny=1;}
 			}
 			else if (bt==2) {
-				maxy=ny-1;
+				maxy=ny2-1;
 				miny=1;
 			}
 			else if (bt==3) {
-				double mf=ny/(song.getMaxF()+0.0);
-				maxy=(int)Math.round(song.getMaxBrush()*mf);
-				if (maxy>=ny){maxy=ny-1;}
-				miny=(int)Math.round(song.getMinBrush()*mf);
-				if (miny>=maxy){maxy=ny-1;}
+				double mf=ny2/(song.getMaxF()+0.0);
+				maxy=(int)Math.round(song.getMinBrush()*mf);
+				if (maxy>=ny2){maxy=ny2-1;}
+				miny=(int)Math.round(song.getMaxBrush()*mf);
+				//if (miny>=maxy){maxy=ny2-1;}
 				if (miny<=0){miny=1;}
-				maxy=ny-maxy;
-				miny=ny-miny;
+				maxy=ny2-maxy;
+				miny=ny2-miny;
 				//System.out.println(song.maxBrush+" "+song.minBrush+" "+song.maxf+" "+ny+" "+maxy+" "+miny);
 			}
-			int x=(int)Math.round(newx/stretchX);
-			int ox=(int)Math.round(oldx/stretchX);
+			int x=(int)Math.round(newx/(stretchX));
+			int ox=(int)Math.round(oldx/(stretchX));
 			//this next section updates pointList at the point in time the cursor is at
 			
 			
@@ -2716,15 +2836,15 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 			
 			if (x>ox+1){
 				double distx=x-ox;
-				double disty=(newy-oldy)/stretchY;
+				double disty=(newy-oldy)/(stretchY);
 				double oy=oldy/stretchY;
-				int brushAdj=(int)Math.round(song.getBrushSize()/stretchY);
+				int brushAdj=(int)Math.round(multiplier*song.getBrushSize()/(stretchY));
 				for (int i=ox+1; i<x; i++){
 					
 					if (bt==1){
 						int y=(int)Math.round(((i-ox)/distx)*disty+oy);
 						maxy=y+brushAdj;
-						if (maxy>=ny){maxy=ny-1;}
+						if (maxy>=ny2){maxy=ny2-1;}
 						miny=y-brushAdj;
 						if (miny<=0){miny=1;}
 						if (pointList[i][0]==0){
@@ -2745,12 +2865,20 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 					}
 					else if (bt==2) {
 						pointList[i][0]=1;
-						pointList[i][1]=ny-1;
+						pointList[i][1]=ny2-1;
 						updatePList(i, miny, maxy);
 					}
 					else if (bt==3) {
-						pointList[i][0]=1;
-						pointList[i][1]=ny-1; 
+						double mf=ny2/(song.getMaxF()+0.0);
+						maxy=(int)Math.round(song.getMinBrush()*mf);
+						if (maxy>=ny2){maxy=ny2-1;}
+						miny=(int)Math.round(song.getMaxBrush()*mf);
+						//if (miny>=maxy){maxy=ny2-1;}
+						if (miny<=0){miny=1;}
+						maxy=ny2-maxy;
+						miny=ny2-miny;
+						pointList[i][0]=miny;
+						pointList[i][1]=maxy; 
 						updatePList(i, miny, maxy);
 					}
 				}
@@ -2759,14 +2887,14 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 			}
 			if (ox>x+1){
 				double distx=ox-x;
-				double disty=(newy-oldy)/stretchY;
-				double oy=oldy/stretchY;
-				int brushAdj=(int)Math.round(song.getBrushSize()/stretchY);
+				double disty=(newy-oldy)/(stretchY);
+				double oy=oldy/(stretchY);
+				int brushAdj=(int)Math.round(multiplier*song.getBrushSize()/(stretchY));
 				for (int i=x+1; i<ox; i++){
 					if (bt==1){
 						int y=(int)Math.round(((ox-i)/distx)*disty+oy);
 						maxy=y+brushAdj;
-						if (maxy>=ny){maxy=ny-1;}
+						if (maxy>=ny2){maxy=ny2-1;}
 						miny=y-brushAdj;
 						if (miny<=0){miny=1;}
 						if (pointList[i][0]==0){
@@ -2787,12 +2915,20 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 					}
 					else if (bt==2) {
 						pointList[i][0]=1;
-						pointList[i][1]=ny-1;
+						pointList[i][1]=ny2-1;
 						updatePList(i, miny, maxy);
 					}
 					else if (bt==3) {
-						pointList[i][0]=1;
-						pointList[i][1]=ny-1;
+						double mf=ny2/(song.getMaxF()+0.0);
+						maxy=(int)Math.round(song.getMinBrush()*mf);
+						if (maxy>=ny2){maxy=ny2-1;}
+						miny=(int)Math.round(song.getMaxBrush()*mf);
+						//if (miny>=maxy){maxy=ny2-1;}
+						if (miny<=0){miny=1;}
+						maxy=ny2-maxy;
+						miny=ny2-miny;
+						pointList[i][0]=miny;
+						pointList[i][1]=maxy;
 						updatePList(i, miny, maxy); 
 					}
 				}
