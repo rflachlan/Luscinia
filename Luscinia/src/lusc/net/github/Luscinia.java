@@ -20,12 +20,10 @@ import java.awt.event.WindowListener;
 //import java.beans.PropertyChangeListener;
 //import java.beans.PropertyChangeEvent;
 
+
 import javax.swing.BorderFactory; 
 //import javax.swing.border.Border;
 import javax.swing.event.*;
-
-//import java.awt.event.*;
-//import java.lang.reflect.*;
 
 import lusc.net.github.db.*;
 import lusc.net.github.ui.AboutBox;
@@ -61,8 +59,13 @@ public class Luscinia implements WindowListener, ActionListener, ChangeListener{
 	private static String ADD_TAB = "add tab";
 	private static String REMOVE_TAB = "remove tab";
 	
+<<<<<<< HEAD
 	String lversion="2.15.04.15.01";
 	String dversion="2.15.04.15.01";
+=======
+	String lversion="2.16.04.15.01";
+	String dversion="2.16.04.15.01";
+>>>>>>> origin/master
 	
 	
 	
@@ -77,6 +80,28 @@ public class Luscinia implements WindowListener, ActionListener, ChangeListener{
 	public DataBaseController getDBController(){
 		return dbc;
 	}
+	
+	/**
+	 * This method gets information about whether the system that Luscinia is operating on has a Retina screen or something similar
+	 * @return an integer value of the scale factor (2 indicates retina screen, for eg).
+	 */
+	public static int getGraphicsScalingFactor() {
+		 GraphicsEnvironment env = GraphicsEnvironment.getLocalGraphicsEnvironment();
+		 final GraphicsDevice device = env.getDefaultScreenDevice();
+		 try {
+		   java.lang.reflect.Field field = device.getClass().getDeclaredField("scale");
+		   if (field != null) {
+		       field.setAccessible(true);
+		       Object scale = field.get(device);
+		 
+		       if (scale instanceof Integer) {
+		         return ((Integer)scale).intValue();
+		       }
+		     }
+		   } catch (Exception ignore) {}
+
+		  return 0;
+		}
 	
 	/**
 	 * This method gets the version of Luscinia being used
@@ -135,7 +160,11 @@ public class Luscinia implements WindowListener, ActionListener, ChangeListener{
 
 		//rsc=ResourceBundle.getBundle ("resources", Locale.getDefault());
         container.setLayout(new BorderLayout());
+        
+        int sc=getGraphicsScalingFactor();
+        
 		defaults=new Defaults();
+		defaults.setScaleFactor(sc);
 		//defaults.lnf=UIManager.getLookAndFeel();
 		container.setPreferredSize(new Dimension(800, 600));
 		//tabbedPane.setPreferredSize(new Dimension(800, 550));

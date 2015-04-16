@@ -18,6 +18,7 @@ import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeEvent;
 import java.text.*;
 
+import lusc.net.github.Defaults;
 import lusc.net.github.Song;
 //import lusc.net.github.analysis.SongGroup;
 import lusc.net.github.analysis.AnalysisGroup;
@@ -84,14 +85,16 @@ public class SimpleVisualComparison extends JPanel implements PropertyChangeList
 	AnalysisGroup sg;
 	Song[] songs;
 	VisualAnalysisPane vap;
+	Defaults defaults;
 	
 	Random random=new Random(System.currentTimeMillis());
 	
 	//public SimpleVisualComparison(SongGroup sg, int sckey, boolean fitOnScreen, AnalysisChoose ac){
-	public SimpleVisualComparison(AnalysisGroup sg, int sckey, VisualAnalysisPane vap, AnalysisChoose ac){
+	public SimpleVisualComparison(AnalysisGroup sg, int sckey, VisualAnalysisPane vap, AnalysisChoose ac, Defaults defaults){
 		this.sg=sg;
 		sg.checkAndLoadRawData();
 		songs=sg.getSongs();
+		this.defaults=defaults;
 		this.dbc=sg.getDBC();
 		this.sckey=sckey;
 		this.vap=vap;
@@ -105,8 +108,8 @@ public class SimpleVisualComparison extends JPanel implements PropertyChangeList
 		Dimension d = Toolkit.getDefaultToolkit().getScreenSize();
 		width=(int)(d.getWidth()-60);
 		spectHeight=(int)((d.getHeight()-200)*0.5)-25;
-		s1=new SpectrPane();
-		s2=new SpectrPane();
+		s1=new SpectrPane(defaults);
+		s2=new SpectrPane(defaults);
 		s1.setLimitedOptions(spectHeight, width);
 		s2.setLimitedOptions(spectHeight, width);
 

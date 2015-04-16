@@ -416,7 +416,7 @@ public class DisplayPC  extends DisplayPane implements  ActionListener{
 					for (int i=0; i<pcp.selP.length; i++){
 						int a=pcp.selP[i];
 						
-						if (labelType==3){
+						if (labelType==5){
 							int[][] overallAssignments=km.getOverallAssignments();
 							int b=overallAssignments[cluster-2][a];
 							int c=0;
@@ -435,7 +435,7 @@ public class DisplayPC  extends DisplayPane implements  ActionListener{
 							}
 							ssb.draw(dataType, wr);
 						}
-						else if (labelType==4){
+						else if (labelType==6){
 							int[][] overallAssignments=ent.getOverallAssignment();
 							int b=overallAssignments[cluster-2][a];
 							int c=0;
@@ -454,7 +454,7 @@ public class DisplayPC  extends DisplayPane implements  ActionListener{
 							}
 							ssb.draw(dataType, wr);
 						}	
-						else if (labelType==5){
+						else if (labelType==7){
 							int[] db=snn.getDBSCANClusters();
 							int b=db[a];
 							int c=0;
@@ -504,7 +504,7 @@ public class DisplayPC  extends DisplayPane implements  ActionListener{
 					for (int i=0; i<labs.length; i++){
 						if (labs[i]==s){labelType=i;}
 					}
-					if ((labelType==3)||(labelType==4)||(labelType==5)){
+					if ((labelType==5)||(labelType==6)||(labelType==7)){
 						selectAllCat.setEnabled(true);
 					}
 					else{
@@ -517,7 +517,7 @@ public class DisplayPC  extends DisplayPane implements  ActionListener{
 			}
 		}
 		int tcluster=cluster;
-		if (labelType==5){
+		if (labelType==7){
 			tcluster=snn.getNumClusts()+1;
 		}
 		
