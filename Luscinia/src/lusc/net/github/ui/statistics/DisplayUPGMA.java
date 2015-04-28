@@ -48,6 +48,9 @@ public class DisplayUPGMA extends DisplayPane implements MouseInputListener, Pro
 	double maxdist=100;
 	double maxY=0;
 	
+	int lineWeight=1;
+	int fontSize=10;
+	
 	int size=0;
 	int size1=0;	
 	
@@ -87,6 +90,7 @@ public class DisplayUPGMA extends DisplayPane implements MouseInputListener, Pro
 	NumberFormat num, num2;
 	boolean RECALC=true;
 	double maxDist;
+	double scale=1;
 	
 	public DisplayUPGMA (UPGMA upgma, ComparisonResults cr, AnalysisGroup sg, int width, int height, Defaults defaults){
 		this.upgma=upgma;
@@ -97,6 +101,8 @@ public class DisplayUPGMA extends DisplayPane implements MouseInputListener, Pro
 		this.width=width;
 		this.height=height;
 		this.defaults=defaults;
+		scale=defaults.getScaleFactor();
+		//this.width=(int)Math.round(scale*width);
 		dat=upgma.getDat();
 		maxDist=upgma.getMaxDist();
 		startDisplaying();
@@ -113,6 +119,8 @@ public class DisplayUPGMA extends DisplayPane implements MouseInputListener, Pro
 		this.silhouettes=silhouettes;
 		this.avsils=avsils;
 		this.defaults=defaults;
+		scale=defaults.getScaleFactor();
+		//this.width=(int)Math.round(scale*width);
 		dat=upgma.getDat();	
 		maxDist=upgma.getMaxDist();
 		startDisplaying();	
@@ -139,10 +147,11 @@ public class DisplayUPGMA extends DisplayPane implements MouseInputListener, Pro
 		num2.setMaximumFractionDigits(5);
 		size=dat.length;
 		size1=size-1;
-
-		bodyFont  = new Font("Arial", Font.PLAIN, elespace/2);
+		
+		int fsz=(int)Math.round(elespace*scale/2);
+		bodyFont  = new Font("Arial", Font.PLAIN, fsz);
         if (bodyFont == null) {
-            bodyFont = new Font("SansSerif", Font.PLAIN, elespace/2);
+            bodyFont = new Font("SansSerif", Font.PLAIN, fsz);
         }
 		
 		xdisp2=width-250;
@@ -175,7 +184,7 @@ public class DisplayUPGMA extends DisplayPane implements MouseInputListener, Pro
 		//status=new JLabel("Number of leaves: "+elements+" Cut-off: 0");
 		//status.setBorder(BorderFactory.createEmptyBorder(10,10,10,20));
 		paintPanel();
-		spg.paintImage(imf);
+		spg.paintImage(imf, scale);
 		paintDSG();
 		//spg.revalidate();
 		//this.revalidate();
@@ -285,30 +294,44 @@ public class DisplayUPGMA extends DisplayPane implements MouseInputListener, Pro
 		drawDottedLine=true;
 		
 		dlLoc=place;
-		System.out.println("1");
 		paintPanel();
-		System.out.println("2");
 		//spg.paintImage(imf);
-		System.out.println("3");
 		//paintDSG();
-		this.revalidate();
-		System.out.println("4");
+		//this.revalidate();
+		spg.paintImage(imf, scale);
+		spg.revalidate();
 	}
 	
 	
 	public void paintPanel(){
 		
 		
-		int ny=elespace*elements+2*ydisp;
+		int ny=(int)Math.round(scale*(elespace*elements+2*ydisp));
 		System.out.println("UPGMA TREE HEIGHT: "+ny);
-		imf=new BufferedImage(width, ny, BufferedImage.TYPE_INT_ARGB);
+		int widthx=(int)Math.round(scale*width);
+		imf=new BufferedImage(widthx, ny, BufferedImage.TYPE_INT_ARGB);
 		Graphics2D g=imf.createGraphics();
+		int lw=(int)Math.round(lineWeight*scale);
+		BasicStroke fs=new BasicStroke(lw, BasicStroke.CAP_SQUARE, BasicStroke.JOIN_MITER);
+		g.setStroke(fs);
+		
+		
+		
+		RenderingHints hints =new RenderingHints(RenderingHints.KEY_RENDERING,
+				 RenderingHints.VALUE_RENDER_QUALITY);
+				hints.put(RenderingHints.KEY_ANTIALIASING,
+				RenderingHints.VALUE_ANTIALIAS_ON);
+		g.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+				RenderingHints.VALUE_ANTIALIAS_ON);
+		
+		g.setRenderingHints(hints);
+		
 		g.setColor(Color.WHITE);
-		g.fillRect(0,0, width, ny);
+		g.fillRect(0,0, widthx, ny);
 		g.setColor(Color.BLACK);
 		int i, j, k, colorroot, xpl2, ypl2;
-		xpl1=(int)Math.round(dat[size1].xloc);
-		ypl1=(int)Math.round(dat[size1].yloc);
+		xpl1=(int)Math.round(dat[size1].xloc*scale);
+		ypl1=(int)Math.round(dat[size1].yloc*scale);
 		//g.fillArc(xpl1-1, ypl1-1, 3, 3, 0, 360);
 		
 		Color[] colors=new Color[101];
@@ -346,16 +369,16 @@ public class DisplayUPGMA extends DisplayPane implements MouseInputListener, Pro
 		if (labels==null){labels=new double[1];}
 		
 		for (i=size1; i>=0; i--){
-			xpl1=(int)Math.round(dat[i].xloc);
-			ypl1=(int)Math.round(dat[i].yloc);
+			xpl1=(int)Math.round(dat[i].xloc*scale);
+			ypl1=(int)Math.round(dat[i].yloc*scale);
 			
 			if (dat[i].children>1){
 				for (j=0; j<2; j++){
 				
 					int q=dat[i].daughters[j];
 					
-					xpl2=(int)Math.round(dat[q].xloc);
-					ypl2=(int)Math.round(dat[q].yloc);
+					xpl2=(int)Math.round(dat[q].xloc*scale);
+					ypl2=(int)Math.round(dat[q].yloc*scale);
 					
 					double meanout=0;
 					if (silhouettes==null) {
@@ -423,14 +446,16 @@ public class DisplayUPGMA extends DisplayPane implements MouseInputListener, Pro
 			int yq=0;
 			
 			while (yq<ny){
-				
-				g.drawLine(dlLoc, yq, dlLoc, yq+10);
+				int d=(int)Math.round(dlLoc*scale);
+				g.drawLine(d, yq, d, yq+10);
 				yq+=20;
 			}
 		}
 		
 		g.setColor(Color.WHITE);
-		g.fillRect(xpl1,0, 300, ydisp-1);
+		int f1=(int)(300*scale);
+		int f2=(int)((ydisp-1)*scale);
+		g.fillRect(xpl1,0, f1, f2);
 		g.dispose();
 	}
 	
@@ -479,8 +504,12 @@ public class DisplayUPGMA extends DisplayPane implements MouseInputListener, Pro
 			j--;
 		}
 		
+		//int f1=(int)Math.round(1*scale);
+		//int f2=(int)Math.round(100*scale);
+		int f3=(int)Math.round(90*scale);
+		int f4=(int)Math.round(xdisp*scale);
 
-		dsg.paintGraphUPGMA(ypoints, xpoints, 1, 100, width, 90, xdisp, this);	
+		dsg.paintGraphUPGMA(ypoints, xpoints, 1, 100, width, f3, f4, this, scale);	
 	}
 	
 	public void mouseClicked(MouseEvent e) { 
@@ -564,7 +593,7 @@ public class DisplayUPGMA extends DisplayPane implements MouseInputListener, Pro
 			
 			ssb.draw(dataType, dat[loc].child);
 			
-			spg.paintImageDot(imf, clickedX, clickedY);
+			spg.paintImageDot(imf, clickedX, clickedY, scale);
 			spg.revalidate();
 				//repaint();	
 		}
@@ -606,7 +635,7 @@ public class DisplayUPGMA extends DisplayPane implements MouseInputListener, Pro
         		leavesField.setValue(elements);
         		cutOffField.setValue(cutoff*maxDist);
         		paintPanel();
-        		spg.paintImage(imf);
+        		spg.paintImage(imf, scale);
         		//repaint();
         		paintDSG();
         		this.revalidate();
@@ -641,7 +670,7 @@ public class DisplayUPGMA extends DisplayPane implements MouseInputListener, Pro
         		int r=(int)Math.round(1000*(1-cutoff));
         		zoom.setValue(r);
         		paintPanel();
-    			spg.paintImage(imf);
+    			spg.paintImage(imf, scale);
     			paintDSG();
     			this.revalidate();
     			scrollPane.revalidate();
@@ -665,7 +694,7 @@ public class DisplayUPGMA extends DisplayPane implements MouseInputListener, Pro
         		int q=(int)Math.round(1000*(1-cutoff));
         		zoom.setValue(q);
         		paintPanel();
-    			spg.paintImage(imf);
+    			spg.paintImage(imf, scale);
     			paintDSG();
     			this.revalidate();
     			scrollPane.revalidate();

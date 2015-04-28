@@ -10,8 +10,8 @@ package lusc.net.github.ui.statistics;
 import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.event.*;
+
 import java.awt.*;
-import java.awt.image.BufferedImage;
 import java.awt.image.*;
 import java.awt.event.*;
 
@@ -22,13 +22,14 @@ public class DrawSilhouetteGraph extends JPanel implements MouseInputListener{
 	boolean active=true;
 	int[] xscores;
 	Color[] palette={Color.RED, Color.BLUE, Color.GREEN, Color.CYAN, Color.PINK};
+	double scale=1.0;
 
 	public DrawSilhouetteGraph (){
 		
 	}
 	
-	public void paintGraph(double[] yscores, double[] xscores, double ymax, double xmax, int height, int width, int graphHeight, int graphWidth){
-	
+	public void paintGraph(double[] yscores, double[] xscores, double ymax, double xmax, int height, int width, int graphHeight, int graphWidth, double scale){
+		this.scale=scale;
 		this.setPreferredSize(new Dimension(width, height));
 		imf=new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
 		Graphics2D g=imf.createGraphics();
@@ -59,13 +60,11 @@ public class DrawSilhouetteGraph extends JPanel implements MouseInputListener{
 		repaint();
 	}
 	
-	public void paintGraphUPGMA(double[][] yscores, int[] xscores, double ymax, int height, int width, int graphHeight, int graphWidth, DisplayUPGMA dupgma){
+	public void paintGraphUPGMA(double[][] yscores, int[] xscores, double ymax, int height, int width, int graphHeight, int graphWidth, DisplayUPGMA dupgma, double scale){
 		
 		this.xscores=xscores;
 		this.dupgma=dupgma;
-		
-		
-		
+		this.scale=scale;
 		
 		int n=yscores[0].length;
 		int m=yscores.length;
@@ -79,11 +78,14 @@ public class DrawSilhouetteGraph extends JPanel implements MouseInputListener{
 				if (yscores[j][i]>maxy[j]){maxy[j]=yscores[j][i];}
 			}
 		}
-		
-		//width=graphWidth+minx+250;
-		width=maxx+200;
-		
 		this.setPreferredSize(new Dimension(width, height));
+		//width=graphWidth+minx+250;
+		System.out.println("WIDTH1: "+width);
+		width=(int)Math.round(scale*(maxx+200));
+		System.out.println("WIDTH2: "+width);
+		height=(int)Math.round(scale*height);
+		
+		
 		imf=new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
 		Graphics2D g=imf.createGraphics();
 		g.setColor(Color.WHITE);
@@ -91,28 +93,33 @@ public class DrawSilhouetteGraph extends JPanel implements MouseInputListener{
 
 		double yoff=(height-graphHeight)*0.5;
 		
+		minx=(int)Math.round(minx*scale);
+		maxx=(int)Math.round(maxx*scale);
+		
 		g.setColor(Color.BLACK);
 		g.drawRect(minx, (int)yoff, maxx-minx, graphHeight);
 	
 		
 		
-		int xpl=xscores[0];
+		int xpl=(int)Math.round(xscores[0]*scale);
 		int ypl[]=new int[m];
 		for (int i=0; i<m; i++){
 			maxy[i]=ymax;
 			ypl[i]=(int)Math.round(((maxy[i]-yscores[i][0])/maxy[i])*graphHeight+yoff);
 		}
 		int xpl2, ypl2;
+		int diam=(int)Math.round(3*scale);
+		int diam2=(int)Math.round(scale);
 		for (int i=1; i<n; i++){
-			xpl2=xscores[i];
+			xpl2=(int)Math.round(xscores[i]*scale);
 			for (int j=0; j<m; j++){
 				g.setColor(palette[j]);
-				g.fillArc(xpl-1, ypl[j]-1, 3, 3, 0, 360);
+				g.fillArc(xpl-diam2, ypl[j]-diam2, diam, diam, 0, 360);
 				
 				//System.out.println("PLOTTED LINES: "+yscores[i]+" "+maxy+" "+xpl2);
 				ypl2=(int)Math.round(((maxy[j]-yscores[j][i])/maxy[j])*graphHeight+yoff);
 				
-				g.fillArc(xpl2-1, ypl2-1, 3, 3, 0, 360);
+				g.fillArc(xpl2-diam2, ypl2-diam2, diam, diam, 0, 360);
 				g.drawLine(xpl, ypl[j], xpl2, ypl2);
 				ypl[j]=ypl2;
 			}
@@ -122,8 +129,7 @@ public class DrawSilhouetteGraph extends JPanel implements MouseInputListener{
 		g.setColor(Color.WHITE);
 		g.fillRect(minx, (int)(yoff+graphHeight+1), maxx-minx, (int)(height-yoff-graphHeight-1));
 		g.dispose();
-		repaint();
-		
+		repaint();	
 		this.addMouseListener(this);
 		
 	}
@@ -143,7 +149,6 @@ public class DrawSilhouetteGraph extends JPanel implements MouseInputListener{
 					loc=i;
 				}
 			}
-				
 			dupgma.drawDottedLine(xscores[loc]);
 		}
 		active=true;
@@ -164,11 +169,14 @@ public class DrawSilhouetteGraph extends JPanel implements MouseInputListener{
 	public void mouseDragged(MouseEvent e) { 
 		
 	}
-	
 			
 	public void paintComponent(Graphics g) {
 		super.paintComponent(g);  //paint background
-		g.drawImage(imf, 7, 0, this);
+		Graphics2D g2=(Graphics2D) g;
+		g2.scale(1/scale, 1/scale);
+		System.out.println(imf.getWidth()+" "+imf.getHeight());
+		g2.drawImage(imf, 7, 0, this);
+		//g.drawImage(imf, 7, 0, this);
 	}
 	
 }

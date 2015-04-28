@@ -10,9 +10,9 @@ package lusc.net.github.ui.statistics;
 import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.event.*;
+
 import java.awt.*;
 import java.awt.event.*;
-import java.awt.image.BufferedImage;
 import java.awt.image.*;
 
 public class SimplePaintingPanel extends JPanel{
@@ -22,22 +22,32 @@ public class SimplePaintingPanel extends JPanel{
 	int x=0;
 	int y=0;
 	JPanel imagePanel=new JPanel();
+	double scale=1.0;
 	
-	public void paintImage(BufferedImage im){
+	public void paintImage(BufferedImage im, double scale){
 		this.imf=im;
+		this.scale=scale;
 		x=-1;
 		y=-1;
-		this.setPreferredSize(new Dimension(imf.getWidth(), imf.getHeight()));
+		
+		int xpref=(int)Math.round(im.getWidth()/scale);
+		int ypref=(int)Math.round(im.getHeight()/scale);
+		
+		this.setPreferredSize(new Dimension(xpref, ypref));
 		System.out.println("IMAGE SIZE: "+imf.getWidth()+" "+imf.getHeight());
 		repaint();
 		imagePanel.add(this);
 	}
 	
-	public void paintImageDot(BufferedImage im, int xx, int yy){
+	public void paintImageDot(BufferedImage im, int xx, int yy, double scale){
 		this.imf=im;
 		this.x=xx;
 		this.y=yy;
-		this.setPreferredSize(new Dimension(imf.getWidth(), imf.getHeight()));
+		this.scale=scale;
+		int xpref=(int)Math.round(im.getWidth()/scale);
+		int ypref=(int)Math.round(im.getHeight()/scale);
+		
+		this.setPreferredSize(new Dimension(xpref, ypref));
 		System.out.println("IMAGE SIZE: "+imf.getWidth()+" "+imf.getHeight());
 		repaint();
 		imagePanel.add(this);
@@ -58,10 +68,10 @@ public class SimplePaintingPanel extends JPanel{
 		
 	public void paintComponent(Graphics g) {
 		
-		int upperLeftX = g.getClipBounds().x;
-        int upperLeftY = g.getClipBounds().y;
-        int visibleWidth = g.getClipBounds().width;
-        int visibleHeight = g.getClipBounds().height;
+		int upperLeftX = (int)Math.round(g.getClipBounds().x*scale);
+        int upperLeftY = (int)Math.round(g.getClipBounds().y*scale);
+        int visibleWidth = (int)Math.round(g.getClipBounds().width*scale);
+        int visibleHeight = (int)Math.round(g.getClipBounds().height*scale);
         
         //System.out.println(upperLeftX+" "+upperLeftY+" "+visibleWidth+" "+visibleHeight+" "+imf.getWidth()+" "+imf.getHeight());
         
@@ -75,16 +85,21 @@ public class SimplePaintingPanel extends JPanel{
 		
 		
 		super.paintComponent(g);  //paint background
-		g.drawImage(q, upperLeftX, upperLeftY, this);
+		Graphics2D g2=(Graphics2D) g;
+		g2.scale(1/scale, 1/scale);
+		g2.drawImage(q, upperLeftX, upperLeftY, this);
 		
 		if (numIms==2){
-			g.drawImage(imf2, imf.getWidth(), 0, this);
+			g2.drawImage(imf2, imf.getWidth(), 0, this);
 		}
 		
 		//System.out.println("image painted");
 		if ((x>=0)&&(y>=0)){
-			g.setColor(Color.RED);
-			g.fillArc(x-3, y-3, 7, 7, 0, 360);
+			int x2=(int)Math.round((x-3)*scale);
+			int y2=(int)Math.round((y-3)*scale);
+			int diam=(int)Math.round(7*scale);
+			g2.setColor(Color.RED);
+			g2.fillArc(x2, y2, diam, diam, 0, 360);
 		}
 	}
 }
