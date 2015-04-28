@@ -152,6 +152,12 @@ public class DataBaseController {
 		return store;
 	}
 	
+	public LinkedList<Song> loadSongDetailsFromDatabase(){
+		LinkedList<Song> olist=db.loadSongDetailsFromDatabase();
+		return olist;
+	}
+
+	
 	
 		
 	public Song loadSongFromDatabase(int ID, int info){

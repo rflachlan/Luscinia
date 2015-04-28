@@ -5,7 +5,10 @@ import java.util.LinkedList;
 
 import lusc.net.github.Element;
 import lusc.net.github.Song;
+import lusc.net.github.analysis.clustering.KMedoids;
+import lusc.net.github.analysis.clustering.SNNDensity;
 import lusc.net.github.analysis.multivariate.MultiDimensionalScaling;
+import lusc.net.github.analysis.syntax.EntropyAnalysis;
 import lusc.net.github.ui.AnalysisSwingWorker;
 
 public class ComparisonResults {
@@ -28,6 +31,11 @@ public class ComparisonResults {
 	String[] names, individualNames, populations, species;
 	long[] times;
 	long maxTime, minTime;
+	
+	KMedoids km;
+	SNNDensity snn;
+	EntropyAnalysis ent;
+	
 	
 	public ComparisonResults(Song[] songs, double[][] diss, int type){
 		this.songs=songs;
@@ -244,6 +252,17 @@ public class ComparisonResults {
 		return out;
 	}
 	
+	public void setKMedoids(KMedoids km){
+		this.km=km;
+	}
+	
+	public void setSNNCluster(SNNDensity snn){
+		this.snn=snn;
+	}
+	
+	public void setSyntaxCluster(EntropyAnalysis ent){
+		this.ent=ent;
+	}
 	
 	public void makeLookUps(){
 		

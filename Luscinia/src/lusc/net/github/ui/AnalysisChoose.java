@@ -14,6 +14,8 @@ import lusc.net.github.ui.compmethods.VisualAnalysisPane;
 import lusc.net.github.ui.compmethods.VisualComparison;
 import lusc.net.github.ui.db.DatabaseTree2;
 import lusc.net.github.ui.db.myNode;
+import lusc.net.github.ui.db.DatabaseView.ByDate;
+import lusc.net.github.ui.db.DatabaseView.HasSylls;
 
 import java.awt.*;
 
@@ -31,6 +33,9 @@ import java.awt.event.*;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 
 import java.util.*;
@@ -51,6 +56,8 @@ public class AnalysisChoose extends JPanel implements ActionListener, ChangeList
 	private static String EXPAND_COMMAND="expand";
 	private static String NEXTSTEP="next";
 	private static String STOPCOMMAND="stop";
+	private static String MDS_VIEW="mds view";
+	private static String DENDROGRAM_VIEW="dendrogram view";
 	
 	JRadioButton dtwAnalysis=new JRadioButton("Computer comparison by time warping");
 	JRadioButton parAnalysis=new JRadioButton("Comparison by parameter");
@@ -66,7 +73,7 @@ public class AnalysisChoose extends JPanel implements ActionListener, ChangeList
 	
     protected DatabaseTree2 treePanel;
 	LinkedList<String[]> tstore=new LinkedList<String[]>();
-	LinkedList<String[]> ustore=new LinkedList<String[]>();
+	LinkedList<Song> ustore=new LinkedList<Song>();
 	String query=null;
 	private int [] indq={1,2};
 	private int [] sonq={1,2,3};
@@ -245,8 +252,27 @@ public class AnalysisChoose extends JPanel implements ActionListener, ChangeList
 		
 		comparisonType.add(rbgPanel, BorderLayout.WEST);
 		
+		JMenuBar menuBar=new JMenuBar();
+		JMenu menu=new JMenu("Display Options");
+
+		JMenuItem MDSView=new JMenuItem("MDS display");
+		MDSView.setActionCommand(MDS_VIEW);
+		MDSView.addActionListener(this);
+		menu.add(MDSView);
+		
+		JMenuItem DendrogramView=new JMenuItem("Dendrogram");
+		DendrogramView.setActionCommand(DENDROGRAM_VIEW);
+		DendrogramView.addActionListener(this);
+		menu.add(DendrogramView);
+		
+
+		
+		menuBar.add(menu);
+		
+		
 		f=new JFrame("Analyze database");
 		f.getContentPane().add(this);
+		f.setJMenuBar(menuBar);
 		f.pack();
 		f.setVisible(true);
 		
@@ -274,12 +300,11 @@ public class AnalysisChoose extends JPanel implements ActionListener, ChangeList
 		archNams=new String[ustore.size()];
 		archIndNams=new String[ustore.size()];
 		for (int i=0; i<ustore.size(); i++){
-			String [] nam=ustore.get(i);
-			archIds[i]=myIntV(nam[1]);
-			archNams[i]=nam[0];
+			Song nam=ustore.get(i);
+			archIds[i]=nam.getSongID();
+			archNams[i]=nam.getName();
 
-			if (nam[2]==null){nam[2]="-1";}
-			int par=myIntV(nam[2]);
+			int par=nam.getIndividualID();
 			boolean found=false;
 			for (int j=0; j<numind; j++){
 				myNode posspar=(myNode)treePanel.getRootNode().getChildAt(j);
@@ -288,14 +313,14 @@ public class AnalysisChoose extends JPanel implements ActionListener, ChangeList
 					String [] nam2=tstore.get(j);
 					archIndNams[i]=nam2[0];
 					
-					myNode chile=treePanel.addObject(posspar, nam[0], true);
-					chile.setDex(myIntV(nam[1]));
+					myNode chile=treePanel.addObject(posspar, nam.getName(), true);
+					chile.setDex(nam.getSongID());
 					j=numind;
 				}
 			}
 			if (!found){
-				myNode chile=treePanel.addObject(nullpar, nam[0], true);
-				chile.setDex(myIntV(nam[1]));
+				myNode chile=treePanel.addObject(nullpar, nam.getName(), true);
+				chile.setDex(nam.getSongID());
 			}
 			
 		}
@@ -336,9 +361,47 @@ public class AnalysisChoose extends JPanel implements ActionListener, ChangeList
 			tstore.add(0, s);
 		}
 		ustore=null;
-		ustore=new LinkedList<String[]>();
-		ustore.addAll(dbc.readFromDataBase("SELECT name, id, IndividualID FROM songdata", sonq));
+		ustore=new LinkedList<Song>();
+		ustore=dbc.loadSongDetailsFromDatabase();
+		
+		Collections.sort(ustore, new ByDate());
+		Collections.sort(ustore, new HasSylls());
 	}
+	
+	public class ByAlphabet implements Comparator<Song> {
+		@Override
+		public int compare(Song a, Song b) {
+		    return a.getName().compareTo(b.getName());
+		}
+	}
+	
+	public class ByDate implements Comparator<Song> {
+		@Override
+		public int compare(Song a, Song b) {
+			long l1=a.getTDate()-b.getTDate();
+			int p=1;
+			if (l1<0){
+				p=-1;
+			}
+		    return p;
+		}
+	}
+	
+	public class HasSylls implements Comparator<Song> {
+		@Override
+		public int compare(Song a, Song b) {
+			int p1=a.getNumSylls();
+			int p2=b.getNumSylls();
+			
+			int p=0;
+			if ((p1>0)&&(p2==0)){p=-1;}
+			if ((p1==0)&&(p2>0)){p=1;}
+			
+		    return p;
+		}
+	}
+	
+	
 	
 	 public void actionPerformed(ActionEvent e) {
         String command = e.getActionCommand();
@@ -356,6 +419,12 @@ public class AnalysisChoose extends JPanel implements ActionListener, ChangeList
 		}
 		if (NEXTSTEP.equals(command)) {moveToNextStep(mainPanel.getSelectedIndex());}
 		if(STOPCOMMAND.equals(command)){cancelTask(mainPanel.getSelectedIndex());}
+		if (MDS_VIEW.equals(command)){
+			PCPaneOptions ppo=new PCPaneOptions();
+		}
+		if (DENDROGRAM_VIEW.equals(command)){
+			DendrogramOptions ddo=new DendrogramOptions();
+		}
 	}	
 	
 	 

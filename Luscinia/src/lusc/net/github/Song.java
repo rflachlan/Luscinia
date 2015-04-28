@@ -79,6 +79,7 @@ public class Song {
 	int individualID=0; 
 	int songID=0; 
 	long tDate=0;
+	int numSylls=0;
 	String notes=" "; 
 	String location=" "; 
 	String recordEquipment=" ";
@@ -1413,6 +1414,14 @@ public class Song {
 		if (a<syllList.size()){
 			syllList.remove(a);
 		}
+	}
+	
+	public void setNumSylls(int a){
+		numSylls=a;
+	}
+	
+	public int getNumSylls(){
+		return numSylls;
 	}
 
 	/**

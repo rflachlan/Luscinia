@@ -40,6 +40,7 @@ public class PCPane extends JPanel implements MouseInputListener{
 	
 	int width, height, dimensionX, dimensionY, labelType, dataType, clusterN;
 	
+	
 	double[][] data;
 	ComparisonResults cr;
 	boolean connectors,gridlines, flipX, flipY, linked;
@@ -55,12 +56,14 @@ public class PCPane extends JPanel implements MouseInputListener{
 	int maxx, maxy, minx, miny, startx, starty, endx, endy;
 	
 	int gridSizeDefault=400;
+	float alpha=1.0f;
 	int xshift1=50;
 	int yshift1=50;
 	int legendSpacerDefault=50;
 	double iconSize=2;	
 	
 	float lineWeight=1.0f;
+	float lineWeight2=1.0f;
 	
 	float scaler=2.0f;
 	
@@ -68,15 +71,17 @@ public class PCPane extends JPanel implements MouseInputListener{
 	boolean selectionStarted=false;
 	int[] selP;
 	
-	AlphaComposite ac = AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.4f);
+	AlphaComposite ac = AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.15f);
 	
 	int fontSize=12;
 	
 	public PCPane(int w, int h, DisplayPC dpc, Defaults defaults){
-		this.width=2*w;
-		this.height=2*h;
+		scaler=(float)defaults.getScaleFactor();
+		this.width=(int)scaler*w;
+		this.height=(int)scaler*h;
 		this.dpc=dpc;
 		this.defaults=defaults;
+		
 		dim=new Dimension(width, height);
 		
 		imf=new BufferedImage(this.width, this.height, BufferedImage.TYPE_INT_ARGB);
@@ -254,10 +259,51 @@ public class PCPane extends JPanel implements MouseInputListener{
 	}
 	
 	
-	
-	
-	
 	public float[] getColorScore(float p){
+		//float[] z=getRobPalette(p);
+		//float[] z=getHSBPalette(p, 0.5f, 1.0f, 0.85f, 1f);
+		//Color[] cols={new Color(255,237,160), new Color(254,178,76), new Color(240,59,32)};
+		//Color[] cols={new Color(165,0,38), new Color(215,48,39), new Color(244,109,67), new Color(253,174,97), new Color(254,224,144), new Color(245,245,191), new Color(224,233,248), new Color(171,217,233), new Color(116,173,209), new Color(69,117,180), new Color(49,54,149)};
+		//Color[] cols={new Color(236,226,240), new Color(208,209,230), new Color(166,189,219), new Color(103,169,207), new Color(54,144,192), new Color(2,129,138), new Color(1,108,89), new Color(1,70,54)};
+		//Color[] cols={Color.GREEN, Color.YELLOW, Color.RED};
+		Color[] cols={new Color(77,77,255), new Color(235, 235, 100), new Color(239,21,21)};
+		
+		float[] z=getLinearPalette(p, cols);
+		
+		return z;
+	}
+	
+	public float[] getHSBPalette(float p, float start, float end, float sat, float bright){
+		float x=start+(end-start)*p;
+		Color c = Color.getHSBColor(x, sat, bright);
+		float[] results=c.getColorComponents(null);
+		return results;
+	}
+	
+	public float[] getLinearPalette(float p, Color[] c){
+		
+		int n=c.length;
+		
+		int x=(int)Math.floor(p*(n-1));
+		if (x==n-1){x=n-2;}
+		
+		float y=p*(n-1)-x;
+		System.out.println(n+" "+p+" "+x+" "+y);
+		Color a=c[x];
+		Color b=c[x+1];
+		
+		float[] ra=a.getColorComponents(null);
+		float[] rb=b.getColorComponents(null);
+		
+		for (int i=0; i<ra.length; i++){
+			ra[i]=rb[i]*y+ra[i]*(1-y);
+		}
+		return ra;
+		
+	}
+	
+	
+	public float[] getRobPalette(float p){
 		float redc=0;
 		if (p>0.8){redc=1f;}
 		else if ((p>0.2)&&(p<=0.6)){redc=0.0f;}
@@ -284,10 +330,7 @@ public class PCPane extends JPanel implements MouseInputListener{
 		bluec/=1.5f;
 		bluec=1.0f-bluec;
 		
-		Color c = Color.getHSBColor(p*0.8f, 0.85f, 1.0f);
-		float[] results=c.getColorComponents(null);
-		
-		//float[] results={redc, greenc, bluec};
+		float[] results={redc, greenc, bluec};
 		return results;
 	}
 	
@@ -352,7 +395,7 @@ public class PCPane extends JPanel implements MouseInputListener{
 	}
 	
 
-	public void paintPanel(ComparisonResults cr, double[][] data, int dimensionX, int dimensionY, int labelType, int dataType, int clusterN, boolean connectors, boolean gridlines, boolean flipX, boolean flipY, boolean linked){
+	public void paintPanel(ComparisonResults cr, double[][] data, int dimensionX, int dimensionY, int labelType, int dataType, int clusterN, boolean connectors, boolean gridlines, boolean flipX, boolean flipY, boolean linked, float alpha, double iconSize, float lineWeight2){
 		
 		this.dimensionX=dimensionX;
 		this.dimensionY=dimensionY;
@@ -366,6 +409,9 @@ public class PCPane extends JPanel implements MouseInputListener{
 		this.flipX=flipX;
 		this.flipY=flipY;
 		this.linked=linked;
+		this.alpha=alpha;
+		this.iconSize=iconSize;
+		this.lineWeight2=lineWeight2;
 		paintPanel();
 		repaint();
 	}
@@ -407,7 +453,7 @@ public class PCPane extends JPanel implements MouseInputListener{
 		BasicStroke fs=new BasicStroke(lineWeight*scaler, BasicStroke.CAP_SQUARE, BasicStroke.JOIN_MITER);
 		g.setStroke(fs);
 		BasicStroke fs2=new BasicStroke(lineWeight*scaler*2, BasicStroke.CAP_SQUARE, BasicStroke.JOIN_MITER);
-		BasicStroke fs3=new BasicStroke(lineWeight*scaler*10, BasicStroke.CAP_SQUARE, BasicStroke.JOIN_MITER);
+		BasicStroke fs3=new BasicStroke(lineWeight2*scaler, BasicStroke.CAP_SQUARE, BasicStroke.JOIN_MITER);
 		
 		
 		RenderingHints hints =new RenderingHints(RenderingHints.KEY_RENDERING,
@@ -660,7 +706,7 @@ public class PCPane extends JPanel implements MouseInputListener{
 		
 		double adj1=0.5*(absmax1+absmin1);
 		double adj2=0.5*(absmax2+absmin2);
-		g.setStroke(fs);
+		g.setStroke(fs3);
 		
 		double[] labels=null;
 		if (labelType==3){
@@ -705,7 +751,7 @@ public class PCPane extends JPanel implements MouseInputListener{
 					}
 					else{
 						float[] c=getColorScore(p);
-						g.setColor(new Color(c[0], c[1], c[2], 0.25f));
+						g.setColor(new Color(c[0], c[1], c[2], alpha));
 					}
 				}
 				else{
@@ -742,7 +788,7 @@ public class PCPane extends JPanel implements MouseInputListener{
 				}
 				else{
 					float[] c=getColorScore(q);
-					g.setColor(new Color(c[0], c[1], c[2]));
+					g.setColor(new Color(c[0], c[1], c[2], alpha));
 				}
 				paintIcon(0, x, y, iconSize, false, g);
 			}
@@ -833,7 +879,7 @@ public class PCPane extends JPanel implements MouseInputListener{
 						}
 						else{
 							float[] c=getColorScore(q);
-							g.setColor(new Color(c[0], c[1], c[2]));
+							g.setColor(new Color(c[0], c[1], c[2], alpha));
 						}
 						paintIcon(0, x, y, 2*iconSize, true, g);
 					}
@@ -1009,7 +1055,7 @@ public class PCPane extends JPanel implements MouseInputListener{
 	public void paintComponent(Graphics g) {
 		super.paintComponent(g);  //paint background
 		Graphics2D g2=(Graphics2D) g;
-		g2.scale(0.5, 0.5);
+		g2.scale(1/scaler, 1/scaler);
 		System.out.println(imf.getWidth()+" "+imf.getHeight());
 		g2.drawImage(imf, 0, 0, this);
 		//System.out.println("here");

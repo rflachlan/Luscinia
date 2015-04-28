@@ -31,7 +31,7 @@ import lusc.net.github.ui.SaveDocument;
 import lusc.net.github.ui.SaveImage;
 import lusc.net.github.ui.SpectrogramSideBar;
 
-public class DisplayPC  extends DisplayPane implements  ActionListener{	
+public class DisplayPC  extends DisplayPane implements  ActionListener, ChangeListener{	
 	private static String labs[] = {"None","Individual", "Population", "Position", "Time", "K-Medoid Cluster", "Syntax Cluster", "SNN Cluster"};
 	
 	Defaults defaults;
@@ -50,6 +50,9 @@ public class DisplayPC  extends DisplayPane implements  ActionListener{
 	boolean gridlines=false;
 	int dimensionX=0;
 	int dimensionY=1;
+	float alpha=1.0f;
+	double iconSize=2;
+	float lineWeight=3f;
 	
 	int cluster=2;
 	
@@ -63,6 +66,8 @@ public class DisplayPC  extends DisplayPane implements  ActionListener{
 	private static String SALL="sall";
 	private static String LINK="link";
 	
+	JSlider alphaSlider, iconSlider, lineSlider;
+	
 	int labelType=0;
 
 	PCPane pcp;
@@ -75,7 +80,7 @@ public class DisplayPC  extends DisplayPane implements  ActionListener{
 	KMedoids km;
 	SNNDensity snn;
 	EntropyAnalysis ent;
-	Font font=new Font("Sans-Serif", Font.PLAIN, 9);
+	Font font=new Font("Sans-Serif", Font.PLAIN, 8);
 
 	
 	public DisplayPC(ComparisonResults cr, SpectrogramSideBar ssb, KMedoids km, EntropyAnalysis ent, SNNDensity snn, int dataType, int width, int height, Defaults defaults){
@@ -150,7 +155,7 @@ public class DisplayPC  extends DisplayPane implements  ActionListener{
 		this.add(newTopPanel, BorderLayout.NORTH);
 		
 		pcp=new PCPane(width, height-150, this, defaults);
-		pcp.paintPanel(cr, data, dimensionX, dimensionY, labelType, dataType, cluster, connected, gridlines, flipX, flipY, linked);
+		pcp.paintPanel(cr, data, dimensionX, dimensionY, labelType, dataType, cluster, connected, gridlines, flipX, flipY, linked, alpha, iconSize, lineWeight);
 		this.add(pcp, BorderLayout.CENTER);
 		
 	}
@@ -251,6 +256,20 @@ public class DisplayPC  extends DisplayPane implements  ActionListener{
 		dimSelector1.setFont(font);
 		dimSelector2.setFont(font);
 		
+		alphaSlider=new JSlider(0, 100, 100);
+		alphaSlider.addChangeListener(this);
+		JLabel alphaLabel=new JLabel("Alpha: ");
+		alphaLabel.setFont(font);
+		
+		iconSlider=new JSlider(1, 100, 20);
+		iconSlider.addChangeListener(this);
+		JLabel iconLabel=new JLabel("Icon Size: ");
+		iconLabel.setFont(font);
+		
+		lineSlider=new JSlider(1, 100, 20);
+		lineSlider.addChangeListener(this);
+		JLabel lineLabel=new JLabel("Line Width: ");
+		lineLabel.setFont(font);
 		
 		JCheckBox connectors=new JCheckBox("Connect within songs");
 		connectors.setFont(font);
@@ -278,17 +297,35 @@ public class DisplayPC  extends DisplayPane implements  ActionListener{
 		JPanel xpane=new JPanel(new BorderLayout());
 		xpane.add(labelX, BorderLayout.WEST);
 		xpane.add(dimSelector1, BorderLayout.CENTER);
-		xpane.add(flipXButton, BorderLayout.EAST);
+		//xpane.add(flipXButton, BorderLayout.EAST);
 		
 		JPanel ypane=new JPanel(new BorderLayout());
 		ypane.add(labelY, BorderLayout.WEST);
 		ypane.add(dimSelector2, BorderLayout.CENTER);
-		ypane.add(flipYButton, BorderLayout.EAST);
+		//ypane.add(flipYButton, BorderLayout.EAST);
+		
+		JPanel flippane=new JPanel(new BorderLayout());
+		flippane.add(flipXButton, BorderLayout.EAST);
+		flippane.add(flipYButton, BorderLayout.WEST);
+		
+		
+		JPanel apane=new JPanel(new BorderLayout());
+		apane.add(alphaLabel, BorderLayout.WEST);
+		apane.add(alphaSlider, BorderLayout.CENTER);
+		
+		JPanel ipane=new JPanel(new BorderLayout());
+		ipane.add(iconLabel, BorderLayout.WEST);
+		ipane.add(iconSlider, BorderLayout.CENTER);
+		
+		JPanel lpane=new JPanel(new BorderLayout());
+		lpane.add(lineLabel, BorderLayout.WEST);
+		lpane.add(lineSlider, BorderLayout.CENTER);
 		
 		JPanel WPane=new JPanel(new GridLayout(0,1));
 		WPane.setBorder(BorderFactory.createEmptyBorder(5,5,5,5));
 		WPane.add(xpane);
 		WPane.add(ypane);
+		WPane.add(flippane);
 		
 		JPanel tpane=new JPanel(new BorderLayout());
 		tpane.add(pointLabel, BorderLayout.CENTER);
@@ -312,17 +349,25 @@ public class DisplayPC  extends DisplayPane implements  ActionListener{
 		CPane.setBorder(BorderFactory.createEmptyBorder(5,5,5,5));
 		CPane.add(tpane);
 		CPane.add(upane);
+
 		
 		JPanel EPane=new JPanel(new GridLayout(0,1));
 		EPane.setBorder(BorderFactory.createEmptyBorder(5,5,5,5));
 		EPane.add(clearButton);
 		EPane.add(selectAllCat);
 		
+		
 		JPanel FPane=new JPanel(new GridLayout(0,1));
-		EPane.setBorder(BorderFactory.createEmptyBorder(5,5,5,5));
+		FPane.setBorder(BorderFactory.createEmptyBorder(5,5,5,5));
 		FPane.add(connectors);
 		FPane.add(grids);
 		FPane.add(link);
+		
+		JPanel SPane=new JPanel(new GridLayout(0,1));
+		SPane.setBorder(BorderFactory.createEmptyBorder(5,5,5,5));
+		SPane.add(apane);
+		SPane.add(ipane);
+		SPane.add(lpane);
 				
 		JPanel rpane=new JPanel(new GridLayout(1,0));
 		rpane.setBorder(BorderFactory.createEmptyBorder(0,0,0,100));
@@ -330,6 +375,7 @@ public class DisplayPC  extends DisplayPane implements  ActionListener{
 		rpane.add(CPane);
 		rpane.add(EPane);
 		rpane.add(FPane);
+		rpane.add(SPane);
 		
 		return rpane;
 	
@@ -387,6 +433,24 @@ public class DisplayPC  extends DisplayPane implements  ActionListener{
 		ssb.draw(dataType, wrap);
 		clearButton.setEnabled(true);
 		
+	}
+	
+	public void stateChanged(ChangeEvent e) {
+		
+		JSlider source = (JSlider)e.getSource();
+		if (!source.getValueIsAdjusting()) {
+			if (source==alphaSlider){
+				int fps = (int)source.getValue();
+				alpha=fps/100f;
+			}
+			if (source==iconSlider){
+				iconSize=source.getValue()*0.1;
+			}
+			if (source==lineSlider){
+				lineWeight=(float)(source.getValue()*0.1);
+			}
+			pcp.paintPanel(cr, data, dimensionX, dimensionY, labelType, dataType, cluster, connected, gridlines, flipX, flipY, linked, alpha, iconSize, lineWeight);
+		}
 	}
 	
 	
@@ -521,7 +585,7 @@ public class DisplayPC  extends DisplayPane implements  ActionListener{
 			tcluster=snn.getNumClusts()+1;
 		}
 		
-		pcp.paintPanel(cr, data, dimensionX, dimensionY, labelType, dataType, tcluster, connected, gridlines, flipX, flipY, linked);
+		pcp.paintPanel(cr, data, dimensionX, dimensionY, labelType, dataType, tcluster, connected, gridlines, flipX, flipY, linked, alpha, iconSize, lineWeight);
 		this.revalidate();
 	}
 

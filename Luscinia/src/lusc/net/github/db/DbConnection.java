@@ -863,7 +863,139 @@ public class DbConnection {
 		}
 		return output;
 	}
-
+	
+	public LinkedList<Song> loadSongDetailsFromDatabaseOld (){
+		
+		String query="SELECT name, id, IndividualID FROM songdata";
+		
+		LinkedList<Song> olist=new LinkedList<Song>();
+		
+		PreparedStatement stmt = null; 
+		ResultSet rs = null; 
+		try {
+			stmt = con.prepareStatement(query);
+			rs = stmt.executeQuery( );
+			while( rs.next( ) ) {
+				Song song=new Song();
+				String s = rs.getString("name");
+				int id=rs.getInt("id");
+				int indID=rs.getInt("IndividualID");
+				song.setName(s);
+				song.setSongID(id);
+				song.setIndividualID(indID);
+				olist.add(song);
+			}
+		}
+		catch (Exception e){
+			e.printStackTrace();
+		}
+		
+		for (int i=0; i<olist.size(); i++){
+			Song song=(Song)olist.get(i);
+			String queryb="SELECT time, songid FROM wavs WHERE id = "+song.getSongID();
+			
+			try {
+				stmt = con.prepareStatement(queryb);
+				rs = stmt.executeQuery( );
+				if( !rs.next( ) ) {
+				}
+				else {		
+					song.setTDate(rs.getLong("time"));
+				}
+			}
+			catch (Exception e){
+				e.printStackTrace();
+			}
+		}
+		
+		for (int i=0; i<olist.size(); i++){
+			Song song=(Song)olist.get(i);
+			String queryb="SELECT starttime FROM syllable WHERE songID = "+song.getSongID();
+			
+			try {
+				stmt = con.prepareStatement(queryb);
+				rs = stmt.executeQuery( );
+				int a=0;
+				while( rs.next( ) ) {
+					a++;
+				}
+				song.setNumSylls(a);
+			}
+			catch (Exception e){
+				e.printStackTrace();
+			}
+		}
+		
+		return olist;
+	}
+	
+	public LinkedList<Song> loadSongDetailsFromDatabase (){
+		
+		String query="SELECT name, id, IndividualID FROM songdata";
+				
+		Hashtable<Integer, Song> otable=new Hashtable<Integer, Song>();
+		
+		
+		PreparedStatement stmt = null; 
+		ResultSet rs = null; 
+		try {
+			stmt = con.prepareStatement(query);
+			rs = stmt.executeQuery( );
+			while( rs.next( ) ) {
+				Song song=new Song();
+				String s = rs.getString("name");
+				int id=rs.getInt("id");
+				int indID=rs.getInt("IndividualID");
+				song.setName(s);
+				song.setSongID(id);
+				song.setIndividualID(indID);
+				
+				otable.put(id, song);
+			}
+		}
+		catch (Exception e){
+			e.printStackTrace();
+		}
+				
+		String queryb="SELECT time, songid FROM wavs";
+		
+		stmt = null; 
+		rs = null; 
+		try {
+			stmt = con.prepareStatement(queryb);
+			rs = stmt.executeQuery( );
+			while( rs.next( ) ) {
+				int p=rs.getInt("songid");
+				Song song=otable.get(p);
+				song.setTDate(rs.getLong("time"));
+				otable.put(p, song);
+			}
+		}
+		catch (Exception e){
+			e.printStackTrace();
+		}
+		
+		String queryc="SELECT starttime, songID FROM syllable";
+		
+		stmt = null; 
+		rs = null; 
+		try {
+			stmt = con.prepareStatement(queryc);
+			rs = stmt.executeQuery( );
+			while( rs.next( ) ) {
+				int p=rs.getInt("songid");
+				Song song=otable.get(p);
+				song.setNumSylls(song.getNumSylls()+1);
+				otable.put(p, song);
+			}
+		}
+		catch (Exception e){
+			e.printStackTrace();
+		}
+		
+		LinkedList<Song> olist=new LinkedList<Song>(otable.values());
+		return olist;
+	}
 	
 	public  Song loadSongFromDatabase (int id, int info){
 		Song song=new Song();

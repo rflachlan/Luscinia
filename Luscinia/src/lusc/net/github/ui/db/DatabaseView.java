@@ -64,6 +64,7 @@ public class DatabaseView extends TabType implements ActionListener {
 	String query=null;
 	private int [] indq={1,2};
 	private int [] sonq={1,2,3};
+	private int [] eleq={1};
 	int addType=0;
 	JButton manageUsers, addIndButton, addSongButton, addRecordingButton, removeButton, expandTreeButton, analysisButton, sonogramButton, expandButton, logOutButton, copyButton;
 	JCheckBox informationCheckBox;
@@ -216,26 +217,24 @@ public class DatabaseView extends TabType implements ActionListener {
 		}
 		int numind=treePanel.rootNode.getChildCount();
 		for (int i=0; i<ustore.size(); i++){
-			String [] nam=(String[])ustore.get(i);
-			if (nam[2]==null){nam[2]="-1";}
-			int par=myIntV(nam[2]);
+			Song nam=(Song)ustore.get(i);
+			//if (nam[2]==null){nam[2]="-1";}
+			int par=nam.getIndividualID();
+			String nam0=nam.getName();
+			int nam1=nam.getSongID();
 			boolean found=false;
 			for (int j=0; j<numind; j++){
 				myNode posspar=(myNode)treePanel.rootNode.getChildAt(j);
 				if (posspar.dex==par){
 					found=true;
-					myNode chile=treePanel.addObject(posspar, nam[0], true);
-					
-					
-					
-					
-					chile.dex=myIntV(nam[1]);
+					myNode chile=treePanel.addObject(posspar, nam0, true);
+					chile.dex=nam1;
 					j=numind;
 				}
 			}
 			if (!found){
-				myNode chile=treePanel.addObject(nullpar, nam[0], true);
-				chile.dex=myIntV(nam[1]);
+				myNode chile=treePanel.addObject(nullpar, nam0, true);
+				chile.dex=nam1;
 			}
 			
 		}
@@ -274,10 +273,48 @@ public class DatabaseView extends TabType implements ActionListener {
 		
 		ustore=null;
 		ustore=new LinkedList();
-		query="SELECT name, id, IndividualID FROM songdata";
-		ustore.addAll(dbc.readFromDataBase(query, sonq));
+		ustore=dbc.loadSongDetailsFromDatabase();
+		
+		Collections.sort(ustore, new ByDate());
+		Collections.sort(ustore, new HasSylls());
+		
+		
+		
 		System.out.println("NUM SONGS: "+ustore.size());
 		
+	}
+	
+	public class ByAlphabet implements Comparator<Song> {
+		@Override
+		public int compare(Song a, Song b) {
+		    return a.getName().compareTo(b.getName());
+		}
+	}
+	
+	public class ByDate implements Comparator<Song> {
+		@Override
+		public int compare(Song a, Song b) {
+			long l1=a.getTDate()-b.getTDate();
+			int p=1;
+			if (l1<0){
+				p=-1;
+			}
+		    return p;
+		}
+	}
+	
+	public class HasSylls implements Comparator<Song> {
+		@Override
+		public int compare(Song a, Song b) {
+			int p1=a.getNumSylls();
+			int p2=b.getNumSylls();
+			
+			int p=0;
+			if ((p1>0)&&(p2==0)){p=-1;}
+			if ((p1==0)&&(p2>0)){p=1;}
+			
+		    return p;
+		}
 	}
 	
 	public void renameNode (myNode temp){
@@ -360,8 +397,8 @@ public class DatabaseView extends TabType implements ActionListener {
 		extractFromDatabase();
 		int maxind=-1;
 		for (int i=0; i<ustore.size(); i++){
-			String[]nam2=(String[])ustore.get(i);
-			int p=myIntV(nam2[1]);
+			Song nam2=(Song)ustore.get(i);
+			int p=nam2.getSongID();
 			if (p>maxind){maxind=p;}
 		}
 		chile.dex=maxind;
@@ -567,8 +604,8 @@ public class DatabaseView extends TabType implements ActionListener {
 				
 				for (int i=0; i<ustore.size(); i++){
 					try{
-						String []nam=(String[])ustore.get(i);
-						int p=myIntV(nam[1]);
+						Song nam=(Song)ustore.get(i);
+						int p=nam.getSongID();
 						Song song=dbc.loadSongFromDatabase(p, 0);
 						
 						songTranslater[i][0]=song.getSongID();

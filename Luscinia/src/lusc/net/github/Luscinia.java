@@ -59,13 +59,10 @@ public class Luscinia implements WindowListener, ActionListener, ChangeListener{
 	private static String ADD_TAB = "add tab";
 	private static String REMOVE_TAB = "remove tab";
 	
-<<<<<<< HEAD
-	String lversion="2.15.04.15.01";
-	String dversion="2.15.04.15.01";
-=======
-	String lversion="2.16.04.15.01";
-	String dversion="2.16.04.15.01";
->>>>>>> origin/master
+
+	String lversion="2.28.04.15.01";
+	String dversion="2.28.04.15.01";
+
 	
 	
 	
@@ -145,9 +142,18 @@ public class Luscinia implements WindowListener, ActionListener, ChangeListener{
 		//catch(Exception e){
 			//System.out.println("Non-apple OS");
 		//}
+		
+		defaults=new Defaults();
+		
+		
+		
 		Container container=frame.getContentPane();
 		JMenuBar menuBar=new JMenuBar();
-		JMenu menu=new JMenu("Luscinia");
+		defaults.setMenuBar(menuBar);
+		JMenu menu=menuBar.getMenu(0);
+		if (menu==null){
+			menu=new JMenu("Luscinia");
+		}
 		JMenuItem about=new JMenuItem("About Luscinia");
 		about.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e){
@@ -163,7 +169,7 @@ public class Luscinia implements WindowListener, ActionListener, ChangeListener{
         
         int sc=getGraphicsScalingFactor();
         
-		defaults=new Defaults();
+		
 		defaults.setScaleFactor(sc);
 		//defaults.lnf=UIManager.getLookAndFeel();
 		container.setPreferredSize(new Dimension(800, 600));
@@ -501,7 +507,7 @@ public class Luscinia implements WindowListener, ActionListener, ChangeListener{
 		try{
 			
 			//String osName=System.getProperty("os.name");
-			
+			System.setProperty("apple.laf.useScreenMenuBar", "true");
 			
 			try { 
 				UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());

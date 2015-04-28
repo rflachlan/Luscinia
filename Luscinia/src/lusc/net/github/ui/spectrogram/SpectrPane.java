@@ -960,7 +960,7 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 		
 	}
 	
-	void reDoLastSelection(){
+	void reDoLastSelectionX(){
 		if (lastPointList!=null){
 			pointList=new int[lastPointList.length][];
 			for (int i=0; i<lastPointList.length; i++){
@@ -1127,7 +1127,10 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 				archivePointList=new int[lastPointList.length][];
 				for (int i=0; i<lastPointList.length; i++){
 					archivePointList[i]=new int[lastPointList[i].length];
-					System.arraycopy(lastPointList[i], 0, archivePointList[i], 0, lastPointList[i].length);
+					//for (int j=0; j<lastPointList[i].length; j++){
+						//archivePointList[i][j]=(int)Math.round(lastPointList[i][j]*multiplier);
+					//}
+					System.arraycopy(pointList[i], 0, archivePointList[i], 0, pointList[i].length);
 				}
 			}
 			//segmentMDL(signals);

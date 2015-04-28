@@ -346,7 +346,7 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 			}
 		}	
 		
-		if ((clustcomp)||(distcomp)){
+		if (clustcomp){
 			updateProgressLabel("cluster analysis:");
 			for (int i=0; i<levels.length; i++){
 				if (levels[i]){
@@ -359,21 +359,12 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 							CompositionAnalyzer compa=new CompositionAnalyzer(km[i], j-minClusterK, sg, j, i, comps[i].getDissT());
 						}
 					}
+					comps[i].setKMedoids(km[i]);
 					ds.addCluster(km[i]);
 				}
 			}
 			progress();
 			
-		}
-		
-		if (distcomp){
-			updateProgressLabel("drawing distance distributions");
-			
-			for (int i=0; i<levels.length; i++){
-				if (levels[i]){
-					dsp[i]=new DisplaySimilarityProportions(sg, km[i], i, (int)dim.getWidth(), (int)dim.getHeight(), defaults);
-				}
-			}
 		}
 		
 		if (snncomp){
@@ -387,6 +378,7 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 					}
 					progress();
 					ds.addSNNCluster(snn[i]);
+					comps[i].setSNNCluster(snn[i]);
 				}	
 			}
 		}	
@@ -398,10 +390,21 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 					ent[i]=new EntropyAnalysis(comps[i], maxSyntaxK, syntaxMode);	
 					progress();
 					ds.addSyntax(ent[i]);
+					comps[i].setSyntaxCluster(ent[i]);
 					//EntropyPopulationComp epc=new EntropyPopulationComp(comps[i], maxSyntaxK);
 				}
 			}
 		}	
+		
+		if (distcomp){
+			updateProgressLabel("drawing distance distributions");
+			
+			for (int i=0; i<levels.length; i++){
+				if (levels[i]){
+					dsp[i]=new DisplaySimilarityProportions(comps[i], (int)dim.getWidth(), (int)dim.getHeight(), defaults);
+				}
+			}
+		}
 			
 		if (mdscomp){
 			for (int i=0; i<levels.length; i++){

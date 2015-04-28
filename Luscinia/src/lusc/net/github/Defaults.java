@@ -33,6 +33,7 @@ public class Defaults {
 	
 	static LookAndFeel lnf;
 	int scaleFactor;
+	JMenuBar menuBar;
 	
 	/**
 	 * constructor
@@ -777,6 +778,14 @@ public class Defaults {
 	 */
 	public int getScaleFactor(){
 		return scaleFactor;
+	}
+	
+	public void setMenuBar(JMenuBar menuBar){
+		this.menuBar=menuBar;
+	}
+	
+	public JMenuBar getMenuBar(){
+		return menuBar;
 	}
 	
 }
