@@ -37,7 +37,7 @@ import lusc.net.github.ui.SaveDocument;
 import lusc.net.github.ui.SaveImage;
 import lusc.net.github.ui.SpectrogramSideBar;
 
-public class DisplayUPGMA extends DisplayPane implements MouseInputListener, PropertyChangeListener, ChangeListener{
+public class DisplayUPGMA extends DisplayPane implements ActionListener, MouseInputListener, PropertyChangeListener, ChangeListener{
 	
 	Defaults defaults;
 	int ysize=600;
@@ -91,6 +91,13 @@ public class DisplayUPGMA extends DisplayPane implements MouseInputListener, Pro
 	boolean RECALC=true;
 	double maxDist;
 	double scale=1;
+	
+	String[] labels={"None", "Position", "Song", "Individual", "Population", "Species"};
+	JComboBox<String> branchLabels;
+	int branchLabelIndex=0;
+	
+	JCheckBox songname, indname, popname, specname;
+	boolean addsong, addind, addpop, addspec;
 	
 	public DisplayUPGMA (UPGMA upgma, ComparisonResults cr, AnalysisGroup sg, int width, int height, Defaults defaults){
 		this.upgma=upgma;
@@ -148,11 +155,15 @@ public class DisplayUPGMA extends DisplayPane implements MouseInputListener, Pro
 		size=dat.length;
 		size1=size-1;
 		
+		Font fontDef=this.getFont();		
+		
 		int fsz=(int)Math.round(elespace*scale/2);
-		bodyFont  = new Font("Arial", Font.PLAIN, fsz);
+		bodyFont  = new Font(fontDef.getName(), fontDef.getStyle(), fsz);
         if (bodyFont == null) {
             bodyFont = new Font("SansSerif", Font.PLAIN, fsz);
         }
+        
+        Font font=new Font(fontDef.getName(), fontDef.getStyle(), 8);
 		
 		xdisp2=width-250;
 		xdisp=xdisp2+10;
@@ -167,19 +178,71 @@ public class DisplayUPGMA extends DisplayPane implements MouseInputListener, Pro
 		zoom.addChangeListener(this);
 		
 		leavesField=new JFormattedTextField(num);
+		leavesField.setFont(font);
 		leavesField.setColumns(6);
 		leavesField.setValue(new Integer(elements));
 		leavesField.addPropertyChangeListener("value", this);
 		
 		cutOffField=new JFormattedTextField(num2);
+		cutOffField.setFont(font);
 		cutOffField.setColumns(6);
 		cutOffField.setValue(new Integer(0));
 		cutOffField.addPropertyChangeListener("value", this);
 		
 		leavesLabel=new JLabel("Number of leaves: ");
+		leavesLabel.setFont(font);
 		leavesLabel.setBorder(BorderFactory.createEmptyBorder(10,10,10,20));
 		cutOffLabel=new JLabel("Cut-off: ");
+		cutOffLabel.setFont(font);
 		cutOffLabel.setBorder(BorderFactory.createEmptyBorder(10,10,10,20));
+		
+		int choices=1;
+		if (dataType==4){
+			choices=3;
+		}
+		if (dataType==5){
+			choices=4;
+		}
+		String[] subLab=new String[labels.length-choices+1];
+		subLab[0]=labels[0];
+		int ii=1;
+		for (int i=choices; i<labels.length; i++){subLab[ii]=labels[i]; ii++;}
+		branchLabels=new JComboBox(subLab);
+		branchLabels.addActionListener(this);
+		branchLabels.setFont(font);
+		
+		JLabel blLabel=new JLabel("Branch Label");
+		blLabel.setFont(font);
+		blLabel.setLabelFor(branchLabels);
+		
+		songname=new JCheckBox("Song");
+		songname.setSelected(true);
+		addsong=true;
+		if (dataType==5){
+			addsong=false;
+		}
+		songname.setFont(font);
+		songname.addActionListener(this);
+		
+		indname=new JCheckBox("Individual");
+		indname.setFont(font);
+		addind=false;
+		if (dataType==5){
+			indname.setSelected(true);
+			addind=true;
+		}
+		indname.addActionListener(this);
+		
+		popname=new JCheckBox("Population");
+		popname.setFont(font);
+		addpop=false;
+		popname.addActionListener(this);
+		
+		specname=new JCheckBox("Species");
+		specname.setFont(font);
+		addspec=false;
+		specname.addActionListener(this);
+		
 		
 		//status=new JLabel("Number of leaves: "+elements+" Cut-off: 0");
 		//status.setBorder(BorderFactory.createEmptyBorder(10,10,10,20));
@@ -195,7 +258,7 @@ public class DisplayUPGMA extends DisplayPane implements MouseInputListener, Pro
 		scrollPane.setPreferredSize(new Dimension(width, height-400));
 		spg.addMouseListener(this);
 		JPanel topPane=new JPanel(new BorderLayout());
-		topPane.add(zoom, BorderLayout.CENTER);
+		topPane.add(zoom, BorderLayout.WEST);
 		
 		JPanel settingsPane=new  JPanel();
 		settingsPane.add(leavesLabel);
@@ -203,8 +266,25 @@ public class DisplayUPGMA extends DisplayPane implements MouseInputListener, Pro
 		settingsPane.add(cutOffLabel);
 		settingsPane.add(cutOffField);
 		
-		//topPane.add(status, BorderLayout.EAST);
-		topPane.add(settingsPane, BorderLayout.EAST);
+		JPanel labelPane=new JPanel();
+		labelPane.add(blLabel);
+		labelPane.add(branchLabels);
+		
+		JPanel namePane=new JPanel(new GridLayout(2,0));
+		if (dataType<5){
+			namePane.add(songname);
+		}
+		namePane.add(indname);
+		namePane.add(popname);
+		namePane.add(specname);
+		
+		JPanel rightPane=new JPanel(new BorderLayout());
+		rightPane.add(labelPane, BorderLayout.WEST);
+		rightPane.add(namePane, BorderLayout.CENTER);
+		
+		topPane.add(settingsPane, BorderLayout.CENTER);
+		topPane.add(rightPane, BorderLayout.EAST);
+		
 		JPanel middlePane=new JPanel(new BorderLayout());
 		middlePane.add(dsg, BorderLayout.NORTH);
 		middlePane.add(scrollPane, BorderLayout.CENTER);
@@ -302,10 +382,125 @@ public class DisplayUPGMA extends DisplayPane implements MouseInputListener, Pro
 		spg.revalidate();
 	}
 	
+	public void labelBranches(){
+		
+		if (branchLabelIndex==1){
+			double[] d=cr.getPosition();
+			for (int i=0; i<d.length; i++){
+				dat[i].colval=d[i];
+			}
+		}
+		if (branchLabelIndex==2){
+			int nsongs=cr.getSongs().length;
+			int[][] d=cr.getLookUp();
+			for (int i=0; i<d.length; i++){
+				dat[i].colval=d[i][0]/(nsongs+0.0);
+			}
+		}
+		if (branchLabelIndex==3){
+			int ninds=cr.getIndividualNames().length;
+			int[] d=cr.getLookUpIndividuals();
+			for (int i=0; i<d.length; i++){
+				dat[i].colval=d[i]/(ninds+0.0);
+			}
+		}
+		if (branchLabelIndex==4){
+			int npops=cr.getPopulationNames().length;
+			int[] d=cr.getPopulationListArray();
+			for (int i=0; i<d.length; i++){
+				dat[i].colval=d[i]/(npops+0.0);
+			}
+		}
+		if (branchLabelIndex==5){
+			int nspecs=cr.getSpeciesNames().length;
+			int[] d=cr.getSpeciesListArray();
+			for (int i=0; i<d.length; i++){
+				dat[i].colval=d[i]/(nspecs+0.0);
+			}
+		}	
+	}
+	
+	public float[] getColorScore(float p){
+		//float[] z=getRobPalette(p);
+		//float[] z=getHSBPalette(p, 0.5f, 1.0f, 0.85f, 1f);
+		//Color[] cols={new Color(255,237,160), new Color(254,178,76), new Color(240,59,32)};
+		//Color[] cols={new Color(165,0,38), new Color(215,48,39), new Color(244,109,67), new Color(253,174,97), new Color(254,224,144), new Color(245,245,191), new Color(224,233,248), new Color(171,217,233), new Color(116,173,209), new Color(69,117,180), new Color(49,54,149)};
+		//Color[] cols={new Color(236,226,240), new Color(208,209,230), new Color(166,189,219), new Color(103,169,207), new Color(54,144,192), new Color(2,129,138), new Color(1,108,89), new Color(1,70,54)};
+		//Color[] cols={Color.GREEN, Color.YELLOW, Color.RED};
+		Color[] cols={new Color(77,77,255), new Color(235, 235, 100), new Color(239,21,21)};
+		
+		float[] z=getLinearPalette(p, cols);
+		
+		return z;
+	}
+	
+	public float[] getHSBPalette(float p, float start, float end, float sat, float bright){
+		float x=start+(end-start)*p;
+		Color c = Color.getHSBColor(x, sat, bright);
+		float[] results=c.getColorComponents(null);
+		return results;
+	}
+	
+	public float[] getLinearPalette(float p, Color[] c){
+		
+		int n=c.length;
+		
+		int x=(int)Math.floor(p*(n-1));
+		if (x==n-1){x=n-2;}
+		
+		float y=p*(n-1)-x;
+		System.out.println(n+" "+p+" "+x+" "+y);
+		Color a=c[x];
+		Color b=c[x+1];
+		
+		float[] ra=a.getColorComponents(null);
+		float[] rb=b.getColorComponents(null);
+		
+		for (int i=0; i<ra.length; i++){
+			ra[i]=rb[i]*y+ra[i]*(1-y);
+		}
+		return ra;
+		
+	}
+	
+	
+	public float[] getRobPalette(float p){
+		float redc=0;
+		if (p>0.8){redc=1f;}
+		else if ((p>0.2)&&(p<=0.6)){redc=0.0f;}
+		else if (p<=0.2){redc=1-p*5f;}
+		else {redc=(p-0.6f)*5f;}
+		redc+=0.5f;
+		redc/=1.5f;
+		redc=1.0f-redc;
+		
+		float greenc=0f;
+		if (p>0.6){greenc=0.0f;}
+		else if (p<=0.4){greenc=1;}
+		else {greenc=1-(p-0.4f)*5f;}
+		greenc+=0.5f;
+		greenc/=1.5f;
+		greenc=1.0f-greenc;
+		
+		float bluec=0;
+		if (p<=0.2){bluec=0.0f;}
+		else if ((p>0.4)&&(p<=0.8)){bluec=1.0f;}
+		else if (p<=0.4){bluec=(p-0.2f)*5f;}
+		else {bluec=1-(p-0.8f)*5f;}
+		bluec+=0.5f;
+		bluec/=1.5f;
+		bluec=1.0f-bluec;
+		
+		float[] results={redc, greenc, bluec};
+		return results;
+	}
+	
 	
 	public void paintPanel(){
 		
 		
+		String[] names=cr.getNames(addspec, addpop, addind, addsong);
+			
 		int ny=(int)Math.round(scale*(elespace*elements+2*ydisp));
 		System.out.println("UPGMA TREE HEIGHT: "+ny);
 		int widthx=(int)Math.round(scale*width);
@@ -314,8 +509,6 @@ public class DisplayUPGMA extends DisplayPane implements MouseInputListener, Pro
 		int lw=(int)Math.round(lineWeight*scale);
 		BasicStroke fs=new BasicStroke(lw, BasicStroke.CAP_SQUARE, BasicStroke.JOIN_MITER);
 		g.setStroke(fs);
-		
-		
 		
 		RenderingHints hints =new RenderingHints(RenderingHints.KEY_RENDERING,
 				 RenderingHints.VALUE_RENDER_QUALITY);
@@ -333,7 +526,7 @@ public class DisplayUPGMA extends DisplayPane implements MouseInputListener, Pro
 		xpl1=(int)Math.round(dat[size1].xloc*scale);
 		ypl1=(int)Math.round(dat[size1].yloc*scale);
 		//g.fillArc(xpl1-1, ypl1-1, 3, 3, 0, 360);
-		
+		/*
 		Color[] colors=new Color[101];
 		
 		
@@ -364,9 +557,9 @@ public class DisplayUPGMA extends DisplayPane implements MouseInputListener, Pro
 			//g.drawLine(5, i+5, 15, i+5);
 			
 		}
-		
-		double[] labels=sg.getLabels(dataType);
-		if (labels==null){labels=new double[1];}
+		*/
+		//double[] labels=sg.getLabels(dataType);
+		//if (labels==null){labels=new double[1];}
 		
 		for (i=size1; i>=0; i--){
 			xpl1=(int)Math.round(dat[i].xloc*scale);
@@ -380,6 +573,7 @@ public class DisplayUPGMA extends DisplayPane implements MouseInputListener, Pro
 					xpl2=(int)Math.round(dat[q].xloc*scale);
 					ypl2=(int)Math.round(dat[q].yloc*scale);
 					
+					/*
 					double meanout=0;
 					if (silhouettes==null) {
 						double meancount=0;
@@ -395,12 +589,6 @@ public class DisplayUPGMA extends DisplayPane implements MouseInputListener, Pro
 						else{
 							meanout=-1;
 						}
-						//if (meanout>0.5){
-						//	meanout=Math.sqrt(2*(meanout-0.5))*0.5+0.5;
-						//}
-						//else{
-						//	meanout=0.5-Math.sqrt(2*(0.5-meanout))*0.5;
-						//}
 					}
 					else if (silhouettes.length<dat.length){
 						double meancount=0;
@@ -426,7 +614,37 @@ public class DisplayUPGMA extends DisplayPane implements MouseInputListener, Pro
 					}
 					else{
 						g.setColor(colors[p]);
-					}					
+					}		
+					*/
+					
+					if (branchLabelIndex==0){
+						g.setColor(Color.BLACK);
+					}
+					else{
+						int nq=dat[q].child.length;
+						System.out.println(q+" "+dat[q].children);
+						if (nq==0){
+							float[] fc=getColorScore((float)dat[q].colval);
+							g.setColor(new Color(fc[0], fc[1], fc[2]));
+						}
+						else{
+							float[] fct=new float[3];
+							for (int m=0; m<dat[q].child.length; m++){
+								float[] fc=getColorScore((float)dat[dat[q].child[m]].colval);
+								for (int n=0; n<3; n++){
+									fct[n]+=fc[n];
+								}
+							}
+							float den=dat[q].child.length;
+							for (int n=0; n<3; n++){
+								fct[n]=fct[n]/den;
+								if (fct[n]>1f){fct[n]=1;}
+							}
+							g.setColor(new Color(fct[0], fct[1], fct[2]));
+						}
+					}
+					
+					
 					//g.setColor(Color.BLACK);
 					g.drawLine(xpl1, ypl1, xpl1, ypl2);
 					g.drawLine(xpl1, ypl2, xpl2, ypl2);
@@ -436,13 +654,13 @@ public class DisplayUPGMA extends DisplayPane implements MouseInputListener, Pro
 			else if (cutoff==0){
 				g.setColor(Color.BLACK);
 				g.setFont(bodyFont);
-				String[] names=cr.getNames();
+				
 				g.drawString(names[dat[i].child[0]], xpl1+5, ypl1+5);
 			}
 		}
 		
 		if (drawDottedLine){
-			
+			g.setColor(Color.BLACK);
 			int yq=0;
 			
 			while (yq<ny){
@@ -703,6 +921,36 @@ public class DisplayUPGMA extends DisplayPane implements MouseInputListener, Pro
         	}
         }
         
+	}
+	
+	public void actionPerformed(ActionEvent e) {
+		if (e.getSource()==branchLabels){
+			String s=(String)branchLabels.getSelectedItem();
+			branchLabelIndex=0;
+			for (int i=0; i<labels.length; i++){
+				if (s.equals(labels[i])){
+					branchLabelIndex=i;
+					i=labels.length;
+				}
+			}
+			labelBranches();
+		}
+		else if(e.getSource()==songname){
+			addsong=songname.isSelected();
+		}
+		else if(e.getSource()==popname){
+			addpop=popname.isSelected();
+		}
+		else if(e.getSource()==indname){
+			addind=indname.isSelected();
+		}
+		else if(e.getSource()==specname){
+			addspec=specname.isSelected();
+		}
+
+		paintPanel();
+		spg.paintImage(imf, scale);
+		spg.revalidate();
 	}
 	
 	public void export(){

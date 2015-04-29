@@ -203,6 +203,51 @@ public class ComparisonResults {
 	}
 	
 	/**
+	 * gets the names array for the comparison.
+	 * @return String[] array of names
+	 */
+	public String[] getNames(boolean incspec, boolean incpop, boolean incind, boolean incsong){
+		
+		String[] out=new String[n];
+		String sep=":";
+		
+		int[] spec=null;
+		if (incspec){spec=getSpeciesListArray();}
+		int[] pop=null;
+		if (incpop){pop=getPopulationListArray();}
+		int[] ind=null;
+		if (incind){ind=lookUpIndividual;}
+		
+		
+		
+		for (int i=0; i<n; i++){
+			boolean started=false;
+			StringBuffer sb=new StringBuffer();
+			if (incspec){
+				sb.append(species[spec[i]]);
+				started=true;
+			}
+			if (incpop){
+				if (started){sb.append(sep);}
+				sb.append(populations[pop[i]]);
+				started=true;
+			}
+			if (incind){
+				if (started){sb.append(sep);}
+				sb.append(individualNames[ind[i]]);
+				started=true;
+			}
+			if (incsong){
+				if (started){sb.append(sep);}
+				sb.append(names[i]);
+				started=true;
+			}
+			out[i]=sb.toString();
+		}
+		return out;
+	}
+	
+	/**
 	 * gets the type for the comparison.
 	 * @return int index for type
 	 */
@@ -457,7 +502,8 @@ public class ComparisonResults {
 				}
 				for (int j=0; j<songs[i].getNumElements(); j++){
 					Integer gr=new Integer(j+1);
-					names[count]=songs[i].getIndividualName()+":"+n3+","+gr.toString();
+					//names[count]=songs[i].getIndividualName()+":"+n3+","+gr.toString();
+					names[count]=n3+","+gr.toString();
 					count++;
 				}
 			}
@@ -493,7 +539,8 @@ public class ComparisonResults {
 							}
 						}
 						sb.deleteCharAt(sb.length()-1);
-						names[count]=songs[i].getIndividualName()+": "+n3+": "+sb.toString();						
+						//names[count]=songs[i].getIndividualName()+": "+n3+": "+sb.toString();	
+						names[count]=n3+": "+sb.toString();	
 						count++;
 					}
 				}
@@ -509,7 +556,8 @@ public class ComparisonResults {
 				}
 				for (int j=0; j<songs[i].getNumPhrases(); j++){
 					Integer gr=new Integer(j+1);
-					names[count]=songs[i].getIndividualName()+":"+n3+","+gr.toString();	
+					//names[count]=songs[i].getIndividualName()+":"+n3+","+gr.toString();	
+					names[count]=n3+","+gr.toString();	
 					count++;
 				}
 			}
@@ -522,7 +570,8 @@ public class ComparisonResults {
 					n2=n2.substring(0, length-4);
 				}
 				Integer gr=new Integer(lookUps[i][1]+1);
-				names[i]=songs[lookUps[i][0]].getIndividualName()+":"+n2+","+gr.toString();
+				//names[i]=songs[lookUps[i][0]].getIndividualName()+":"+n2+","+gr.toString();
+				names[i]=n2+","+gr.toString();
 			}
 		}
 		else if (type==SONG_TYPE){
