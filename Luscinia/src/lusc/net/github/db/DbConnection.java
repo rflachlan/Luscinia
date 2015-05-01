@@ -935,7 +935,7 @@ public class DbConnection {
 				
 		Hashtable<Integer, Song> otable=new Hashtable<Integer, Song>();
 		
-		
+		System.out.println("Checking ids");
 		PreparedStatement stmt = null; 
 		ResultSet rs = null; 
 		try {
@@ -956,7 +956,9 @@ public class DbConnection {
 		catch (Exception e){
 			e.printStackTrace();
 		}
-				
+			
+		
+		System.out.println("Checking times");
 		String queryb="SELECT time, songid FROM wavs";
 		
 		stmt = null; 
@@ -967,14 +969,21 @@ public class DbConnection {
 			while( rs.next( ) ) {
 				int p=rs.getInt("songid");
 				Song song=otable.get(p);
-				song.setTDate(rs.getLong("time"));
-				otable.put(p, song);
+				if (song!=null){
+					song.setTDate(rs.getLong("time"));
+					otable.put(p, song);
+				}
+				else{
+					System.out.println("Missing song: "+p);
+				}
 			}
 		}
 		catch (Exception e){
 			e.printStackTrace();
 		}
 		
+		
+		System.out.println("Checking sylls");
 		String queryc="SELECT starttime, songID FROM syllable";
 		
 		stmt = null; 
@@ -985,14 +994,20 @@ public class DbConnection {
 			while( rs.next( ) ) {
 				int p=rs.getInt("songid");
 				Song song=otable.get(p);
-				song.setNumSylls(song.getNumSylls()+1);
-				otable.put(p, song);
+		
+				if (song!=null){
+					song.setNumSylls(song.getNumSylls()+1);
+					otable.put(p, song);
+				}
+				else{
+					System.out.println("Missing song: "+p);
+				}
 			}
 		}
 		catch (Exception e){
 			e.printStackTrace();
 		}
-		
+		System.out.println("Done");
 		LinkedList<Song> olist=new LinkedList<Song>(otable.values());
 		return olist;
 	}

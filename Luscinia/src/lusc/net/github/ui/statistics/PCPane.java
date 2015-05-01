@@ -834,19 +834,22 @@ public class PCPane extends JPanel implements MouseInputListener{
 				
 				boolean toDraw=false;
 				int ref2=-1;
-				double ref1=-1;
-				if (dataType<4){ref1=labels[i]; ref2=lookUp[i][0];}
+				//double ref1=-1;
+				if (dataType<4){
+					//ref1=labels[i]; 
+					ref2=lookUp[i][0];
+				}
 				if(ref2>=0){
 					for (int z=0; z<selP.length; z++){
 						if ((dataType<4)&&(ref2==lookUp[selP[z]][0])){toDraw=true;}
 					}
 				}
 				if (toDraw){
-					if (ref1>0){
+					//if (ref1>0){
 						g.setColor(Color.BLACK);
 						Line2D.Double line=new Line2D.Double(location[i-1][0], location[i-1][1], location[i][0], location[i][1]);
 						g.draw(line);
-					}
+					//}
 				}
 			}
 			for (int i=0; i<n; i++){
@@ -856,8 +859,11 @@ public class PCPane extends JPanel implements MouseInputListener{
 				
 				boolean toDraw=false;
 				int ref2=-1;
-				double ref1=-1;
-				if (dataType<4){ref1=labels[i]; ref2=lookUp[i][0];}
+				//double ref1=-1;
+				if (dataType<4){
+					//ref1=labels[i]; 
+					ref2=lookUp[i][0];
+				}
 				if(ref2>=0){
 					for (int z=0; z<selP.length; z++){
 						if ((dataType<4)&&(ref2==lookUp[selP[z]][0])){toDraw=true;}

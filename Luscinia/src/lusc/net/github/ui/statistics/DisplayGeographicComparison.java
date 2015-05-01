@@ -11,6 +11,9 @@ import javax.swing.*;
 import javax.swing.event.*;
 
 import java.awt.geom.AffineTransform;
+import java.awt.geom.Arc2D;
+import java.awt.geom.Line2D;
+import java.awt.geom.Rectangle2D;
 import java.awt.font.FontRenderContext;
 import java.awt.font.TextLayout;
 import java.awt.*;
@@ -18,6 +21,7 @@ import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.text.DecimalFormat;
 import java.text.NumberFormat;
 
 import lusc.net.github.Defaults;
@@ -42,10 +46,14 @@ public class DisplayGeographicComparison extends DisplayPane implements Property
 	double maxDist, minDist;
 	double logc=1/Math.log(10);
 	JSlider zoom1, zoom2;
-	JLabel z1Lab, z2Lab, imLabel;
+	JLabel z1Lab, z2Lab;
+	//, imLabel;
 	JPanel mainPanel=new JPanel(new BorderLayout());
 	AnalysisGroup sg;
+	SimplePaintingPanel spp=new SimplePaintingPanel();
 	//SongGroup sg;
+	double scale=1;
+	int fontSize=12;
 	
 	JFormattedTextField numCategories, thresholdSimilarity;
 	NumberFormat num, num2;
@@ -58,7 +66,9 @@ public class DisplayGeographicComparison extends DisplayPane implements Property
 		this.sg=sg;
 		this.setPreferredSize(new Dimension(width, height));
 		this.defaults=defaults;
-		imf=new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+		this.scale=defaults.getScaleFactor();
+		
+		imf=new BufferedImage((int)(width*scale), (int)(height*scale), BufferedImage.TYPE_INT_ARGB);
 		
 		num=NumberFormat.getNumberInstance();
 		num.setMaximumFractionDigits(0);
@@ -115,16 +125,17 @@ public class DisplayGeographicComparison extends DisplayPane implements Property
 		//z2P.add(z2Lab, BorderLayout.EAST);
 		zoomPanel.add(z2P, BorderLayout.SOUTH);
 		
-		imLabel=new JLabel();
-		JPanel imagePanel=new JPanel();
-		imagePanel.add(imLabel);
+		//imLabel=new JLabel();
+		//JPanel imagePanel=new JPanel();
+		//imagePanel.add(imLabel);
 		
 		
 		calculateValues();
 		drawGraph();
 		
 		this.add(zoomPanel, BorderLayout.NORTH);
-		this.add(imagePanel, BorderLayout.CENTER);
+		this.add(spp.imagePanel, BorderLayout.CENTER);
+		//this.add(imagePanel, BorderLayout.CENTER);
 				
 	}
 	
@@ -174,40 +185,67 @@ public class DisplayGeographicComparison extends DisplayPane implements Property
 	public void drawGraph(){
 		
 		int yspan=gh;
-		int sx, ex, sy, ey;
+		double sx, ex, sy, ey;
 		Graphics2D g=imf.createGraphics();
-		g.setColor(Color.WHITE);
-		g.fillRect(0, 0, width, height);
-		g.setColor(Color.BLACK);
-		g.drawRect(xst, yst, gw, gh);
-		String xLabel="Distance (m)";
-		g.drawString(xLabel, xst+(gw/2)-20, yst+gh+40);
 		
+		BasicStroke fs=new BasicStroke((int)(scale), BasicStroke.CAP_SQUARE, BasicStroke.JOIN_MITER);
+		g.setStroke(fs);
+		
+		RenderingHints hints =new RenderingHints(RenderingHints.KEY_RENDERING,
+				 RenderingHints.VALUE_RENDER_QUALITY);
+				hints.put(RenderingHints.KEY_ANTIALIASING,
+				RenderingHints.VALUE_ANTIALIAS_ON);
+		g.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+				RenderingHints.VALUE_ANTIALIAS_ON);
+		
+		int fsz=(int)Math.round(fontSize*scale);
+		Font fontDef=g.getFont();
+		Font font=new Font(fontDef.getName(), fontDef.getStyle(), fsz);
+		g.setFont(font);
+		FontRenderContext frc = g.getFontRenderContext();
+		
+		g.setColor(Color.WHITE);
+		Rectangle2D.Double r1=new Rectangle2D.Double(0, 0, width*scale, height*scale);
+		g.fill(r1);
+		
+		
+		//g.fillRect(0, 0, width, height);
+		
+		g.setColor(Color.BLACK);
+		Rectangle2D.Double r2=new Rectangle2D.Double(xst*scale, yst*scale, gw*scale, gh*scale);
+		g.draw(r2);
+	
 		int nc=ci.getNumCategories();
 		
 		for (int i=1; i<nc; i++){
-			sx=(int)Math.round(yspan*(results[i-1][0])+yst);
-			ex=(int)Math.round(yspan*(results[i][0])+yst);
-			sy=(int)Math.round(gw*results[i-1][3]+xst);
-			ey=(int)Math.round(gw*results[i][3]+xst);
-			g.drawLine(sy, sx, ey, ex);
-			
+			sx=scale*(yspan*(results[i-1][0])+yst);
+			ex=scale*(yspan*(results[i][0])+yst);
+			sy=scale*(gw*results[i-1][3]+xst);
+			ey=scale*(gw*results[i][3]+xst);
+			Line2D.Double l1=new Line2D.Double(sy, sx, ey, ex);
+			g.draw(l1);			
 		}
 		
+		double diam=5;
+		
 		for (int i=0; i<nc; i++){
-			ex=(int)Math.round(yspan*(results[i][0])+yst);
-			ey=(int)Math.round(gw*results[i][3]+xst);
-			g.fillRect(ey-1, ex-1, 3, 3);
+			ex=scale*(yspan*(results[i][0])+yst-(diam*0.5));
+			ey=scale*(gw*results[i][3]+xst-(diam*0.5));
+			//Rectangle2D.Double r3=new Rectangle2D.Double(ey, ex, diam*scale, diam*scale);
+			Arc2D.Double r3=new Arc2D.Double(ey, ex, diam*scale, diam*scale, 0.0, 360.0, Arc2D.Double.OPEN);
+			
+			g.fill(r3);
 		}
 		
 		g.setColor(Color.GRAY);
 		for (int i=1; i<nc; i++){
 			for (int j=1; j<3; j++){
-				sx=(int)Math.round(yspan*(results[i-1][j])+yst);
-				ex=(int)Math.round(yspan*(results[i][j])+yst);
-				sy=(int)Math.round(gw*results[i-1][3]+xst);
-				ey=(int)Math.round(gw*results[i][3]+xst);
-				g.drawLine(sy, sx, ey, ex);
+				sx=scale*(yspan*(results[i-1][j])+yst);
+				ex=scale*(yspan*(results[i][j])+yst);
+				sy=scale*(gw*results[i-1][3]+xst);
+				ey=scale*(gw*results[i][3]+xst);
+				Line2D.Double l1=new Line2D.Double(sy, sx, ey, ex);
+				g.draw(l1);	
 			}
 		}
 		
@@ -216,7 +254,11 @@ public class DisplayGeographicComparison extends DisplayPane implements Property
 		double place=Math.pow(10, Math.floor(minDist));
 		double place2=0;
 		double place3=0;
-		int xpl=0;
+		float xpl=0;
+		float ypl=(float)(scale*(yst+gh+5));
+		double ypl1=scale*(yst+gh);
+		double ypl2=scale*(yst+gh+3);
+		int maxHeight=0;
 		while (place<Math.pow(10, maxDist)){
 			
 			place2=Math.log(place)*logc;
@@ -224,20 +266,28 @@ public class DisplayGeographicComparison extends DisplayPane implements Property
 			
 			Integer p=new Integer((int)place);
 			String pl=p.toString();
-			
-			xpl=(int)Math.round(place2-3+xst);
+			TextLayout layout = new TextLayout(pl, font, frc);
+			Rectangle r = layout.getPixelBounds(null, 0, 0);
+			if (r.height>maxHeight){maxHeight=r.height;}
+			xpl=(float)(scale*(place2+xst));
 			if (place>Math.pow(10, minDist)){
-				g.drawString(pl, xpl, yst+gh+20);
-				g.drawLine(xpl+3, yst+gh, xpl+3, yst+gh+3);
+				layout.draw(g, xpl-(r.width/2), ypl+r.height);
+				//g.drawString(pl, xpl, ypl+r.height);
+				Line2D.Double l1=new Line2D.Double(xpl, ypl1, xpl, ypl2);
+				g.draw(l1);
+				//g.drawLine(xpl+3, yst+gh, xpl+3, yst+gh+3);
 			}
 			int count=2;
 			place3=place*count;
 			while ((count<10)&&(place3<Math.pow(10, maxDist))){
 				place2=Math.log(place3)*logc;
 				place2=gw*(place2-minDist)/(maxDist-minDist);
-				xpl=(int)Math.round(place2+xst);
+				//xpl=(int)Math.round(place2+xst);
+				xpl=(float)(scale*(place2+xst));
 				if (place3>Math.pow(10, minDist)){
-					g.drawLine(xpl, yst+gh, xpl, yst+gh+3);
+					Line2D.Double l1=new Line2D.Double(xpl, ypl1, xpl, ypl2);
+					g.draw(l1);
+					//g.drawLine(xpl, yst+gh, xpl, yst+gh+3);
 				}
 				count++;
 				place3=place*count;
@@ -246,34 +296,61 @@ public class DisplayGeographicComparison extends DisplayPane implements Property
 		}
 		
 		
+		String xLabel="Distance (m)";
+		TextLayout layout = new TextLayout(xLabel, font, frc);
+		Rectangle r = layout.getPixelBounds(null, 0, 0);
+		xpl=(float)(scale*(xst+(gw/2))-(r.width/2));
+		ypl=(float)(scale*(yst+gh+10)+maxHeight+r.height);
+		layout.draw(g, xpl, ypl);
+		
+		DecimalFormat nf=new DecimalFormat("#.##");
+		
 		double tickspace=0.1*gh;
 		place=0;
 		double tickVal1=0;
-		int ypl=0;
+		//int ypl=0;
+		int maxWidth=0;
+		double xpl1=scale*xst;
+		double xpl2=scale*(xst-3);
+		xpl=(float)(scale*(xst-5));
+		
 		while (place<gh){
-			Double p1=new Double(tickVal1);
-			String pl1=p1.toString();
-			if (pl1.length()>sigPlaces){
-				pl1=pl1.substring(0, sigPlaces);
-			}
-			ypl=(int)Math.round(yst+gh-place);
-			g.drawString(pl1, xst-(8*sigPlaces), ypl+3);
-			g.drawLine(xst, ypl, xst-3, ypl);
+			
+			String pl1= nf.format(tickVal1);
+			layout = new TextLayout(pl1, font, frc);
+			r = layout.getPixelBounds(null, 0, 0);
+			if (r.width>maxWidth){maxWidth=r.width;}
+			
+			ypl=(float)(scale*(yst+gh-place));
+			
+			layout.draw(g, xpl-r.width, ypl+(r.height/2));
+			
+			Line2D.Double l1=new Line2D.Double(xpl1, ypl, xpl2, ypl);
+			g.draw(l1);
+	
 			tickVal1+=0.1*max;
 			place+=tickspace;
 		}
 		
 		
-		AffineTransform af = new AffineTransform();
-		af.translate(-30., ((gh/2)+80.));
-		af.rotate(3*Math.PI/2);		
-		FontRenderContext renderContext = new FontRenderContext(null, false, false);
-		g.transform(af);
-		TextLayout layout = new TextLayout("Jaccard Index" , g.getFont(), renderContext);
-		layout.draw(g, 5, 50);
+		layout = new TextLayout("Jaccard Index" , font, frc);
+		r = layout.getPixelBounds(null, 0, 0);	
+		
+		AffineTransform affineTransform = new AffineTransform(); 		
+		double xpos=scale*(xst-10)-maxWidth-(r.width/2);
+		double ypos=scale*(yst+gh*0.5)+(r.height/2);
+		affineTransform.setToTranslation(xpos, ypos);
+		affineTransform.rotate(Math.toRadians(270), r.width/2, r.height/2); 
+
+		g.transform(affineTransform);
+		
+		layout.draw(g, 0, 0);
+		
 		g.dispose();
 		
-		imLabel.setIcon(new ImageIcon(imf));
+		//imLabel.setIcon(new ImageIcon(imf));
+		
+		spp.paintImage(imf, scale);
 		
 		//repaint();
 	}
@@ -293,6 +370,7 @@ public class DisplayGeographicComparison extends DisplayPane implements Property
         	ci.doComparison(value1, value2);
         	calculateValues();
 			drawGraph();
+			spp.revalidate();
         }
     }
 	
@@ -305,6 +383,7 @@ public class DisplayGeographicComparison extends DisplayPane implements Property
         	ci.doComparison(value1, p);
         	calculateValues();
 			drawGraph();
+			spp.revalidate();
         }
         
 	}

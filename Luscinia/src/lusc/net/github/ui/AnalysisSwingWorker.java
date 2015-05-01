@@ -509,7 +509,8 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 	
 	public Object[] makeUPGMA(ComparisonResults cr){
 		double[] sds=cr.getMDS().getSDS();
-		UPGMA upgma=new UPGMA(cr.getDissT(), dendrogramMode);
+		//UPGMA upgma=new UPGMA(cr.getDissT(), dendrogramMode);
+		UPGMA upgma=new UPGMA(cr.getDiss(), dendrogramMode);
 		progress();
 		ClusterValidation cv=new ClusterValidation(dendrogramMode);
 		progress();

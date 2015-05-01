@@ -69,7 +69,6 @@ public class AnalysisGroup {
 		countEleNumber();
 		songNumber=songs.length;
 		this.defaults=defaults;
-		
 	}
 	
 	/**
@@ -447,9 +446,11 @@ public class AnalysisGroup {
 			for (int j=0; j<songs[i].getNumPhrases(); j++){
 				int[][] p=(int[][])songs[i].getPhrase(j);
 				syllableRepetitions[k]=p.length;
+				//System.out.println("REPEAT: "+k+" "+syllableRepetitions[k]);
 				k++;
 			}
 		}
+		
 	}
 	
 	/**
@@ -481,7 +482,7 @@ public class AnalysisGroup {
 			//sc.compressSong3(songs[i]);
 			songs[i]=sc.s;
 		}
-		calculateSyllableRepetitions();
+		//calculateSyllableRepetitions();
 		countEleNumber();
 		songNumber=songs.length;
 	}
@@ -744,6 +745,8 @@ public class AnalysisGroup {
 				}
 			}
 			scoresSyll.setDiss(b);
+			sd2=getMatrixAv(b);
+			System.out.println(sd2);
 		}
 	}
 	
