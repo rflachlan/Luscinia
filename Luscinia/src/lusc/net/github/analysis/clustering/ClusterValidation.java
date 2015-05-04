@@ -18,6 +18,7 @@ public class ClusterValidation {
 
 	//UPGMA upgma;
 	int dmode=1;
+	double beta=-0.25;
 	double[][] pcRep;
 	Random random=new Random(System.currentTimeMillis());
 	
@@ -30,9 +31,10 @@ public class ClusterValidation {
 	 * @param dmode
 	 */
 	
-	public ClusterValidation(double[][] pcRep, int dmode){
+	public ClusterValidation(double[][] pcRep, int dmode, double beta){
 		this.pcRep=pcRep;
 		this.dmode=dmode;
+		this.beta=beta;
 	}
 	
 	
@@ -40,8 +42,9 @@ public class ClusterValidation {
 	 * Constructor takes a dendrogramMode parameter. Inelegant...
 	 * @param dmode
 	 */
-	public ClusterValidation(int dmode){
+	public ClusterValidation(int dmode, double beta){
 		this.dmode=dmode;
+		this.beta=beta;
 	}
 	
 	/**
@@ -122,7 +125,7 @@ public class ClusterValidation {
 				}
 			}		
 			
-			tempUPGMA=new UPGMA(dmat, dmode);
+			tempUPGMA=new UPGMA(dmat, dmode, beta);
 				
 			//simResults=calculateValidityPerCluster(tempUPGMA, dmat);
 			simResults=calculateValidityPerCluster2(tempUPGMA, dmat);
@@ -357,7 +360,7 @@ public class ClusterValidation {
 				dmat[i][j]=Math.sqrt(tot);
 			}
 		}		
-		upgma=new UPGMA(dmat, dmode);
+		upgma=new UPGMA(dmat, dmode, beta);
 		simResults=resamplingMethod(repeat, upgma, null);
 		//upgma=tempUPGMA;
 		return simResults;
@@ -404,7 +407,7 @@ public class ClusterValidation {
 				}
 			}		
 			
-			tempUPGMA=new UPGMA(dmat, dmode);
+			tempUPGMA=new UPGMA(dmat, dmode, beta);
 				
 			simResults=resamplingMethod(500, tempUPGMA, dmat);
 			simResults=getAverageClusterV(simResults, false, tempUPGMA);
@@ -487,7 +490,7 @@ public class ClusterValidation {
 				}
 			}
 			
-			supgma=new UPGMA(rMat, dmode);
+			supgma=new UPGMA(rMat, dmode, beta);
 			calculateTreeDistance(rTreeMat, supgma.getDat());
 			TreeDat[] ndat=nupgma.getDat();
 			for (int j=0; j<ndat.length; j++){

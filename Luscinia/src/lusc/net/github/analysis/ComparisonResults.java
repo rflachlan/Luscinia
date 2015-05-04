@@ -1033,22 +1033,31 @@ public class ComparisonResults {
 	}
 
 	public void checkMakeMDS(int ndi, AnalysisSwingWorker asw){
-		if (mds==null){
-			calculateMDS(ndi, asw);
+		boolean calc=false;
+		
+		tndi=ndi;
+		if (n<=tndi){
+			tndi=n-1;
+		}
+		
+		if (mds==null){calc=true;}
+		else if(mds.getnpcs()!=tndi){
+			calc=true;
+		}
+		
+		if (calc){
+			calculateMDS(tndi, asw);
 			makeDissFromMDS();
 		}
 	}
 
 	public void calculateMDS(int ndi, AnalysisSwingWorker asw){
 		
-		tndi=ndi;
-		if (n<=tndi){
-			tndi=n-1;
-		}
+		
 		mds=new MultiDimensionalScaling();
 		
 		try{
-			mds.RunNonMetricAnalysis(diss, tndi, asw);
+			mds.RunNonMetricAnalysis(diss, ndi, asw);
 		}
 		catch(Exception e){e.printStackTrace();}
 	}

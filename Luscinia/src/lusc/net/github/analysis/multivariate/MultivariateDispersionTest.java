@@ -5,15 +5,16 @@ import java.util.*;
 import lusc.net.github.analysis.BasicStatistics;
 import lusc.net.github.analysis.ComparisonResults;
 import lusc.net.github.analysis.dendrograms.UPGMA;
+import lusc.net.github.ui.AndersonOptions;
 
 public class MultivariateDispersionTest {
 	
 	double testFScore=0;
 	double pValue=0;
 	double[][] meanScores, spatialMedianComp;
-	String[] popNames;
+	String[] names;
 	
-	double[][][] popScore, indScore2;
+	double[][][] groupScore, indScore2;
 	double[][] indScore, clusterDev;
 	int type=0;
 	double[][] data;
@@ -21,12 +22,108 @@ public class MultivariateDispersionTest {
 	int permutations=10000;
 	Random random=new Random(System.currentTimeMillis());
 	
+	
+	public MultivariateDispersionTest(ComparisonResults cr, AndersonOptions ao){
+		this.data=cr.getDiss();
+		this.type=cr.getType();
+		
+		this.permutations=ao.numRepeats;
+		int[] group=null;
+		if (ao.levelSel==0){
+			names=cr.getSpeciesNames();
+			group=cr.getSpeciesListArray();
+		}
+		else if (ao.levelSel==1){
+			names=cr.getPopulationNames();
+			group=cr.getPopulationListArray();
+		}
+		else if (ao.levelSel==2){
+			names=cr.getIndividualNames();
+			group=cr.getLookUpIndividuals();
+		}
+		
+		int ngroup=0;
+		for (int i=0; i<group.length; i++){
+			if (group[i]>ngroup){ngroup=group[i];}
+		}
+		ngroup++;
+		
+
+		n=data.length;
+		int n1=n;
+		
+		MultiDimensionalScaling mds=new MultiDimensionalScaling();
+		boolean completed=false;
+		while (completed==false){
+			completed=true;
+			try{
+				mds.RunMetricAnalysis(data, n1, false, false);
+			}
+			catch(Exception e){
+				completed=false;
+				n1--;
+			}
+		}
+		
+		System.out.println("Finished MDS");
+		double[][] config=mds.configuration;
+		double[] eig=mds.eigenValues;
+		
+		int[] popMembers=new int[ngroup];
+		for (int i=0; i<group.length; i++){
+			popMembers[group[i]]++;
+		}
+		
+		double[][][] byGroup=new double[ngroup][][];
+		
+		for (int i=0; i<ngroup; i++){
+			byGroup[i]=new double[popMembers[i]][n1];
+		}
+		
+		int[] groupCount=new int[ngroup];
+		
+		for (int i=0; i<n; i++){
+			for (int j=0; j<n1; j++){
+				byGroup[group[i]][groupCount[group[i]]][j]=config[i][j];
+			}
+			groupCount[group[i]]++;
+		}
+	
+		BasicStatistics bs=new BasicStatistics();	
+		
+		double[][] spatmed=new double[ngroup][];
+		for (int i=0; i<ngroup; i++){
+			spatmed[i]=calculateSpatialMedian(byGroup[i], eig);
+		}
+		
+		spatialMedianComp=compareSpatialMedians(spatmed, eig);
+		
+		groupScore=new double[ngroup][ngroup][];
+		meanScores=new double[ngroup][ngroup];
+		double[][] gscore2=new double[ngroup][];
+		for (int i=0; i<ngroup; i++){
+			for (int j=0; j<ngroup; j++){
+				groupScore[i][j]=calculateDivergence(spatmed[i], byGroup[j], eig);
+				meanScores[i][j]=bs.calculateMean(groupScore[i][j]);
+				if (i==j){
+					gscore2[i]=new double[groupScore[i][j].length];
+					System.arraycopy(groupScore[i][j], 0, gscore2[i], 0, gscore2[i].length);
+				}
+			}
+		}
+	
+		if (ngroup>1){
+			calculateFPermutationTest(gscore2);
+		}
+		
+	}
+	
 	public MultivariateDispersionTest(ComparisonResults cr){
 
 	//public MultivariateDispersionTest(ComparisonResults crdouble[][] data, int[] pop, int type, String[] popNames, int[][] individuals){
 		this.data=cr.getDiss();
 		this.type=cr.getType();
-		this.popNames=cr.getPopulationNames();
+		this.names=cr.getPopulationNames();
 		int[] pop=cr.getPopulationListArray();
 		int[][] individuals=cr.getIndividuals();
 		n=data.length;
@@ -58,7 +155,7 @@ public class MultivariateDispersionTest {
 		}
 		npop++;
 		
-		System.out.println("Number of Populations: "+npop+" "+popNames.length);
+		System.out.println("Number of Populations: "+npop+" "+names.length);
 
 		
 		int[] indRef=new int[pop.length];
@@ -66,8 +163,8 @@ public class MultivariateDispersionTest {
 			indRef[pop[individuals[i][0]]]++;
 		}
 		
-		for (int i=0; i<popNames.length; i++){
-			System.out.println("Population: "+popNames[i]+" Number of Individuals: "+indRef[i]);
+		for (int i=0; i<names.length; i++){
+			System.out.println("Population: "+names[i]+" Number of Individuals: "+indRef[i]);
 		}
 		
 		
@@ -125,12 +222,12 @@ public class MultivariateDispersionTest {
 		
 		spatialMedianComp=compareSpatialMedians(spatmed, eig);
 		
-		popScore=new double[npop][npop][];
+		groupScore=new double[npop][npop][];
 		meanScores=new double[npop][npop];
 		for (int i=0; i<npop; i++){
 			for (int j=0; j<npop; j++){
-				popScore[i][j]=calculateDivergence(spatmed[i], byPop[j], eig);
-				meanScores[i][j]=bs.calculateMean(popScore[i][j]);
+				groupScore[i][j]=calculateDivergence(spatmed[i], byPop[j], eig);
+				meanScores[i][j]=bs.calculateMean(groupScore[i][j]);
 				
 			}
 		}
@@ -145,9 +242,9 @@ public class MultivariateDispersionTest {
 		}
 				
 		for (int i=0; i<npop; i++){
-			for (int j=0; j<popScore[i][i].length; j++){
+			for (int j=0; j<groupScore[i][i].length; j++){
 				int p=indLabels2[indLabel[i][j]];
-				indScore[i][p]+=popScore[i][i][j];
+				indScore[i][p]+=groupScore[i][i][j];
 				counter[i][p]++;
 			}
 			
@@ -171,9 +268,9 @@ public class MultivariateDispersionTest {
 		
 		for (int i=0; i<npop; i++){
 			for (int j=0; j<npop; j++){
-				for (int k=0; k<popScore[i][j].length; k++){
+				for (int k=0; k<groupScore[i][j].length; k++){
 					int p=indLabels2[indLabel[j][k]];
-					indScore2[i][j][p]+=popScore[i][j][k];
+					indScore2[i][j][p]+=groupScore[i][j][k];
 					counter2[i][j][p]++;
 				}
 			
@@ -244,16 +341,16 @@ public class MultivariateDispersionTest {
 	}
 	
 	
-	public String[] getPopNames(){
-		return popNames;
+	public String[] getNames(){
+		return names;
 	}
 	
 	public double[][][] getIndScore2(){
 		return indScore2;
 	}
 	
-	public double[][][] getPopScore(){
-		return popScore;
+	public double[][][] getGroupScore(){
+		return groupScore;
 	}
 	
 	public double[][] getClusterDev(){

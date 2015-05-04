@@ -712,6 +712,22 @@ public class GeographicComparison {
 		repertoires=reps;
 	}
 	
+	public double haversinAlgorithm(double lat1, double lon1, double lat2, double lon2){
+		double R = 6371000; // metres
+		double ph1 = Math.toRadians(lat1);
+		double ph2 = Math.toRadians(lat2);
+		double deltph = Math.toRadians(lat2-lat1);
+		double deltlam = Math.toRadians(lon2-lon1);
+
+		double a = Math.sin(deltph/2) * Math.sin(deltph/2) +
+		        Math.cos(ph1) * Math.cos(ph2) *
+		        Math.sin(deltlam/2) * Math.sin(deltlam/2);
+		double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+		double d = R * c;
+		return d;
+	}
+	
 	public double[][] calculateGeographicalDistances(){
 		int i,j, k;
 		coordinates=new double [cr.individualNumber][2];
@@ -723,15 +739,19 @@ public class GeographicComparison {
 			System.out.println(i+" "+sx1+" "+sy1);
 			if (sx1!=null){
 				try{
-					Integer xx1=Integer.parseInt(sx1.trim());
-					coordinates[i][0]=xx1.intValue()*0.001;
+					//Integer xx1=Integer.parseInt(sx1.trim());
+					Double xx1=Double.parseDouble(sx1.trim());
+					//coordinates[i][0]=xx1.intValue()*0.001;
+					coordinates[i][0]=xx1.doubleValue();
 				}
 				catch(Exception e){}
 			}
 			if (sy1!=null){
 				try{
-					Integer yy1=Integer.parseInt(sy1.trim());
-					coordinates[i][1]=yy1.intValue()*0.001;
+					//Integer yy1=Integer.parseInt(sy1.trim());
+					Double yy1=Double.parseDouble(sy1.trim());
+					//coordinates[i][1]=yy1.intValue()*0.001;
+					coordinates[i][1]=yy1.doubleValue();
 				}
 				catch(Exception e){}
 			}
@@ -740,10 +760,11 @@ public class GeographicComparison {
 		double[][] geographicalDistances=new double[cr.individualNumber][cr.individualNumber];
 		for (i=0; i<cr.individualNumber; i++){
 			for (j=0; j<i; j++){
-				for (k=0; k<2; k++){
-					geographicalDistances[i][j]+=(coordinates[i][k]-coordinates[j][k])*(coordinates[i][k]-coordinates[j][k]);
-				}
-				geographicalDistances[i][j]=1000*Math.sqrt(geographicalDistances[i][j]);
+				//for (k=0; k<2; k++){
+					//geographicalDistances[i][j]+=(coordinates[i][k]-coordinates[j][k])*(coordinates[i][k]-coordinates[j][k]);
+				//}
+				//geographicalDistances[i][j]=1000*Math.sqrt(geographicalDistances[i][j]);
+				geographicalDistances[i][j]=haversinAlgorithm(coordinates[i][0], coordinates[i][1], coordinates[j][0], coordinates[j][1]);
 			}
 		}
 		return geographicalDistances;

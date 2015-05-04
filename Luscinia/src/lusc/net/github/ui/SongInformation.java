@@ -19,6 +19,7 @@ import lusc.net.github.Defaults;
 import lusc.net.github.Song;
 import lusc.net.github.db.DataBaseController;
 import lusc.net.github.ui.db.DatabaseTree;
+import lusc.net.github.ui.db.DatabaseView;
 
 public class SongInformation extends JPanel implements ActionListener{
 	
@@ -34,6 +35,7 @@ public class SongInformation extends JPanel implements ActionListener{
 	
 	DataBaseController dbc;
 	DatabaseTree treePanel;
+	DatabaseView dv;
 	Dimension dim=new Dimension(400, 300);
 	JButton save=new JButton("Save");
 	JButton saveSound=new JButton("Export sound");
@@ -48,10 +50,11 @@ public class SongInformation extends JPanel implements ActionListener{
 	JLabel notesL=new JLabel("Notes: ");
 	JLabel dateL=new JLabel("  Recording date (dd:mm:yyyy): ");
 	JLabel timeL=new JLabel("Recording time (hh:mm:ss:mmm): ");
+	JLabel individualL=new JLabel("Individual name: ");
 	//JCheckBox typeL=new JCheckBox("Archive recording");
 	JLabel eleNumber, sylNumber;
 	
-	JTextField nameT,eleNumberT, sylNumberT, recordEquipmentT, recordistT, locationT;
+	JTextField nameT,eleNumberT, sylNumberT, recordEquipmentT, recordistT, locationT, individualT;
 	JTextArea notesT;
 	
 	JSpinner timeSpinner, dateSpinner;
@@ -63,8 +66,10 @@ public class SongInformation extends JPanel implements ActionListener{
 	Song song;
 	Defaults defaults;
 	
-	public SongInformation(DatabaseTree treePanel, DataBaseController dbc, int ID, Defaults defaults){
+	public SongInformation(DatabaseView dv, DataBaseController dbc, int ID, Defaults defaults){
 		this.treePanel=treePanel;
+		this.dv=dv;
+		this.treePanel=dv.getDBTree();
 		this.dbc=dbc;
 		this.ID=ID;
 		this.defaults=defaults;
@@ -95,6 +100,8 @@ public class SongInformation extends JPanel implements ActionListener{
 		recordistT.setColumns(15);
 		locationT=new JTextField(song.getLocation());
 		locationT.setColumns(15);
+		individualT=new JTextField(song.getIndividualName());
+		individualT.setColumns(30);
 
 		notesT=new JTextArea(song.getNotes());
 		notesT.setColumns(15);
@@ -176,6 +183,10 @@ public class SongInformation extends JPanel implements ActionListener{
 		locationPane.add(locationL, BorderLayout.LINE_START);
 		locationPane.add(locationT, BorderLayout.CENTER);
 		
+		JPanel individualPane=new JPanel(new BorderLayout());
+		individualPane.add(individualL, BorderLayout.LINE_START);
+		individualPane.add(individualT, BorderLayout.CENTER);
+		
 		contentPane.add(namePane);
 		contentPane.add(eleNumberL);
 		contentPane.add(sylNumberL);
@@ -183,6 +194,7 @@ public class SongInformation extends JPanel implements ActionListener{
 		contentPane.add(timePane);
 		contentPane.add(datePane);
 		contentPane.add(locationPane);
+		contentPane.add(individualPane);
 		contentPane.add(recEqPane);
 		contentPane.add(recPane);
 		contentPane.add(notesPane);
@@ -269,8 +281,20 @@ public class SongInformation extends JPanel implements ActionListener{
 			//song.setArchived(1);
 		//}
 		//System.out.println("CHECKARCHIVE: "+song.getArchived());
+		
+		String s=individualT.getText();
+		if (!s.equals(song.getIndividualName())){
+			
+			int p=dv.getSongLocation(s);
+			if (p>=0){
+				song.setIndividualName(s);
+				song.setIndividualID(p);
+			}
+		}
+		
 		defaults.setSongDetails(song);
 		dbc.writeSongInfo(song);
+		dv.refreshTree();
 	}
 	
 }

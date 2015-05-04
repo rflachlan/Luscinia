@@ -16,6 +16,7 @@ import lusc.net.github.analysis.clustering.SNNDensity;
 import lusc.net.github.analysis.dendrograms.Dendrogram;
 import lusc.net.github.analysis.dendrograms.UPGMA;
 import lusc.net.github.analysis.multivariate.CalculateHopkinsStatistic;
+import lusc.net.github.analysis.multivariate.MRPP;
 import lusc.net.github.analysis.multivariate.MultiDimensionalScaling;
 import lusc.net.github.analysis.multivariate.MultivariateDispersionTest;
 import lusc.net.github.analysis.syntax.EntropyAnalysis;
@@ -56,15 +57,8 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 	private static String SAVE_IMAGE = "save image";
 	private static String EXPORT = "export";	
 	
-	int ndi=5;
-	int dendrogramMode=1;
-	int syntaxMode=2;
-	int minClusterK=2;
-	int maxClusterK=10;
-	int maxSyntaxK=10;
-	int snnK=10;
-	int snnMinPts=4;
-	int snnEps=6;
+	//int ndi=5;
+	//int dendrogramMode=1;
 	double songUpperLimit=20;
 	double songLowerLimit=5;
 	double geogPropLimit=5;
@@ -72,21 +66,14 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 	//DisplayPane dsE, dsSy, dsSt, dsSo, dsInd;
 
 	
-	
-	
-	
-	
-	
-	
-	
 	int pcsUsed=2;
 	
 	int xd, yd;
 	boolean mdsNeeded;
 	
-	boolean matrixcomp, distcomp, treecomp, geogcomp, clustcomp, syntcomp, hopcomp, mdscomp, andcomp, distfunc, snncomp;
+	boolean matrixcomp, distcomp, treecomp, geogcomp, clustcomp, syntcomp, hopcomp, mdscomp, mrppcomp, andcomp, distfunc, snncomp;
 	
-	boolean popcomp=true;
+	//boolean popcomp=true;
 	
 	boolean useTransForSong=true;
 	boolean cycle=true;
@@ -98,6 +85,7 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 	SyntaxAnalysis sa;
 	DataBaseController dbc;
 	AnalysisChoose ac;
+	StatOptionPanel sop;
 	
 	Dimension d = Toolkit.getDefaultToolkit().getScreenSize();
 	Dimension dim=new Dimension(d.width-600, d.height);
@@ -117,6 +105,7 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 		this.defaults=defaults;
 		this.dbc=dbc;
 		this.ac=ac;
+		this.sop=sop;
 		
 		xd=(int)(dim.getWidth()-200);
 		yd=(int)(dim.getHeight()-200);
@@ -140,7 +129,7 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 		dtwComp=sop.dtwComp.isSelected();
 		useTransForSong=sop.useTransForSong.isSelected();
 		cycle=sop.cycle.isSelected();
-		popcomp=sop.popComp.isSelected();
+		//popcomp=sop.popComp.isSelected();
 		
 		
 		matrixcomp=sop.matrix.isSelected();
@@ -153,20 +142,8 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 		distcomp=sop.distDistribution.isSelected();
 		geogcomp=sop.geog.isSelected();
 		andcomp=sop.anderson.isSelected();
+		mrppcomp=sop.mrpp.isSelected();
 		distfunc=sop.distfunc.isSelected();
-		
-		sop.syntaxMode=sop.syntOpts.getSelectedIndex();
-		sop.dendrogramMode=sop.dendOpts.getSelectedIndex();
-		
-		ndi=sop.ndi;
-		syntaxMode=sop.syntaxMode;
-		dendrogramMode=sop.dendrogramMode;
-		minClusterK=sop.minClusterK;
-		maxClusterK=sop.maxClusterK;
-		snnK=sop.snnK;
-		snnMinPts=sop.snnMinPts;
-		snnEps=sop.snnEps;
-		maxSyntaxK=sop.maxSyntaxK;
 		
 		songUpperLimit=sop.songUpperLimit;
 		songLowerLimit=sop.songLowerLimit;
@@ -187,6 +164,8 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 		if (clustcomp){analysisSteps++;}
 		if (hopcomp){analysisSteps++;}
 		if (syntcomp){analysisSteps++;}
+		if (andcomp){analysisSteps++;}
+		if (mrppcomp){analysisSteps++;}
 		
 		analysisSteps*=analysisLevels;
 		if (syntcomp){
@@ -257,7 +236,7 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 		}
 		System.out.println("levels5: "+ levels[5]);
 		if (levels[5]){
-			sg.compressIndividuals();
+			sg.compressIndividuals(sop.bestSongIndiv.isSelected());
 			comps[5]=sg.getScores(5);
 		}
 		
@@ -273,7 +252,7 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 		if (mdsNeeded){
 			for (int i=0; i<6; i++){
 				if (levels[i]){
-					comps[i].checkMakeMDS(ndi, this);
+					comps[i].checkMakeMDS(sop.mdsOptions.numDims, this);
 				}
 			}
 		}
@@ -317,7 +296,7 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 			updateProgressLabel("calculating Hopkins:");
 			for (int i=0; i<levels.length; i++){
 				if (levels[i]){
-					CalculateHopkinsStatistic chs=new CalculateHopkinsStatistic(comps[i].getMDS().getConfiguration(), 1000, i);
+					CalculateHopkinsStatistic chs=new CalculateHopkinsStatistic(comps[i].getMDS().getConfiguration(), sop.hopkinsOptions.numRepeats, sop.hopkinsOptions.maxPicks, sop.hopkinsOptions.distSel, i);
 					progress();
 					ds.addHopkins(chs);
 				}
@@ -328,9 +307,20 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 			updateProgressLabel("calculating distance functions:");
 			for (int i=0; i<levels.length; i++){
 				if (levels[i]){
-					DistanceNeighborFunctions dnf=new DistanceNeighborFunctions(comps[i].getDissT(), i);
+					DistanceNeighborFunctions dnf=new DistanceNeighborFunctions(comps[i].getDiss(), sop.distFuncOptions, i);
 					progress();
 					ds.addDistFunc(dnf);
+				}
+			}
+		}
+		
+		if (mrppcomp){
+			updateProgressLabel("calculating mrpp");
+			for (int i=0; i<levels.length; i++){
+				if (levels[i]){
+					MRPP mrpp=new MRPP(comps[i], sop.mrppOptions, i);
+					progress();
+					ds.addMRPP(mrpp);
 				}
 			}
 		}
@@ -339,7 +329,7 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 			updateProgressLabel("calculating multivariate dispersion:");
 			for (int i=0; i<levels.length; i++){
 				if (levels[i]){
-					MultivariateDispersionTest mdt=new MultivariateDispersionTest(comps[i]);
+					MultivariateDispersionTest mdt=new MultivariateDispersionTest(comps[i], sop.andersonOptions);
 					progress();
 					ds.addAnderson(mdt);
 				}
@@ -350,15 +340,17 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 			updateProgressLabel("cluster analysis:");
 			for (int i=0; i<levels.length; i++){
 				if (levels[i]){
+					int minClusterK=sop.kMedOptions.minClusterK;
+					int maxClusterK=sop.kMedOptions.maxClusterK;
 					km[i]=new KMedoids(comps[i].getDissT(), minClusterK, maxClusterK, i, comps[i].getMDS().getSDS(), 10);
-					if ((i<3)&&(popcomp)){
-						int[] popIds=comps[i].getPopulationListArray();
-						int[] specIds=comps[i].getSpeciesListArray();
-						km[i].runMRPP(popIds,specIds, comps[i].getDissT());
-						for (int j=minClusterK; j<maxClusterK; j++){
-							CompositionAnalyzer compa=new CompositionAnalyzer(km[i], j-minClusterK, sg, j, i, comps[i].getDissT());
-						}
-					}
+					//if ((i<3)&&(popcomp)){
+						//int[] popIds=comps[i].getPopulationListArray();
+						//int[] specIds=comps[i].getSpeciesListArray();
+						//km[i].runMRPP(popIds,specIds, comps[i].getDissT());
+						//for (int j=minClusterK; j<maxClusterK; j++){
+							//CompositionAnalyzer compa=new CompositionAnalyzer(km[i], j-minClusterK, sg, j, i, comps[i].getDissT());
+						//}
+					//}
 					comps[i].setKMedoids(km[i]);
 					ds.addCluster(km[i]);
 				}
@@ -372,10 +364,10 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 			
 			for (int i=0; i<levels.length; i++){
 				if (levels[i]){
-					snn[i]=new SNNDensity(comps[i].getDissT(), snnK, snnEps, snnMinPts, i);
-					if (popcomp){
-						snn[i].runMRPP(comps[i].getPopulationListArray(), comps[i].getDissT());
-					}
+					snn[i]=new SNNDensity(comps[i].getDissT(), sop.snnOptions.snnK, sop.snnOptions.snnEps, sop.snnOptions.snnMinPts, i);
+					//if (popcomp){
+						//snn[i].runMRPP(comps[i].getPopulationListArray(), comps[i].getDissT());
+					//}
 					progress();
 					ds.addSNNCluster(snn[i]);
 					comps[i].setSNNCluster(snn[i]);
@@ -387,7 +379,7 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 			for (int i=0; i<4; i++){
 				if (levels[i]){
 					//ent[i]=new EntropyAnalysis(comps[i].getDissT(), maxSyntaxK, sg.getIndivData(4), comps[i].getLookUp(), i, syntaxMode);	
-					ent[i]=new EntropyAnalysis(comps[i], maxSyntaxK, syntaxMode);	
+					ent[i]=new EntropyAnalysis(comps[i], sop.syntOptions.maxSyntaxK, sop.syntOptions.syntaxMode);	
 					progress();
 					ds.addSyntax(ent[i]);
 					comps[i].setSyntaxCluster(ent[i]);
@@ -401,7 +393,7 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 			
 			for (int i=0; i<levels.length; i++){
 				if (levels[i]){
-					dsp[i]=new DisplaySimilarityProportions(comps[i], (int)dim.getWidth(), (int)dim.getHeight(), defaults);
+					dsp[i]=new DisplaySimilarityProportions(comps[i], (int)dim.getWidth(), (int)dim.getHeight(), defaults, sop.distDOptions);
 				}
 			}
 		}
@@ -452,10 +444,14 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 		if (treecomp) {
 			for (int i=0; i<levels.length; i++){
 				if (levels[i]){
-					String t=s[i]+" dend";
-					tabPane.addTab(t, dup[i]);
-					String u=s[i]+" dendrogram";
-					tabPane.addTab(u, denp[i]);
+					if (dup[i]!=null){
+						String t=s[i]+" dend";
+						tabPane.addTab(t, dup[i]);
+					}
+					if (denp[i]!=null){
+						String u=s[i]+" dendrogram";
+						tabPane.addTab(u, denp[i]);
+					}
 				}
 			}
 		}
@@ -508,28 +504,49 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 	}	
 	
 	public Object[] makeUPGMA(ComparisonResults cr){
+		
+		DendrogramOptions dendOpts=sop.dendOptions;
+		
 		double[] sds=cr.getMDS().getSDS();
+		
+		double[][] d=null;
+		if (dendOpts.useRaw){
+			d=cr.getDiss();
+		}
+		else{
+			d=cr.getDissT();
+		}
+		
+		int dendrogramMode=dendOpts.dendType;
 		//UPGMA upgma=new UPGMA(cr.getDissT(), dendrogramMode);
-		UPGMA upgma=new UPGMA(cr.getDiss(), dendrogramMode);
-		progress();
-		ClusterValidation cv=new ClusterValidation(dendrogramMode);
-		progress();
-		double[][] sil=cv.silhouettePValue(upgma, cr.getDissT(), sds);
-		double[] sil1=sil[0];
-		double [] sil3=cv.calculateWithinClusterDistance(upgma, cr.getDissT());
-		double[][] avsil=new double[3][];
-		avsil[0]=sil[0];
-		//avsil[1]=cv.resamplingMethod(500, upgma, input);
-		avsil[1]=sil[1];
-		avsil[2]=cv.getAverageClusterV(sil3, true, upgma);
+		UPGMA upgma;
+		ClusterValidation cv;
+		DisplayUPGMA du=null;
+		if (dendOpts.intView){
+			upgma=new UPGMA(d, dendOpts.dendType, dendOpts.beta);
+			progress();
+			cv=new ClusterValidation(dendrogramMode, dendOpts.beta);
+			progress();
+			double[][] sil=cv.silhouettePValue(upgma, d, sds);
+			double[] sil1=sil[0];
+			double [] sil3=cv.calculateWithinClusterDistance(upgma, d);
+			double[][] avsil=new double[3][];
+			avsil[0]=sil[0];
+			//avsil[1]=cv.resamplingMethod(500, upgma, input);
+			avsil[1]=sil[1];
+			avsil[2]=cv.getAverageClusterV(sil3, true, upgma);
+			du=new DisplayUPGMA(upgma, cr, sg, (int)dim.getWidth(), (int)dim.getHeight(), sil1, avsil, defaults);
+		}	
 		
-		DisplayUPGMA du=new DisplayUPGMA(upgma, cr, sg, (int)dim.getWidth(), (int)dim.getHeight(), sil1, avsil, defaults);
-		
-		Dendrogram dend=new Dendrogram(cr.getDissT(), dendrogramMode);
-		dend.calcAverages(cr.getPosition());
-		
-		progress();
-		DendrogramPanel den=new DendrogramPanel (dend, sg, cr.getType(), (int)dim.getWidth(), (int)dim.getHeight(), sil1, defaults);
+		Dendrogram dend;
+		DendrogramPanel den=null;
+		if (dendOpts.printView){
+			dend=new Dendrogram(d, dendrogramMode);
+			dend.calcAverages(cr.getPosition());
+			progress();
+			den=new DendrogramPanel (dend, sg, cr.getType(), (int)dim.getWidth(), (int)dim.getHeight(), defaults);
+		}
+
 		Object[] x={du, den};
 		return x;
 	}

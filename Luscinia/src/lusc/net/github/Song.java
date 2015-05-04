@@ -109,6 +109,7 @@ public class Song {
 	String individualName=" ";
 	String population=" "; 
 	String species=" ";
+	String gridType=" ";
 	String locationX=" "; 
 	String locationY=" ";
 	String sx, sy;
@@ -856,7 +857,25 @@ public class Song {
 	public void setIndividualID(int a){
 		individualID=a;
 	}
+	
+	/**
+	 * Gets the grid type for this song (lat/long, etc)
+	 * @return String value for grid type
+	 * @see Individual
+	 */
+	public String getGridType(){
+		return gridType;
+	}
 
+	/**
+	 * Sets the grid type for this song (lat/long, etc)
+	 * @param a String value for grid type
+	 * @see Individual
+	 */
+	public void setGridType(String a){
+		gridType=a;
+	}
+	
 	/**
 	 * Gets the location for this song in the longitude dimension
 	 * @return String value for locationX
@@ -1594,7 +1613,20 @@ public class Song {
 			s.stereo=this.stereo;
 			s.sampleRate=this.sampleRate;
 			s.frameSize=this.frameSize;
-			s.name=this.name+"_"+i;
+			String sn=this.name;
+			if (name.endsWith(".wav")){
+				sn=name.substring(0, name.length()-4);
+			}
+			if (name.endsWith(".mp3")){
+				sn=name.substring(0, name.length()-4);
+			}
+			if (name.endsWith(".aif")){
+				sn=name.substring(0, name.length()-4);
+			}
+			if (name.endsWith(".aiff")){
+				sn=name.substring(0, name.length()-5);
+			}
+			s.name=sn+"_"+(i+1);
 			s.individualID=this.individualID;
 			s.individualName=this.individualName;
 			s.tDate=this.tDate+syll[0];

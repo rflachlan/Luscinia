@@ -1644,7 +1644,7 @@ public class CompressComparisons {
 		return results;	
 	}
 	
-	public double[][] compareIndividuals(double[][] songDiffs, int[][] indIds){
+	public double[][] compareIndividuals(double[][] songDiffs, int[][] indIds, boolean av){
 		
 		
 		
@@ -1669,27 +1669,41 @@ public class CompressComparisons {
 			for (int j=0; j<i; j++){
 				if (i!=j){
 					double u=0;
+					double u2=0;
 					for (int a=0; a<indIds[i].length; a++){
 						double sc=1000000000;
+						double sc2=0;
 						for (int b=0; b<indIds[j].length; b++){
 							double t=temp[indIds[i][a]][indIds[j][b]];
 							if (t<sc){sc=t;}
+							sc2+=t;
 						}
 						u+=sc;
+						u2+=sc2/(indIds[j].length+0.0);
 					}
 					u/=indIds[i].length+0.0;
-					
+					u2/=indIds[i].length+0.0;
 					double v=0;
+					double v2=0;
 					for (int a=0; a<indIds[j].length; a++){
 						double sc=1000000000;
+						double sc2=0;
 						for (int b=0; b<indIds[i].length; b++){
 							double t=temp[indIds[j][a]][indIds[i][b]];
 							if (t<sc){sc=t;}
+							sc2+=t;
 						}
 						v+=sc;
+						v2+=sc2/(indIds[i].length+0.0);
 					}
 					v/=indIds[j].length+0.0;
-					out[i][j]=u+v;
+					v2/=indIds[j].length+0.0;
+					if (av){
+						out[i][j]=u+v;
+					}
+					else{
+						out[i][j]=u2+v2;
+					}
 					System.out.println(i+" "+j+" "+out[i][j]);
 					
 				}

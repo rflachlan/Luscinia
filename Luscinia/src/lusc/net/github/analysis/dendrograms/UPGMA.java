@@ -12,10 +12,13 @@ public class UPGMA {
 	int le;
 	double maxDist;
 	double[][] input;
+	double betaOpt=-0.25;
 	
-	public UPGMA (double[][] input, int mode){
+	public UPGMA (double[][] input, int mode, double betaOpt){
 		this.input=input;
 		this.mode=mode;
+		this.betaOpt=betaOpt;
+		
 		double E=0;
 		le=input.length;
 		int numNodes=le*2-1;
@@ -79,7 +82,7 @@ public class UPGMA {
 				gamma=0;
 			}
 			if (mode==2){
-				beta=-0.25;
+				beta=betaOpt;
 				alphap=(1-beta)*0.5;
 				alphaq=alphap;
 				gamma=0;

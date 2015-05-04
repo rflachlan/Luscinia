@@ -178,6 +178,7 @@ public class DataBaseController {
 			LinkedList<?> store2=db.populateContentPane(song.getIndividualID());
 			song.setSongID(ID);
 			song.setIndividualName((String)store2.get(0));
+			song.setGridType((String)store2.get(2));
 			song.setLocationX((String)store2.get(3));
 			song.setLocationY((String)store2.get(4));
 			song.setSpecies((String)store2.get(5));

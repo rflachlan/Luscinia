@@ -423,7 +423,7 @@ public class AnalysisChoose extends JPanel implements ActionListener, ChangeList
 			PCPaneOptions ppo=new PCPaneOptions();
 		}
 		if (DENDROGRAM_VIEW.equals(command)){
-			DendrogramOptions ddo=new DendrogramOptions();
+			DendrogramOptions ddo=new DendrogramOptions(defaults);
 		}
 	}	
 	

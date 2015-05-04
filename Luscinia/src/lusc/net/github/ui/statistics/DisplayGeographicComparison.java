@@ -45,7 +45,7 @@ public class DisplayGeographicComparison extends DisplayPane implements Property
 	double max=0;
 	double maxDist, minDist;
 	double logc=1/Math.log(10);
-	JSlider zoom1, zoom2;
+	JSlider zoom1;
 	JLabel z1Lab, z2Lab;
 	//, imLabel;
 	JPanel mainPanel=new JPanel(new BorderLayout());
@@ -364,7 +364,8 @@ public class DisplayGeographicComparison extends DisplayPane implements Property
         JSlider source = (JSlider)e.getSource();
         if (!source.getValueIsAdjusting()) {
         	int value1=(int)zoom1.getValue();
-        	int value2=(int)zoom2.getValue();
+        	int value2 = (int)((Number)numCategories.getValue()).intValue();
+        	//int value2=(int)zoom2.getValue();
         	z1Lab.setText(Integer.toString(value1));
         	//z2Lab.setText(Integer.toString(value2));
         	ci.doComparison(value1, value2);

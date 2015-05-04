@@ -18,8 +18,8 @@ import java.text.DecimalFormat;
 import java.util.*;
 
 import lusc.net.github.Defaults;
-import lusc.net.github.Song;
 import lusc.net.github.analysis.ComparisonResults;
+import lusc.net.github.ui.DistanceDistributionOptions;
 import lusc.net.github.ui.SaveDocument;
 import lusc.net.github.ui.SaveImage;
 
@@ -36,7 +36,6 @@ public class DisplaySimilarityProportions extends DisplayPane {
 	LinkedList<double[]> resultsM;
 	LinkedList<String> patternNames;
 	
-	int numcats=0;
 	double xst,yst,gw,gh;
 	int type;
 	double xunit=1;
@@ -45,14 +44,16 @@ public class DisplaySimilarityProportions extends DisplayPane {
 	double mult=1.0;
 	int fontSize=12;
 
-	public DisplaySimilarityProportions(ComparisonResults cr, int width, int height, Defaults defaults){
+	public DisplaySimilarityProportions(ComparisonResults cr, int width, int height, Defaults defaults, DistanceDistributionOptions ddo){
 		this.cr=cr;;
 		this.width=width;
 		this.height=height;
 		this.type=cr.getType();
 		this.defaults=defaults;
-		this.patternNames=patternNames;
 				
+		numCols=ddo.numCols;
+		fontSize=ddo.fontSize;
+		
 		mult=defaults.getScaleFactor();
 		
 		System.out.println(mult);
@@ -113,7 +114,6 @@ public class DisplaySimilarityProportions extends DisplayPane {
 		resultsM=new LinkedList<double[]>();
 		
 		int[] sp=new int[cats.length];
-		int nlabs=1;
 		double[] r=calculateValues(cats, sp);
 		resultsM.add(r);
 		
@@ -404,7 +404,7 @@ public class DisplaySimilarityProportions extends DisplayPane {
 		String xaxis="Dissimilarity";
 		TextLayout layout2 = new TextLayout(xaxis, font, frc);
 		Rectangle r2 = layout2.getPixelBounds(null, 0, 0);
-		layout2.draw(g, (float)(gw/2+xst), (float)(yst+gh+40*mult));
+		layout2.draw(g, (float)(gw/2+xst-r2.width), (float)(yst+gh+40*mult));
 		
 		
 		double unit=0.1;
@@ -519,7 +519,7 @@ public class DisplaySimilarityProportions extends DisplayPane {
 	}
 	
 	public void saveImage(){
-		SaveImage si=new SaveImage(imf, this, defaults);
+		new SaveImage(imf, this, defaults);
 		//si.save();
 	}
 	

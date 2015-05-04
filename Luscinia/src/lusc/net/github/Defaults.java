@@ -574,17 +574,7 @@ public class Defaults {
 	public void setAnalysisOptions(StatOptionPanel sop){
 		setBooleanArray("anatyp", sop.getAnalysisTypes());
 		setBooleanArray("analev", sop.getAnalysisLevels());
-		setBooleanArray("anamis", sop.getMiscOptions());
-		
-		setIntProperty("anandi", sop.getndi());
-		setIntProperty("anadmo", sop.getDendrogramMode());
-		setIntProperty("anasmo", sop.getSyntaxMode());
-		setIntProperty("anamxk", sop.getMaxClusterK());
-		setIntProperty("anamnk", sop.getMinClusterK());
-		setIntProperty("anasnnk", sop.getsnnK());
-		setIntProperty("anaSMPS", sop.getsnnMinPts());
-		setIntProperty("anaSEPS", sop.getsnnEps());
-		setIntProperty("anamsk", sop.getMaxSyntaxK());	
+		setBooleanArray("anamis", sop.getMiscOptions());	
 		
 		setDoubleProperty("anasoup", sop.getSongUpperLimit(), 100);
 		setDoubleProperty("anasolo", sop.getSongLowerLimit(), 100);
@@ -597,7 +587,7 @@ public class Defaults {
 	 */
 	
 	public void getAnalysisOptions(StatOptionPanel sop){
-		boolean[] results1=getBooleanArray("anatyp", 11);
+		boolean[] results1=getBooleanArray("anatyp", 12);
 		if (results1!=null){
 			sop.setAnalysisTypes(results1);
 		}
@@ -609,16 +599,6 @@ public class Defaults {
 		if (results3!=null){
 			sop.setMiscOptions(results3);
 		}
-		
-		sop.setndi(getIntProperty("anandi", 5));
-		sop.setDendrogramMode(getIntProperty("anadmo", 1));
-		sop.setSyntaxMode(getIntProperty("anasmo", 2));
-		sop.setMaxClusterK(getIntProperty("anamxk", 10));
-		sop.setMinClusterK(getIntProperty("anamnk", 2));
-		sop.setsnnK(getIntProperty("anasnnk", 20));
-		sop.setsnnMinPts(getIntProperty("anaSMPS", 10));
-		sop.setsnnEps(getIntProperty("anaSEPS", 10));
-		sop.setMaxSyntaxK(getIntProperty("anamsk", 10));
 		
 		sop.setSongUpperLimit(getDoubleProperty("anasoup", 100, 1000));
 		sop.setSongLowerLimit(getDoubleProperty("anasolo", 100, 0));

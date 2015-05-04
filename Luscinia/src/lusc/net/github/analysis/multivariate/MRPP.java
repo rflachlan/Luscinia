@@ -10,6 +10,9 @@ package lusc.net.github.analysis.multivariate;
 
 import java.util.*;
 
+import lusc.net.github.analysis.ComparisonResults;
+import lusc.net.github.ui.MRPPOptions;
+
 
 public class MRPP {
 	int n;
@@ -23,10 +26,56 @@ public class MRPP {
 	int nresamp=10000;
 	
 	double expectedDelta, empiricalDelta, pvalue, avalue;
+	int dataType=0;
+	
+	public MRPP(ComparisonResults cr, MRPPOptions mo, int type){
+		this.dataType=type;
+		
+		double[][] d=cr.getDiss();
+		
+		int[] partition=null;
+		int s=mo.levelSel;
+		if (s==0){
+			partition=cr.getSpeciesListArray();
+		}
+		else if (s==1){
+			partition=cr.getPopulationListArray();
+		}
+		else if (s==2){
+			partition=cr.getLookUpIndividuals();
+		}
+		weightingMethod=mo.weightingSel;
+		nresamp=mo.numRepeats;
+		calculateMRPP(d, partition);
+	}
 	
 	public MRPP(double[][] d, int[] partition){
+		calculateMRPP(d, partition);
+	}
+	
+	public int getType(){
+		return dataType;
+	}
+	
+	public double getEmpiricalDelta(){
+		return empiricalDelta;
+	}
+	
+	public double getExpectedDelta(){
+		return expectedDelta;
+	}
+	
+	public double getPValue(){
+		return pvalue;
+	}
+	
+	public double getAValue(){
+		return avalue;
+	}
+		
+	public void calculateMRPP(double[][] d, int[] partition){
 		n=d.length;
-
+		double numPart=0;
 		int maxPart=0;
 		for (int i=0; i<n; i++){
 			//System.out.println(partition[i]);
@@ -51,9 +100,23 @@ public class MRPP {
 					partb[t]=partition[i];
 					look[t]=i;
 					t++;
+					numPart++;
 				}
 			}
-		double t2=t;
+			double t2=t;
+			
+			if (weightingMethod==1){
+				t2-=numPart;
+			}
+			if (weightingMethod==2){
+				t2=0;
+				for (int i=0; i<maxPart; i++){
+					if (countPart[i]>0){
+						t2+=countPart[i]*(countPart[i]-1);
+					}
+				}	
+			}
+			
 		
 			dat=new double[t][];
 			for (int i=0; i<t; i++){
@@ -119,7 +182,6 @@ public class MRPP {
 				}
 			}
 		
-		
 			empiricalDelta=calculateDelta(partition, group, countPart, t, maxPart, maxGroup);
 		
 			double[] resamples=new double[nresamp];
@@ -138,10 +200,6 @@ public class MRPP {
 		
 			System.out.println("Empirical Delta: "+empiricalDelta+" Expected Delta: "+expectedDelta+" p: "+pvalue+" A: "+avalue);
 		}
-	}
-	
-	public double getPValue(){
-		return pvalue;
 	}
 	
 	public double calculateDelta(int[] partition, int[] countPart, double t, int maxPart){
@@ -165,6 +223,12 @@ public class MRPP {
 				double s=sc[i]/c[i];
 				if(weightingMethod==0){
 					r+=s*(countPart[i]/t);
+				}
+				if (weightingMethod==1){
+					r+=s*(countPart[i]-1)/t;
+				}
+				if (weightingMethod==2){
+					r+=s*(countPart[i])*(countPart[i]-1)/t;
 				}
 			}
 		}

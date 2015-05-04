@@ -12,6 +12,8 @@ import javax.swing.*;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeEvent;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.text.*;
 
 import lusc.net.github.Defaults;
@@ -21,7 +23,7 @@ import lusc.net.github.analysis.AnalysisGroup;
 import lusc.net.github.analysis.syntax.SyntaxAnalysis;
 import lusc.net.github.db.DataBaseController;
 
-public class StatOptionPanel extends JPanel implements PropertyChangeListener {
+public class StatOptionPanel extends JPanel implements PropertyChangeListener, ActionListener {
 
 	/**
 	 * 
@@ -35,6 +37,7 @@ public class StatOptionPanel extends JPanel implements PropertyChangeListener {
 	JRadioButton upgmaTree=new JRadioButton("Dendrogram", true);
 	JRadioButton nmds=new JRadioButton("Nonmetric MDS", true);
 	JRadioButton geog=new JRadioButton("Geographic analysis", false);
+	JRadioButton mrpp=new JRadioButton("MRPP", false);
 	JRadioButton anderson=new JRadioButton("Multivariate dispersion", false);
 	JRadioButton distfunc=new JRadioButton("Distance/Nearest Neighbor", false);
 	JRadioButton hopkins=new JRadioButton("Hopkins statistic", false);
@@ -54,30 +57,34 @@ public class StatOptionPanel extends JPanel implements PropertyChangeListener {
 	JRadioButton useTransForSong=new JRadioButton("Use syllable transitions for song distance", true);
 	JRadioButton cycle=new JRadioButton("Cycle at end of song: ", true);
 	JRadioButton dtwComp=new JRadioButton("Use DTW to compress songs: ", true);
-	JRadioButton popComp=new JRadioButton("Population comparison", true);
+	//JRadioButton popComp=new JRadioButton("Population comparison", true);
+	JRadioButton bestSongIndiv=new JRadioButton("Find best song matches for Individual comparisons: ", true);
 	
-	String[] syntaxOptions={"Markov Chain", "Match length", "Both"};
-	String[] dendrogramOptions={"UPGMA", "Ward's Method", "Flexible Beta (-0.25)", "Complete linkage", "Single linkage"};
-	JComboBox syntOpts=new JComboBox(syntaxOptions);
-	JComboBox dendOpts=new JComboBox(dendrogramOptions);
-	JFormattedTextField numdims, syntKs, clustKs, clustKsb, snnKF, snnMinPtsF, snnEpsF, songUpperProp, songLowerProp, geogProp;
+	JFormattedTextField songUpperProp, songLowerProp, geogProp;
 	
-	boolean[] analysisTypes=new boolean[11];
+	JButton dendOptionsButton, distDOptionsButton, mdsOptionsButton, hopkinsOptionsButton, mrppOptionsButton, andersonOptionsButton,
+		distFuncOptionsButton, kMedOptionsButton, snnOptionsButton, syntOptionsButton;
+	
+	DendrogramOptions dendOptions;
+	DistanceDistributionOptions distDOptions;
+	MDSOptions mdsOptions;
+	HopkinsOptions hopkinsOptions;
+	AndersonOptions andersonOptions;
+	MRPPOptions mrppOptions;
+	DistanceFunctionOptions distFuncOptions;
+	KMedoidsOptions kMedOptions;
+	SNNOptions snnOptions;
+	SyntaxOptions syntOptions;
+	
+	
+	boolean[] analysisTypes=new boolean[12];
 	boolean[] analysisLevels=new boolean[5];
 	boolean[] miscOptions=new boolean[4];
 	
 
 	JPanel resultsPanel;
 	
-	int ndi=5;
-	int dendrogramMode=1;
-	int syntaxMode=2;
-	int minClusterK=2;
-	int maxClusterK=10;
-	int snnK=10;
-	int snnMinPts=4;
-	int snnEps=6;
-	int maxSyntaxK=10;
+
 	double gapWeighting=0;
 	double syllRepWeighting=0;
 	double songUpperLimit=50;
@@ -89,12 +96,12 @@ public class StatOptionPanel extends JPanel implements PropertyChangeListener {
 	
 	int xd, yd;
 	boolean anacomp, anael, anasy, anast, anaso;
-	boolean sequenceAnalysis=false;
-	boolean mdlAnalysis=false;
-	boolean analyzeForward=false;
-	boolean analyzeBackward=false;
-	boolean analyzeRelative=false;
-	boolean analyzeMissTerminal2=false;
+	//boolean sequenceAnalysis=false;
+	//boolean mdlAnalysis=false;
+	//boolean analyzeForward=false;
+	//boolean analyzeBackward=false;
+	//boolean analyzeRelative=false;
+	//boolean analyzeMissTerminal2=false;
 	
 	JLabel progressLabel=new JLabel("Waiting to start");
 	//SongGroup sg;
@@ -132,20 +139,103 @@ public class StatOptionPanel extends JPanel implements PropertyChangeListener {
 		xd=(int)(dim.getWidth()-400);
 		yd=(int)(dim.getHeight()-400);
 		this.setPreferredSize(dim);
+		
+		dendOptions=new DendrogramOptions(defaults);
+		dendOptionsButton=new JButton("options");
+		dendOptionsButton.addActionListener(this);
+		
+		distDOptions=new DistanceDistributionOptions(defaults);
+		distDOptionsButton=new JButton("options");
+		distDOptionsButton.addActionListener(this);
+		
+		mdsOptions=new MDSOptions(defaults);
+		mdsOptionsButton=new JButton("options");
+		mdsOptionsButton.addActionListener(this);
+		
+		hopkinsOptions=new HopkinsOptions(defaults);
+		hopkinsOptionsButton=new JButton("options");
+		hopkinsOptionsButton.addActionListener(this);
+		
+		mrppOptions=new MRPPOptions(defaults);
+		mrppOptionsButton=new JButton("options");
+		mrppOptionsButton.addActionListener(this);
+		
+		andersonOptions=new AndersonOptions(defaults);
+		andersonOptionsButton=new JButton("options");
+		andersonOptionsButton.addActionListener(this);
+		
+		distFuncOptions=new DistanceFunctionOptions(defaults);
+		distFuncOptionsButton=new JButton("options");
+		distFuncOptionsButton.addActionListener(this);
+		
+		kMedOptions=new KMedoidsOptions(defaults);
+		kMedOptionsButton=new JButton("options");
+		kMedOptionsButton.addActionListener(this);
+		
+		snnOptions=new SNNOptions(defaults);
+		snnOptionsButton=new JButton("options");
+		snnOptionsButton.addActionListener(this);
+		
+		syntOptions=new SyntaxOptions(defaults);
+		syntOptionsButton=new JButton("options");
+		syntOptionsButton.addActionListener(this);
+		
 		JPanel optionsettings=new JPanel();
 		optionsettings.setLayout(new GridLayout(0,1));
 		optionsettings.add(matrix);
-		optionsettings.add(distDistribution);
-		optionsettings.add(upgmaTree);
-		optionsettings.add(nmds);
+		
+		JPanel distDPanel=new JPanel(new BorderLayout());
+		distDPanel.add(distDistribution, BorderLayout.WEST);
+		distDPanel.add(distDOptionsButton, BorderLayout.EAST);
+		optionsettings.add(distDPanel);
+		
+		JPanel dendPanel=new JPanel(new BorderLayout());
+		dendPanel.add(upgmaTree, BorderLayout.WEST);
+		dendPanel.add(dendOptionsButton, BorderLayout.EAST);
+		optionsettings.add(dendPanel);
+		
+		JPanel mdsPanel=new JPanel(new BorderLayout());
+		mdsPanel.add(nmds, BorderLayout.WEST);
+		mdsPanel.add(mdsOptionsButton, BorderLayout.EAST);
+		optionsettings.add(mdsPanel);
+		
 		optionsettings.add(geog);
 		
-		optionsettings.add(hopkins);
-		optionsettings.add(anderson);
-		optionsettings.add(distfunc);
-		optionsettings.add(cluster);
-		optionsettings.add(snn);
-		optionsettings.add(syntaxCluster);
+		
+		JPanel hopkinsPanel=new JPanel(new BorderLayout());
+		hopkinsPanel.add(hopkins, BorderLayout.WEST);
+		hopkinsPanel.add(hopkinsOptionsButton, BorderLayout.EAST);
+		optionsettings.add(hopkinsPanel);
+		
+		JPanel mrppPanel=new JPanel(new BorderLayout());
+		mrppPanel.add(mrpp, BorderLayout.WEST);
+		mrppPanel.add(mrppOptionsButton, BorderLayout.EAST);
+		optionsettings.add(mrppPanel);
+		
+		JPanel andersonPanel=new JPanel(new BorderLayout());
+		andersonPanel.add(anderson, BorderLayout.WEST);
+		andersonPanel.add(andersonOptionsButton, BorderLayout.EAST);
+		optionsettings.add(andersonPanel);
+		
+		JPanel dfuncPanel=new JPanel(new BorderLayout());
+		dfuncPanel.add(distfunc, BorderLayout.WEST);
+		dfuncPanel.add(distFuncOptionsButton, BorderLayout.EAST);
+		optionsettings.add(dfuncPanel);
+		
+		JPanel clusterPanel=new JPanel(new BorderLayout());
+		clusterPanel.add(cluster, BorderLayout.WEST);
+		clusterPanel.add(kMedOptionsButton, BorderLayout.EAST);
+		optionsettings.add(clusterPanel);
+		
+		JPanel snnPanel=new JPanel(new BorderLayout());
+		snnPanel.add(snn, BorderLayout.WEST);
+		snnPanel.add(snnOptionsButton, BorderLayout.EAST);
+		optionsettings.add(snnPanel);
+		
+		JPanel syntPanel=new JPanel(new BorderLayout());
+		syntPanel.add(syntaxCluster, BorderLayout.WEST);
+		syntPanel.add(syntOptionsButton, BorderLayout.EAST);
+		optionsettings.add(syntPanel);
 		
 		matrix.setSelected(analysisTypes[0]);
 		distDistribution.setSelected(analysisTypes[1]);
@@ -158,7 +248,8 @@ public class StatOptionPanel extends JPanel implements PropertyChangeListener {
 		cluster.setSelected(analysisTypes[6]);
 		snn.setSelected(analysisTypes[10]);
 		syntaxCluster.setSelected(analysisTypes[7]);
-				
+		mrpp.setSelected(analysisTypes[11]);
+		
 		JPanel opane=new JPanel();
 		opane.setLayout(new BorderLayout());
 		opane.setBorder(BorderFactory.createTitledBorder("Types of analysis"));
@@ -187,89 +278,6 @@ public class StatOptionPanel extends JPanel implements PropertyChangeListener {
 		JPanel variablesPanel=new JPanel(new GridLayout(0,1));
 		variablesPanel.setBorder(BorderFactory.createTitledBorder("Analysis variables"));
 		
-		JPanel ndpan=new JPanel(new BorderLayout());
-		JLabel numdimlab=new JLabel("Number of dimensions for NMDS: ");
-		ndpan.add(numdimlab, BorderLayout.WEST);
-		numdims=new JFormattedTextField(num);
-		numdims.setColumns(6);
-		numdims.addPropertyChangeListener("value", this);
-		numdims.setValue(new Integer(ndi));
-		ndpan.add(numdims, BorderLayout.CENTER);
-		
-		JPanel kcpana=new JPanel(new BorderLayout());
-		JLabel kclab=new JLabel("      Maximum K-medoid clusters: ");
-		kcpana.add(kclab, BorderLayout.WEST);
-		clustKs=new JFormattedTextField(num);
-		clustKs.setColumns(6);
-		clustKs.addPropertyChangeListener("value", this);
-		clustKs.setValue(new Integer(maxClusterK));
-		kcpana.add(clustKs, BorderLayout.CENTER);
-		
-		JPanel kcpanb=new JPanel(new BorderLayout());
-		JLabel kclabb=new JLabel("      Minimum K-medoid clusters: ");
-		kcpanb.add(kclabb, BorderLayout.WEST);
-		clustKsb=new JFormattedTextField(num);
-		clustKsb.setColumns(6);
-		clustKsb.addPropertyChangeListener("value", this);
-		clustKsb.setValue(new Integer(minClusterK));
-		kcpanb.add(clustKsb, BorderLayout.CENTER);
-		
-		JPanel kcpan=new JPanel(new BorderLayout());
-		kcpan.add(kcpana, BorderLayout.WEST);
-		kcpan.add(kcpanb, BorderLayout.EAST);
-		
-		JPanel snnpana=new JPanel(new BorderLayout());
-		JLabel snnlab=new JLabel("SNN k: ");
-		snnpana.add(snnlab, BorderLayout.WEST);
-		snnKF=new JFormattedTextField(num);
-		snnKF.setColumns(6);
-		snnKF.addPropertyChangeListener("value", this);
-		snnKF.setValue(new Integer(snnK));
-		snnpana.add(snnKF, BorderLayout.CENTER);
-		
-		JPanel snnpanb=new JPanel(new BorderLayout());
-		JLabel snnlabb=new JLabel("SNN MinPts: ");
-		snnpanb.add(snnlabb, BorderLayout.WEST);
-		snnMinPtsF=new JFormattedTextField(num);
-		snnMinPtsF.setColumns(6);
-		snnMinPtsF.addPropertyChangeListener("value", this);
-		snnMinPtsF.setValue(new Integer(snnMinPts));
-		snnpanb.add(snnMinPtsF, BorderLayout.CENTER);
-		
-		JPanel snnpanc=new JPanel(new BorderLayout());
-		JLabel snnlabc=new JLabel("SNN EPS: ");
-		snnpanc.add(snnlabc, BorderLayout.WEST);
-		snnEpsF=new JFormattedTextField(num);
-		snnEpsF.setColumns(6);
-		snnEpsF.addPropertyChangeListener("value", this);
-		snnEpsF.setValue(new Integer(snnEps));
-		snnpanc.add(snnEpsF, BorderLayout.CENTER);
-		
-		JPanel snnpan=new JPanel(new BorderLayout());
-		snnpan.add(snnpana, BorderLayout.WEST);
-		snnpan.add(snnpanb, BorderLayout.CENTER);
-		snnpan.add(snnpanc, BorderLayout.EAST);
-		
-		JPanel kspan=new JPanel(new BorderLayout());
-		JLabel kslab=new JLabel("        Maximum K syntax clusters: ");
-		kspan.add(kslab, BorderLayout.WEST);
-		syntKs=new JFormattedTextField(num);
-		syntKs.setColumns(6);
-		syntKs.addPropertyChangeListener("value", this);
-		syntKs.setValue(new Integer(maxSyntaxK));
-		kspan.add(syntKs, BorderLayout.CENTER);
-		
-		JPanel sypan=new JPanel(new BorderLayout());
-		JLabel sylab=new JLabel("     Syntax methods: ");
-		syntOpts.setSelectedIndex(syntaxMode);
-		sypan.add(sylab, BorderLayout.WEST);
-		sypan.add(syntOpts, BorderLayout.CENTER);
-		
-		JPanel dendpan=new JPanel(new BorderLayout());
-		JLabel dendlab=new JLabel("Dendrogram method: ");
-		dendOpts.setSelectedIndex(dendrogramMode);
-		dendpan.add(dendlab, BorderLayout.WEST);
-		dendpan.add(dendOpts, BorderLayout.CENTER);
 				
 		JPanel songPropUpperPan=new JPanel(new BorderLayout());
 		JLabel sprlab=new JLabel("Song dist. upper lim. (%): ");
@@ -296,30 +304,24 @@ public class StatOptionPanel extends JPanel implements PropertyChangeListener {
 		geogProp.setColumns(6);
 		geogProp.addPropertyChangeListener("value", this);
 		geogProp.setValue(new Double(geogPropLimit));
-		geogPropPan.add(geogProp, BorderLayout.CENTER);
-		
+		geogPropPan.add(geogProp, BorderLayout.CENTER);		
 		
 		variablesPanel.add(elementCompression);
 		variablesPanel.add(dtwComp);
 		variablesPanel.add(useTransForSong);
 		variablesPanel.add(cycle);
-		variablesPanel.add(popComp);
-		variablesPanel.add(ndpan);
-		variablesPanel.add(kcpan);
-		variablesPanel.add(snnpan);
-		variablesPanel.add(kspan);
-		variablesPanel.add(sypan);
-		variablesPanel.add(dendpan);
+		variablesPanel.add(bestSongIndiv);
+		//variablesPanel.add(popComp);
 		variablesPanel.add(songPropUpperPan);
 		variablesPanel.add(songPropLowerPan);
 		variablesPanel.add(geogPropPan);
 		
-		
 		elementCompression.setSelected(miscOptions[0]);
 		useTransForSong.setSelected(miscOptions[1]);
-		popComp.setSelected(miscOptions[2]);
+		//popComp.setSelected(miscOptions[2]);
 		cycle.setSelected(miscOptions[3]);
 		dtwComp.setSelected(miscOptions[4]);
+		bestSongIndiv.setSelected(miscOptions[2]);
 		
 		JPanel hpane=new JPanel();
 		hpane.setLayout(new BorderLayout());
@@ -347,42 +349,6 @@ public class StatOptionPanel extends JPanel implements PropertyChangeListener {
 		return miscOptions;
 	}
 	
-	public int getndi(){
-		return ndi;
-	}
-	
-	public int getDendrogramMode(){
-		return dendrogramMode;
-	}
-	
-	public int getSyntaxMode(){
-		return syntaxMode;
-	}
-	
-	public int getMaxClusterK(){
-		return maxClusterK;
-	}
-	
-	public int getMinClusterK(){
-		return minClusterK;
-	}
-	
-	public int getsnnK(){
-		return snnK;
-	}
-	
-	public int getsnnMinPts(){
-		return snnMinPts;
-	}
-	
-	public int getsnnEps(){
-		return snnEps;
-	}
-	
-	public int getMaxSyntaxK(){
-		return maxSyntaxK;
-	}
-	
 	public double getSongUpperLimit(){
 		return songUpperLimit;
 	}
@@ -405,42 +371,6 @@ public class StatOptionPanel extends JPanel implements PropertyChangeListener {
 	
 	public void setMiscOptions(boolean[] a){
 		miscOptions=a;
-	}
-	
-	public void setndi(int a){
-		ndi=a;
-	}
-	
-	public void setDendrogramMode(int a){
-		dendrogramMode=a;
-	}
-	
-	public void setSyntaxMode(int a){
-		syntaxMode=a;
-	}
-	
-	public void setMaxClusterK(int a){
-		maxClusterK=a;
-	}
-	
-	public void setMinClusterK(int a){
-		minClusterK=a;
-	}
-	
-	public void setsnnK(int a){
-		snnK=a;
-	}
-	
-	public void setsnnMinPts(int a){
-		snnMinPts=a;
-	}
-	
-	public void setsnnEps(int a){
-		snnEps=a;
-	}
-	
-	public void setMaxSyntaxK(int a){
-		maxSyntaxK=a;
 	}
 	
 	public void setSongUpperLimit(double a){
@@ -476,7 +406,7 @@ public class StatOptionPanel extends JPanel implements PropertyChangeListener {
 		
 		miscOptions[0]=elementCompression.isSelected();
 		miscOptions[1]=useTransForSong.isSelected();
-		miscOptions[2]=popComp.isSelected();
+		miscOptions[2]=bestSongIndiv.isSelected();
 		miscOptions[3]=cycle.isSelected();
 		miscOptions[4]=dtwComp.isSelected();
 		
@@ -552,50 +482,52 @@ public class StatOptionPanel extends JPanel implements PropertyChangeListener {
 		progressLabel.paintImmediately(rect);
 	}
 	
+	public void actionPerformed(ActionEvent e){
+		if (e.getSource()==dendOptionsButton){
+			JOptionPane.showMessageDialog(this, dendOptions);
+			dendOptions.wrapUp();
+		}
+		if (e.getSource()==distDOptionsButton){
+			JOptionPane.showMessageDialog(this, distDOptions);
+			distDOptions.wrapUp();
+		}
+		if (e.getSource()==mdsOptionsButton){
+			JOptionPane.showMessageDialog(this, mdsOptions);
+			mdsOptions.wrapUp();
+		}
+		if (e.getSource()==hopkinsOptionsButton){
+			JOptionPane.showMessageDialog(this, hopkinsOptions);
+			hopkinsOptions.wrapUp();
+		}
+		if (e.getSource()==mrppOptionsButton){
+			JOptionPane.showMessageDialog(this, mrppOptions);
+			mrppOptions.wrapUp();
+		}
+		if (e.getSource()==andersonOptionsButton){
+			JOptionPane.showMessageDialog(this, andersonOptions);
+			andersonOptions.wrapUp();
+		}
+		if (e.getSource()==distFuncOptionsButton){
+			JOptionPane.showMessageDialog(this, distFuncOptions);
+			distFuncOptions.wrapUp();
+		}
+		if (e.getSource()==kMedOptionsButton){
+			JOptionPane.showMessageDialog(this, kMedOptions);
+			kMedOptions.wrapUp();
+		}
+		if (e.getSource()==snnOptionsButton){
+			JOptionPane.showMessageDialog(this, snnOptions);
+			snnOptions.wrapUp();
+		}	
+		if (e.getSource()==syntOptionsButton){
+			JOptionPane.showMessageDialog(this, syntOptions);
+			syntOptions.wrapUp();
+		}
+	}
 	
 	public void propertyChange(PropertyChangeEvent e) {
         Object source = e.getSource();
-		if (source==numdims){
-			ndi = (int)((Number)numdims.getValue()).intValue();
-			if (ndi>500){ndi=500;}
-			if (ndi<2){ndi=2;}
-			numdims.setValue(new Integer(ndi));
-			ac.mdsProvided=false;
-		}
-		if (source==syntKs){
-			maxSyntaxK = (int)((Number)syntKs.getValue()).intValue();
-			if (maxSyntaxK>50){maxSyntaxK=50;}
-			if (maxSyntaxK<2){maxSyntaxK=2;}
-			syntKs.setValue(new Integer(maxSyntaxK));
-		}
-		if (source==clustKs){
-			maxClusterK = (int)((Number)clustKs.getValue()).intValue();
-			//if (maxClusterK>50+minClusterK){maxClusterK=50+minClusterK;}
-			if (maxClusterK<2+minClusterK){maxClusterK=2+minClusterK;}
-			clustKs.setValue(new Integer(maxClusterK));
-		}
-		if (source==clustKsb){
-			minClusterK = (int)((Number)clustKsb.getValue()).intValue();
-			if (minClusterK>maxClusterK-2){minClusterK=maxClusterK-2;}
-			if (minClusterK<2){minClusterK=2;}
-			clustKsb.setValue(new Integer(minClusterK));
-		}
-		if (source==snnKF){
-			snnK = (int)((Number)snnKF.getValue()).intValue();
-			//if (maxClusterK>50+minClusterK){maxClusterK=50+minClusterK;}
-			if (snnK<4){snnK=4;}
-			snnKF.setValue(new Integer(snnK));
-		}
-		if (source==snnEpsF){
-			snnEps = (int)((Number)snnEpsF.getValue()).intValue();
-			//if (snnEps>=snnK){snnEps=snnK-1;}
-			snnEpsF.setValue(new Integer(snnEps));
-		}
-		if (source==snnMinPtsF){
-			snnMinPts = (int)((Number)snnMinPtsF.getValue()).intValue();
-			if (snnMinPts>=snnK){snnMinPts=snnK-1;}
-			snnMinPtsF.setValue(new Integer(snnMinPts));
-		}
+		
 		if (source==songUpperProp){
 			songUpperLimit=((Number)songUpperProp.getValue()).doubleValue();
 			if (songUpperLimit>100){songUpperLimit=100;}

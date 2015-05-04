@@ -2,6 +2,8 @@ package lusc.net.github.analysis;
 
 import java.util.*;
 
+import lusc.net.github.ui.DistanceFunctionOptions;
+
 public class DistanceNeighborFunctions {
 	
 	double[][] data;
@@ -15,9 +17,11 @@ public class DistanceNeighborFunctions {
 	int dBins=10;
 	int nBins=20;
 	
-	public DistanceNeighborFunctions(double[][] indata, int type){
+	public DistanceNeighborFunctions(double[][] indata, DistanceFunctionOptions dfo, int type){
 		this.data=indata;
 		this.type=type;
+		dBins=dfo.densityCount;
+		nBins=dfo.knn;
 		n=data.length;
 		calculateDensity();
 		calculateNNDist();

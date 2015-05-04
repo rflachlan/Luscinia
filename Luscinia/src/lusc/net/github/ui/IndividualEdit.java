@@ -45,13 +45,13 @@ public class IndividualEdit extends JPanel{
 	JLabel population=new JLabel("Population: ");
 	JLabel locDesc=new JLabel("Description of Location: ");
 	JLabel gridType=new JLabel("Grid Type: ");
-	JLabel gridx=new JLabel("Latitude:   ");
-	JLabel gridy=new JLabel("Longitude: ");
+	JLabel gridx=new JLabel("Latitude (N):   ");
+	JLabel gridy=new JLabel("Longitude (E): ");
 	
 	JTextField nameT,gridXT, gridYT, speciesT, populationT;
 	JTextArea locDescT;
 
-	String [] u={"UTM"};
+	String [] u={"Latitude/Longitude"};
 	JComboBox gridTypeT=new JComboBox(u);
 	  
 	JPanel contentPane=new JPanel();

@@ -16,15 +16,22 @@ public class CalculateHopkinsStatistic {
 	
 	Random random=new Random(System.currentTimeMillis());
 	int resamples=100;
-	String resultString[]=null;
-	double[][] results=null;
-	int[] picks={1, 2, 5, 10, 20};
+	//String resultString[]=null;
+	String resultString=null;
+	//double[][] results=null;
+	double[] results=null;
+	//int[] picks={1, 2, 5, 10, 20, 50, 100, 200, 500, 1000};
+	int pick=1;
 	double[][] silhouetteMax=null;
 	
+	int distribution=0;
 	
-	public CalculateHopkinsStatistic(double[][] data, int resamples, int type){
+	
+	public CalculateHopkinsStatistic(double[][] data, int resamples, int maxPicks, int distribution, int type){
 		this.resamples=resamples;
 		this.type=type;
+		this.pick=maxPicks;
+		this.distribution=distribution;
 		int dims=data[0].length;
 		int n=data.length;
 		
@@ -58,40 +65,55 @@ public class CalculateHopkinsStatistic {
 		//int[] picks={1, 2, 5, 10, 20, 50};
 		
 		
+		if (pick>=n-1){
+			pick=n-2;
+		}
+		
+		/*
 		for (int i=0; i<picks.length; i++){
 			if (picks[i]>=n-1){
 				picks[i]=n-2;
 			}
 		}
-		
+		*/
 				
-		double realscore[]=calculateSumNNearestNeighbour(inputData, picks);
+		//double realscore[]=calculateSumNNearestNeighbour(inputData, picks);
+		double realscore=calculateSumNNearestNeighbour(inputData, pick);
 		
 		
 		//double realscore=calculateSumNNearestNeighbour(inputData, 5);
 		//double realdensity[]=calculateDensity(inputData);
 		double[][] simData=new double[dims][n];
-		double[][] simresults=new double [picks.length][resamples];
+		//double[][] simresults=new double [picks.length][resamples];
+		double[] simresults=new double [resamples];
 		//double[][] simresults2=new double [realdensity.length][resamples];
 		//double[][]sdsim=new double[dims][resamples];
 
 
-		silhouetteMax=new double[n][resamples];
+		//silhouetteMax=new double[n][resamples];
 
 		for (int i=0; i<resamples; i++){
 			for (int j=0; j<dims; j++){
 				for (int k=0; k<n; k++){
-					simData[j][k]=random.nextGaussian()*sds[j];
+					if (distribution==0){
+						simData[j][k]=random.nextGaussian()*sds[j];
+					}
+					else if (distribution==1){
+						simData[j][k]=random.nextDouble()*sds[j];
+					}
 				}
 				//sdsim[j][i]=bs.calculateSD(simData[j], false)-sds[j];				
 			}
-			double[] score=calculateSumNNearestNeighbour(simData, inputData, picks);
-			//double score=calculateSumNNearestNeighbour(simData, 5);
+			//double[] score=calculateSumNNearestNeighbour(simData, inputData, picks);
+			//double score=calculateSumNNearestNeighbour(simData, inputData, pick);
+			double score=calculateSumNNearestNeighbour(simData, pick);
 			//double score=calculateSumNearestNeighbourGreaterThanX(simData, threshold);
 			
-			for (int j=0; j<picks.length; j++){
-				simresults[j][i]=score[j]/(score[j]+realscore[j]);
-			}
+			simresults[i]=score/(score+realscore);
+			
+			//for (int j=0; j<picks.length; j++){
+				//simresults[j][i]=score[j]/(score[j]+realscore[j]);
+			//}
 			//double [] score2=calculateDensity(simData);
 			//for (int j=0; j<simresults2.length; j++){
 			//	simresults2[j][i]=score2[j]/(score2[j]+realdensity[j]);
@@ -114,16 +136,30 @@ public class CalculateHopkinsStatistic {
 		}
 		
 		
-		for (int i=0; i<n; i++){
-			Arrays.sort(silhouetteMax[i]);
-		}
+		//for (int i=0; i<n; i++){
+			//Arrays.sort(silhouetteMax[i]);
+		//}
 		
 		//double[] meanscore=new double[picks.length];
 		//double[] sdscore=new double[picks.length];
 		//double[] upper2point5=new double[picks.length];
 		//double[] lower2point5=new double[picks.length];
-		resultString=new String[picks.length];
-		results=new double[picks.length][4];
+		//resultString=new String[picks.length];
+		resultString=new String("");
+		results=new double[4];
+		//results=new double[picks.length][4];
+		
+		double meanscore=bs.calculateMean(simresults);
+		double sdscore=bs.calculateSD(simresults, true);
+		double upper2point5=bs.calculatePercentile(simresults, 2.5, true);
+		double lower2point5=bs.calculatePercentile(simresults, 2.5, false);
+		results[0]=meanscore;
+		results[1]=sdscore;
+		results[2]=upper2point5;
+		results[3]=lower2point5;
+		resultString=pick+" MEAN: "+meanscore+ " SD: "+sdscore+" UPPER 2.5: "+upper2point5+" LOWER 2.5: "+lower2point5;
+		
+		/*
 		for (int i=0; i<picks.length; i++){	
 			double meanscore=bs.calculateMean(simresults[i]);
 			double sdscore=bs.calculateSD(simresults[i], true);
@@ -135,6 +171,7 @@ public class CalculateHopkinsStatistic {
 			results[i][3]=lower2point5;
 			resultString[i]=picks[i]+" MEAN: "+meanscore+ " SD: "+sdscore+" UPPER 2.5: "+upper2point5+" LOWER 2.5: "+lower2point5;
 		}
+		*/
 		/*for (int i=0; i<dims; i++){
 			double meansd=bs.calculateMean(sdsim[i]);
 			double sdsd=bs.calculateSD(sdsim[i], false);
@@ -156,16 +193,28 @@ public class CalculateHopkinsStatistic {
 		return resamples;
 	}
 	
-	public String[] getResultString(){
+	//public String[] getResultString(){
+		//return resultString;
+	//}
+	
+	public String getResultString(){
 		return resultString;
 	}
 	
-	public double[][] getResults(){
+	//public double[][] getResults(){
+		//return results;
+	//}
+	
+	public double[] getResults(){
 		return results;
 	}
 	
-	public int[] getPicks(){
-		return picks;
+	//public int[] getPicks(){
+		//return picks;
+	//}
+	
+	public int getPicks(){
+		return pick;
 	}
 	
 	public double[][] getSilhouetteMax(){
@@ -348,6 +397,35 @@ public class CalculateHopkinsStatistic {
 		for (int j=0; j<N.length; j++){
 			results[j]/=m+0.0;
 		}
+
+		return results;	
+	}
+	
+	public double calculateSumNNearestNeighbour(double[][] data1, double[][] data2, int N){
+		
+		double suma=0;
+		double a;
+		int n=data1.length; 
+		int m=data1[0].length;
+		
+		double[] holder=new double[m];
+		double results=0;
+		int N2=N-1; // have to take 1 off because first nearest neighbour is at position 0 in the matrix
+		for (int i=0; i<m; i++){
+			for (int j=0; j<m; j++){
+				suma=0;
+				for (int k=0; k<n; k++){
+					a=data1[k][i]-data2[k][j];
+					suma+=a*a;
+				}	
+				holder[j]=suma;
+			}
+			Arrays.sort(holder);
+			results+=Math.sqrt(holder[N2]);	
+		}
+		
+		results/=m+0.0;
+
 
 		return results;	
 	}

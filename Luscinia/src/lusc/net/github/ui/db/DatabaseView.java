@@ -110,6 +110,10 @@ public class DatabaseView extends TabType implements ActionListener {
     	return dbc;
     }
     
+    public DatabaseTree getDBTree(){
+    	return treePanel;
+    }
+    
     public void refreshTree(){
     	this.remove(treePanel);
     	treePanel = new DatabaseTree(this, dbc.getDBName());
@@ -415,7 +419,7 @@ public class DatabaseView extends TabType implements ActionListener {
 	}
 	
 	public void showInformationSong(){
-		SongInformation si=new SongInformation(treePanel, dbc, treePanel.selnode[0].dex, defaults);
+		SongInformation si=new SongInformation(this, dbc, treePanel.selnode[0].dex, defaults);
 		informationPanel.removeAll();
 		informationPanel.add(si);
 		informationPanel.validate();
@@ -430,6 +434,18 @@ public class DatabaseView extends TabType implements ActionListener {
 		informationPanel.revalidate();
 		this.repaint();
 		System.out.println("HERE3");
+	}
+	
+	public int getSongLocation(String s){
+		int p=-1;
+		for (int i=0; i<tstore.size(); i++){
+			String[] x=(String[])tstore.get(i);
+			if (x[0].equals(s)){
+				p=myIntV(x[1]);
+				
+			}
+		}		
+		return p;
 	}
 	
 	    

@@ -686,9 +686,9 @@ public class AnalysisGroup {
 	/**
 	 * This function constructs individual comparisons, based on song comparisons
 	 */
-	public void compressIndividuals(){
+	public void compressIndividuals(boolean a){
 		CompressComparisons cc=new CompressComparisons();
-		double[][] b=cc.compareIndividuals(scoresSong.getDiss(), scoresSong.getIndividuals());
+		double[][] b=cc.compareIndividuals(scoresSong.getDiss(), scoresSong.getIndividuals(), a);
 		scoresInd=new ComparisonResults(songs, b, 5);
 	}
 	

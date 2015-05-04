@@ -54,7 +54,87 @@ public class Individual {
 		yco=(String)list.get(4);
 		species=(String)list.get(5);
 		population=(String)list.get(6);
+		
+		if (!xco.equals("")){
+			//fixLatLong(26, "N");
+		}
+		
 		list=null;
+	}
+	
+	void fixLatLong(int zone, String dir){
+		
+		double e=0.081819191;
+		double b=6356752.314;
+		double a=6378137;
+		double eisq=0.006739497;
+		double k0=0.9996;
+		
+		double mucor=a*(1-(e*e*0.25)-(0.046875*e*e*e*e)-(0.01953125*e*e*e*e*e*e));
+		double ei=(1-Math.sqrt(1-e*e))/(1+Math.sqrt(1-e*e));
+		double c1=1.5*ei-(27/32.0)*ei*ei*ei;
+		double c2=(21/16.0)*ei*ei-(55/32.0)*ei*ei*ei*ei;
+		double c3=(151/96.0)*ei*ei*ei;
+		double c4=(1097/512.0)*ei*ei*ei*ei;
+		
+		
+		
+		Double xx1=Double.parseDouble(xco.trim());
+		//coordinates[i][0]=xx1.intValue()*0.001;
+		double lat=xx1.doubleValue();
+		
+		Double yy1=Double.parseDouble(yco.trim());
+		//coordinates[i][0]=xx1.intValue()*0.001;
+		double lon=yy1.doubleValue();
+		lon-=zone*1000000;
+		
+		if ((xx1>100000)&&(yy1>100000)){
+		
+			double latcor=lat;
+			if (!dir.equals("N")){
+				latcor=lat-10000000;
+			}
+			double epr=500000-lon;
+			double arclength=lat/k0;
+			double mu=arclength/mucor;
+			double phi=mu+c1*Math.sin(2*mu)+c2*Math.sin(4*mu)+c3*Math.sin(6*mu)+c4*Math.sin(8*mu);
+			double C1=eisq*Math.cos(phi)*Math.cos(phi);
+			double T1=Math.tan(phi);
+			T1*=T1;
+			double N1=a/Math.sqrt(1-Math.pow(e*Math.sin(phi), 2));
+			double R1=a*(1-e*e)/Math.pow(1-Math.pow(e*Math.sin(phi), 2),1.5);
+			double D=epr/(N1*k0);
+			double FACT1=N1*Math.tan(phi)/R1;
+			double FACT2=D*D*0.5;
+			double FACT3=(5+3*T1+10*C1-4*C1*C1-9*eisq)*D*D*D*D/24.0;
+			double FACT4=(61+90*T1+298*C1+45*T1*T1-252*eisq-3*C1*C1)*D*D*D*D*D*D/720.0;
+			double LoFACT1=D;
+			double LoFACT2=(1+2*T1+C1)*D*D*D/6.0;
+			double LoFACT3=(5-2*C1+28*T1-3*C1*C1+8*eisq+24*T1*T1)*D*D*D*D*D/120.0;
+			double DeltaLong=(LoFACT1-LoFACT2+LoFACT3)/Math.cos(phi);
+			double ZoneCM=6*zone-183;
+			double rawlat=180*(phi-FACT1*(FACT2+FACT3+FACT4))/Math.PI;
+			if (!dir.equals("N")){
+				rawlat=0-rawlat;
+			}
+			double rawlong=ZoneCM-DeltaLong*180/Math.PI;
+		
+			//System.out.println("arclength: "+arclength);
+			//System.out.println("mu: "+mu);
+			//System.out.println("phi: "+phi);
+			//System.out.println("C1: "+C1);
+			//System.out.println("T1: "+T1);
+			//System.out.println("N1: "+N1);
+			//System.out.println("R1: "+R1);
+			//System.out.println("D: "+D);
+			//System.out.println("DeltaLong: "+DeltaLong);
+			//System.out.println("ZoneCM: "+ZoneCM);
+
+			xco=new String(rawlat+"");
+			yco=new String(rawlong+"");
+		}
+		
+		
 	}
 	
 	/**

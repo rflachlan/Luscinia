@@ -1410,6 +1410,8 @@ public class DbConnection {
 		writeToDataBase(query);
 		query="UPDATE songdata SET Recorder='"+song.getRecordist()+"'" +w;
 		writeToDataBase(query);
+		query="UPDATE songdata SET IndividualID='"+song.getIndividualID()+"'" +w;
+		writeToDataBase(query);
 		//query="UPDATE songdata SET Archived='"+song.getArchived()+"'" +w;
 		//writeToDataBase(query);
 		query="UPDATE songdata SET Name='"+song.getName()+"'" +w;

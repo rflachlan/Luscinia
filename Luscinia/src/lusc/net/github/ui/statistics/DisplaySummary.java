@@ -9,13 +9,7 @@ package lusc.net.github.ui.statistics;
 
 
 import javax.swing.*;
-import javax.swing.border.Border;
-import javax.swing.event.*;
-
 import java.awt.*;
-import java.awt.event.*;
-import java.awt.image.*;
-import java.io.*;
 import java.util.*;
 import java.text.*;
 
@@ -24,6 +18,7 @@ import lusc.net.github.analysis.DistanceNeighborFunctions;
 import lusc.net.github.analysis.clustering.KMedoids;
 import lusc.net.github.analysis.clustering.SNNDensity;
 import lusc.net.github.analysis.multivariate.CalculateHopkinsStatistic;
+import lusc.net.github.analysis.multivariate.MRPP;
 import lusc.net.github.analysis.multivariate.MultivariateDispersionTest;
 import lusc.net.github.analysis.syntax.EntropyAnalysis;
 import lusc.net.github.analysis.syntax.MarkovChain;
@@ -33,6 +28,10 @@ import lusc.net.github.ui.SaveDocument;
 
 public class DisplaySummary  extends DisplayPane {
 	
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 5452616185703704872L;
 	Dimension dim=new Dimension(600, 400);
 	JPanel messagePanel=new JPanel();
 	Font font=new Font("Sans-Serif", Font.PLAIN, 9);
@@ -40,15 +39,17 @@ public class DisplaySummary  extends DisplayPane {
 	JTextArea texter=new JTextArea();
 	
 	String returner=System.getProperty("line.separator");
+	String[] levels={"Elements", "Elements", "Syllables", "Transitions", "Songs", "Individuals"};
 	String tabc="\u0009";
 	
-	LinkedList cluster=new LinkedList();
-	LinkedList snncluster=new LinkedList();
-	LinkedList syntax=new LinkedList();
-	LinkedList hopkins=new LinkedList();
-	LinkedList miscellaneous=new LinkedList();
-	LinkedList anderson=new LinkedList();
-	LinkedList distfunc=new LinkedList();
+	LinkedList<KMedoids> cluster=new LinkedList<KMedoids>();
+	LinkedList<SNNDensity> snncluster=new LinkedList<SNNDensity>();
+	LinkedList<EntropyAnalysis> syntax=new LinkedList<EntropyAnalysis>();
+	LinkedList<CalculateHopkinsStatistic> hopkins=new LinkedList<CalculateHopkinsStatistic>();
+	LinkedList<String> miscellaneous=new LinkedList<String>();
+	LinkedList<MultivariateDispersionTest> anderson=new LinkedList<MultivariateDispersionTest>();
+	LinkedList<DistanceNeighborFunctions> distfunc=new LinkedList<DistanceNeighborFunctions>();
+	LinkedList<MRPP> mrppl=new LinkedList<MRPP>();
 	
 	Defaults defaults;
 	
@@ -92,24 +93,15 @@ public class DisplaySummary  extends DisplayPane {
 	
 	public void addHopkins(CalculateHopkinsStatistic chs){
 		hopkins.add(chs);
-		if (chs.getType()<2){
-			texter.append("Hopkins statistics for elements");
-		}
-		else if (chs.getType()==2){
-			texter.append("Hopkins statistics for syllables");
-		}
-		else if (chs.getType()==3){
-			texter.append("Hopkins statistics for syllable transitions");
-		}
-		else if (chs.getType()==4){
-			texter.append("Hopkins statistics for songs");
-		}
+		texter.append("Hopkins statistics for "+levels[chs.getType()]);
 		texter.append(returner);
-		String[] resultString=chs.getResultString();
-		for (int i=0; i<resultString.length; i++){
-			texter.append(resultString[i]);
-			texter.append(returner);
-		}
+		String resultString=chs.getResultString();
+		texter.append(resultString);
+		texter.append(returner);
+		//for (int i=0; i<resultString.length; i++){
+			//texter.append(resultString[i]);
+			//texter.append(returner);
+		//}
 		
 	}
 	
@@ -117,50 +109,37 @@ public class DisplaySummary  extends DisplayPane {
 		DecimalFormat df = new DecimalFormat("#.####");
 		distfunc.add(dnf);
 		int type=dnf.getType();
-		if (type<2){
-			texter.append("Densities and NN Dists for Elements");
-		}
-		else if (type==2){
-			texter.append("Densities and NN Dists for Syllables");
-		}
-		else if (type==3){
-			texter.append("Densities and NN Dists for Syllable Transitions");
-		}
-		else if (type==4){
-			texter.append("Densities and NN Dists for Songs");
-		}
+		texter.append("NN Dists for "+levels[type]);
 		texter.append(returner);
 		double[] meanNN=dnf.getMeanNN();
+		double[] densThresh=dnf.getDensityThresholds();
+		texter.append("k"+tabc+"Nearest Neighbour Distance");
+		texter.append(returner);
 		for (int i=0; i<meanNN.length; i++){
-			texter.append(meanNN[i]+tabc);
+			texter.append((i+1)+tabc+meanNN[i]);
+			texter.append(returner);
 		}
+		texter.append(returner);
+		texter.append("Densities for "+levels[type]);
+		texter.append(returner);
+		texter.append("Threshold"+tabc+"Rel. Thresh."+tabc+"Density");
 		texter.append(returner);
 		double[] meanDens=dnf.getMeanDens();
 		for (int i=0; i<meanDens.length; i++){
-			texter.append(meanDens[i]+tabc);
+			texter.append(densThresh[i]+tabc+df.format(1/(i+1.0))+tabc+meanDens[i]+tabc);
+			texter.append(returner);
 		}
-		
+		texter.append(returner);
 	}
 	
 	public void addAnderson(MultivariateDispersionTest mdt){
 		DecimalFormat df = new DecimalFormat("#.####");
 		anderson.add(mdt);
 		int type=mdt.getType();
-		if (type<2){
-			texter.append("Multivariate Dispersion Test for Elements (Anderson 1996)");
-		}
-		else if (type==2){
-			texter.append("Multivariate Dispersion Test for Syllables (Anderson 1996)");
-		}
-		else if (type==3){
-			texter.append("Multivariate Dispersion Test for Syllable Transitions (Anderson 1996)");
-		}
-		else if (type==4){
-			texter.append("Multivariate Dispersion Test for Songs (Anderson 1996)");
-		}
+		texter.append("Multivariate Dispersion Test for "+levels[type]+"  (Anderson 1996)");
 		texter.append(returner);
 		texter.append(tabc);
-		String[] popNames=mdt.getPopNames();
+		String[] popNames=mdt.getNames();
 		double[][] meanScores=mdt.getMeanScores();
 		
 		for (int i=0; i<popNames.length; i++){
@@ -311,18 +290,7 @@ public class DisplaySummary  extends DisplayPane {
 	public void addCluster(KMedoids km){
 		cluster.add(km);
 		int type=km.getType();
-		if (type<2){
-			texter.append("K-medoids statistics for elements");
-		}
-		else if (type==2){
-			texter.append("K-medoids statistics for syllables");
-		}
-		else if (type==3){
-			texter.append("K-medoids statistics for syllable transitions");
-		}
-		else if (type==4){
-			texter.append("K-medoids statistics for songs");
-		}
+		texter.append("K-medoids statistics for "+levels[type]);
 		texter.append(returner);
 		texter.append("k Global Silhouette index");
 		texter.append(returner);
@@ -337,20 +305,21 @@ public class DisplaySummary  extends DisplayPane {
 	public void addSNNCluster(SNNDensity snn){
 		snncluster.add(snn);
 		int type=snn.getType();
-		if (type<2){
-			texter.append("SNN summary for elements");
-		}
-		else if (type==2){
-			texter.append("SNN summary for syllables");
-		}
-		else if (type==3){
-			texter.append("SNN summary for syllable transitions");
-		}
-		else if (type==4){
-			texter.append("SNN summary for songs");
-		}
+		texter.append("SNN summary for "+levels[type]);
 		texter.append(returner);
 		texter.append("number of clusters: "+snn.getNumClusts());
+		texter.append(returner);
+		
+	}
+	
+	public void addMRPP(MRPP mrpp){
+		mrppl.add(mrpp);
+		int type=mrpp.getType();
+		texter.append("MRPP summary for "+levels[type]);
+		texter.append(returner);
+		texter.append("Empirical delta: "+mrpp.getEmpiricalDelta()+" Expected delta: "+mrpp.getExpectedDelta());
+		texter.append(returner);
+		texter.append("p-value: "+mrpp.getPValue()+" a-value: "+mrpp.getAValue());
 		texter.append(returner);
 		
 	}
@@ -369,18 +338,8 @@ public class DisplaySummary  extends DisplayPane {
 				sd.writeSheet("Hopkins statistics");
 				for (int i=0; i<hopkins.size(); i++){
 					CalculateHopkinsStatistic chs=(CalculateHopkinsStatistic)hopkins.get(i);
-					if (chs.getType()<2){
-						sd.writeString("Hopkins statistics for elements");
-					}
-					else if (chs.getType()==2){
-						sd.writeString("Hopkins statistics for syllables");
-					}
-					else if (chs.getType()==3){
-						sd.writeString("Hopkins statistics for syllable transitions");
-					}
-					else if (chs.getType()==4){
-						sd.writeString("Hopkins statistics for songs");
-					}
+					int type=chs.getType();
+					sd.writeString("Hopkins statistics for "+levels[type]);
 					sd.writeLine();
 					
 					sd.writeLine();
@@ -390,15 +349,13 @@ public class DisplaySummary  extends DisplayPane {
 					sd.writeString("upper 2.5%ile");
 					sd.writeString("lower 2.5%ile");
 					sd.writeLine();
-					int[] picks=chs.getPicks();
-					double[][] results=chs.getResults();
-					for (int j=0; j<picks.length; j++){
-						sd.writeInt(picks[j]);
-						for (int k=0; k<results[j].length; k++){
-							sd.writeDouble(results[j][k]);
-						}
-						sd.writeLine();
+					int picks=chs.getPicks();
+					double[] results=chs.getResults();
+					sd.writeInt(picks);
+					for (int k=0; k<results.length; k++){
+						sd.writeDouble(results[k]);
 					}
+					sd.writeLine();
 				}
 			}
 			if(distfunc.size()>0){
@@ -406,18 +363,7 @@ public class DisplaySummary  extends DisplayPane {
 				for (int i=0; i<distfunc.size(); i++){
 					DistanceNeighborFunctions dnf=(DistanceNeighborFunctions)distfunc.get(i);
 					int type=dnf.getType();
-					if (type<2){
-						sd.writeString("Densities and NN Dists for Elements");
-					}
-					else if (type==2){
-						sd.writeString("Densities and NN Dists for Syllables");
-					}
-					else if (type==3){
-						sd.writeString("Densities and NN Dists for Syllable Transitions");
-					}
-					else if (type==4){
-						sd.writeString("Densities and NN Dists for Songs");
-					}
+					sd.writeString("Densities and NN Dists for "+levels[type]);
 					sd.writeLine();
 					int n=dnf.getN();
 					int nBins=dnf.getNBins();
@@ -442,22 +388,11 @@ public class DisplaySummary  extends DisplayPane {
 				for (int i=0; i<anderson.size(); i++){
 					MultivariateDispersionTest mdt=(MultivariateDispersionTest)anderson.get(i);
 					int type=mdt.getType();
-					if (type<2){
-						sd.writeString("Multivariate Dispersion Test for Elements (Anderson 1996)");
-					}
-					else if (type==2){
-						sd.writeString("Multivariate Dispersion Test for Syllables (Anderson 1996)");
-					}
-					else if (type==3){
-						sd.writeString("Multivariate Dispersion Test for Syllable Transitions (Anderson 1996)");
-					}
-					else if (type==4){
-						sd.writeString("Multivariate Dispersion Test for Songs (Anderson 1996)");
-					}
+					sd.writeString("Multivariate Dispersion Test for "+levels[type]+"  (Anderson 1996)");
 					sd.writeLine();
 					sd.writeString(" ");
 					double[][] meanScores=mdt.getMeanScores();
-					String[] popNames=mdt.getPopNames();
+					String[] popNames=mdt.getNames();
 					
 					for (int j=0; j<meanScores.length; j++){
 						sd.writeString(popNames[j]);
@@ -498,7 +433,7 @@ public class DisplaySummary  extends DisplayPane {
 					sd.writeLine();
 					sd.writeLine();
 					int maxPerPop=0;
-					
+					/*
 					double[][][] indScore2=mdt.getIndScore2();
 					
 					for (int j=0; j<indScore2.length; j++){
@@ -520,18 +455,19 @@ public class DisplaySummary  extends DisplayPane {
 						sd.writeLine();
 					}
 					maxPerPop=0;
+					*/
 					sd.writeLine();
-					double[][][] popScore=mdt.getPopScore();
-					for (int j=0; j<popScore.length; j++){
-						for (int jj=0; jj<popScore[j].length; jj++){
-							if(popScore[j][jj].length>maxPerPop){maxPerPop=popScore[j][jj].length;}
+					double[][][] groupScore=mdt.getGroupScore();
+					for (int j=0; j<groupScore.length; j++){
+						for (int jj=0; jj<groupScore[j].length; jj++){
+							if(groupScore[j][jj].length>maxPerPop){maxPerPop=groupScore[j][jj].length;}
 						}
 					}
 					for (int j=0; j<maxPerPop; j++){
-						for (int k=0; k<popScore.length; k++){
-							for (int kk=0; kk<popScore[k].length; kk++){
-								if (popScore[k][kk].length>j){
-									sd.writeDouble(popScore[k][kk][j]);
+						for (int k=0; k<groupScore.length; k++){
+							for (int kk=0; kk<groupScore[k].length; kk++){
+								if (groupScore[k][kk].length>j){
+									sd.writeDouble(groupScore[k][kk][j]);
 								}
 								else{
 									sd.writeString(" ");
@@ -544,23 +480,13 @@ public class DisplaySummary  extends DisplayPane {
 					
 				}
 			}
+			
 			if (cluster.size()>0){
 				sd.writeSheet("Cluster statistics");
 				for (int i=0; i<cluster.size(); i++){
 					KMedoids km=(KMedoids)cluster.get(i);
 					int type=km.getType();
-					if (type<2){
-						sd.writeString("K-medoids statistics for elements");
-					}
-					else if (type==2){
-						sd.writeString("K-medoids statistics for syllables");
-					}
-					else if (type==3){
-						sd.writeString("K-medoids statistics for syllable transitions");
-					}
-					else if (type==4){
-						sd.writeString("K-medoids statistics for songs");
-					}
+					sd.writeString("K-medoids statistics for "+levels[type]);
 					sd.writeLine();
 					sd.writeString("k");
 					sd.writeString("Global Silhouette Index");
@@ -684,6 +610,28 @@ public class DisplaySummary  extends DisplayPane {
 							sd.writeLine();
 						}
 					}
+				}
+			}
+			if (mrppl.size()>0){
+				sd.writeSheet("MRPP statistics");
+				for (int i=0; i<mrppl.size(); i++){
+					MRPP mrpp=mrppl.get(i);
+					int type=mrpp.getType();
+					
+					sd.writeString("MRPP summary for "+levels[type]);
+					sd.writeLine();
+					sd.writeString("Empirical delta:");
+					sd.writeDouble(mrpp.getEmpiricalDelta());
+					sd.writeLine();
+					sd.writeString("Expected delta:");
+					sd.writeDouble(mrpp.getExpectedDelta());
+					sd.writeLine();
+					sd.writeString("p-value: ");
+					sd.writeDouble(mrpp.getPValue());
+					sd.writeLine();
+					sd.writeString("a-value: ");
+					sd.writeDouble(mrpp.getAValue());
+					sd.writeLine();	
 				}
 			}
 		}

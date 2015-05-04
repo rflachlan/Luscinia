@@ -40,7 +40,7 @@ public class VarianceClusterAnalysis {
 			
 			double[][] subdata2=createSubMatrix2(vec, i, syllPopLabels);
 			
-			UPGMA upgma=new UPGMA(subdata, 1);
+			UPGMA upgma=new UPGMA(subdata, 1, -0.25);
 			
 			int[][] partitions=upgma.getPartitionMembers();
 			
@@ -217,7 +217,7 @@ public class VarianceClusterAnalysis {
 		 */
 		
 		
-		UPGMA upgma=new UPGMA(data, 1);
+		UPGMA upgma=new UPGMA(data, 1, -0.25);
 		int[][] partitions=upgma.getPartitionMembers();
 		int[] elementLabels=new int[vec.length];
 		
