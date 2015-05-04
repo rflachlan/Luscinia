@@ -398,6 +398,7 @@ public class StatOptionPanel extends JPanel implements PropertyChangeListener, A
 		analysisTypes[7]=syntaxCluster.isSelected();
 		analysisTypes[8]=anderson.isSelected();
 		analysisTypes[9]=distfunc.isSelected();
+		analysisTypes[11]=mrpp.isSelected();
 		analysisLevels[0]=element.isSelected();
 		analysisLevels[1]=syllable.isSelected();
 		analysisLevels[2]=syllableTransition.isSelected();

@@ -9,7 +9,9 @@ package lusc.net.github.analysis.clustering;
 
 import java.util.*;
 
+import lusc.net.github.analysis.ComparisonResults;
 import lusc.net.github.analysis.multivariate.MRPP;
+import lusc.net.github.ui.KMedoidsOptions;
 
 public class KMedoids {
 	
@@ -21,9 +23,9 @@ public class KMedoids {
 	
 	int[][] overallAssignments;
 	//int[] overallPrototypes;
-	double[][] prototypeDistances, silhouettes, MRPPresults;
+	double[][] prototypeDistances, silhouettes, MRPPresults, dMat;
 	
-	double[] globalSilhouette, simulatedSilhouette;
+	double[] globalSilhouette, simulatedSilhouette, sds;
 	
 	double[] mat2;
 	int[] rowheads;
@@ -33,13 +35,34 @@ public class KMedoids {
 	Random random=new Random(System.currentTimeMillis());
 	
 	
+	public KMedoids(ComparisonResults cr, KMedoidsOptions ko){
+		this.type=cr.getType();
+		this.dMat=cr.getDiss();
+		makeMatrix2(dMat, 1);
+		this.minK=ko.minClusterK;
+		this.maxK=ko.maxClusterK;
+		this.nsims=ko.nsims;
+		this.numReseeds=ko.numReseeds;
+		this.sds=cr.getMDS().getSDS();
+		if (maxK*2>=dMat.length){
+			maxK=dMat.length/2;
+		}
+		
+		n=dMat.length;
+		if (maxK>n/2){
+			maxK=n/2;
+		}	
+	}
+	
 	
 	public KMedoids (double[][] dMat, int minK, int maxK, int type, double[] sds, int nsims){
 		this.type=0;
+		this.dMat=dMat;
 		makeMatrix2(dMat, 1);
 		this.maxK=maxK;
 		this.minK=minK;
-		this.nsims=nsims;
+		//this.nsims=nsims;
+		this.sds=sds;
 		if (maxK*2>=dMat.length){
 			maxK=dMat.length/2;
 		}
@@ -48,6 +71,12 @@ public class KMedoids {
 		if (maxK>n/2){
 			maxK=n/2;
 		}
+		calculateKMedoids();
+	}
+	
+	public void calculateKMedoids(){
+		
+		
 		
 		assignmentLength=maxK-minK+1;
 		
@@ -56,7 +85,7 @@ public class KMedoids {
 		silhouettes=new double[assignmentLength][n];
 		globalSilhouette=new double[assignmentLength];
 		simulatedSilhouette=new double[assignmentLength];
-		int ncores=Runtime.getRuntime().availableProcessors()/2;
+		int ncores=Runtime.getRuntime().availableProcessors();
 		int nr=(int)Math.ceil(numReseeds/ncores);
 		KMedoidsThread[] kmt=new KMedoidsThread[numReseeds];
 		

@@ -340,9 +340,11 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 			updateProgressLabel("cluster analysis:");
 			for (int i=0; i<levels.length; i++){
 				if (levels[i]){
-					int minClusterK=sop.kMedOptions.minClusterK;
-					int maxClusterK=sop.kMedOptions.maxClusterK;
-					km[i]=new KMedoids(comps[i].getDissT(), minClusterK, maxClusterK, i, comps[i].getMDS().getSDS(), 10);
+					//int minClusterK=sop.kMedOptions.minClusterK;
+					//int maxClusterK=sop.kMedOptions.maxClusterK;
+					//km[i]=new KMedoids(comps[i].getDissT(), minClusterK, maxClusterK, i, comps[i].getMDS().getSDS(), 10);
+					km[i]=new KMedoids(comps[i], sop.kMedOptions);
+					
 					//if ((i<3)&&(popcomp)){
 						//int[] popIds=comps[i].getPopulationListArray();
 						//int[] specIds=comps[i].getSpeciesListArray();
