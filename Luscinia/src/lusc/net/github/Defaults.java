@@ -578,7 +578,7 @@ public class Defaults {
 		
 		setDoubleProperty("anasoup", sop.getSongUpperLimit(), 100);
 		setDoubleProperty("anasolo", sop.getSongLowerLimit(), 100);
-		setDoubleProperty("anageog", sop.getGeogPropLimit(), 100);
+		//setDoubleProperty("anageog", sop.getGeogPropLimit(), 100);
 	}
 	
 	/**
@@ -602,7 +602,7 @@ public class Defaults {
 		
 		sop.setSongUpperLimit(getDoubleProperty("anasoup", 100, 1000));
 		sop.setSongLowerLimit(getDoubleProperty("anasolo", 100, 0));
-		sop.setGeogPropLimit(getDoubleProperty("anageog", 100, 5));
+		//sop.setGeogPropLimit(getDoubleProperty("anageog", 100, 5));
 	}
 						
 	/**

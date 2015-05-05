@@ -18,12 +18,23 @@ public class myNode extends DefaultMutableTreeNode{
 		this.userObject=name;
 	}
 	
+	public myNode(myNode node){
+		this.userObject=node.userObject;
+		this.individual=node.individual;
+		this.dex=node.dex;
+	}
+	
 	public int getDex(){
 		return dex;
 	}
 	
 	public void setDex(int a){
 		dex=a;
+	}
+	
+	public myNode clone(){
+		myNode node=new myNode(this);
+		return node;
 	}
 	
 }

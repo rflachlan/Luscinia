@@ -55,9 +55,9 @@ public class Individual {
 		species=(String)list.get(5);
 		population=(String)list.get(6);
 		
-		if (!xco.equals("")){
+		//if (!xco.equals("")){
 			//fixLatLong(26, "N");
-		}
+		//}
 		
 		list=null;
 	}

@@ -61,7 +61,7 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 	//int dendrogramMode=1;
 	double songUpperLimit=20;
 	double songLowerLimit=5;
-	double geogPropLimit=5;
+	//double geogPropLimit=5;
 	
 	//DisplayPane dsE, dsSy, dsSt, dsSo, dsInd;
 
@@ -147,7 +147,7 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 		
 		songUpperLimit=sop.songUpperLimit;
 		songLowerLimit=sop.songLowerLimit;
-		geogPropLimit=sop.geogPropLimit;
+		//geogPropLimit=sop.geogPropLimit;
 		
 		sop.writeDefaults();
 		

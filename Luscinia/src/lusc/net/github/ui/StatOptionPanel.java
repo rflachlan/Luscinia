@@ -60,7 +60,7 @@ public class StatOptionPanel extends JPanel implements PropertyChangeListener, A
 	//JRadioButton popComp=new JRadioButton("Population comparison", true);
 	JRadioButton bestSongIndiv=new JRadioButton("Find best song matches for Individual comparisons: ", true);
 	
-	JFormattedTextField songUpperProp, songLowerProp, geogProp;
+	JFormattedTextField songUpperProp, songLowerProp;
 	
 	JButton dendOptionsButton, distDOptionsButton, mdsOptionsButton, hopkinsOptionsButton, mrppOptionsButton, andersonOptionsButton,
 		distFuncOptionsButton, kMedOptionsButton, snnOptionsButton, syntOptionsButton;
@@ -88,9 +88,7 @@ public class StatOptionPanel extends JPanel implements PropertyChangeListener, A
 	double gapWeighting=0;
 	double syllRepWeighting=0;
 	double songUpperLimit=50;
-	double songLowerLimit=20;
-	double geogPropLimit=5;
-		
+	double songLowerLimit=20;		
 	
 	int pcsUsed=2;
 	
@@ -297,6 +295,7 @@ public class StatOptionPanel extends JPanel implements PropertyChangeListener, A
 		songLowerProp.setValue(new Double(songLowerLimit));
 		songPropLowerPan.add(songLowerProp, BorderLayout.CENTER);
 		
+		/*
 		JPanel geogPropPan=new JPanel(new BorderLayout());
 		JLabel geoglab=new JLabel("Geog. Anal. threshold (%): ");
 		geogPropPan.add(geoglab, BorderLayout.WEST);
@@ -305,6 +304,7 @@ public class StatOptionPanel extends JPanel implements PropertyChangeListener, A
 		geogProp.addPropertyChangeListener("value", this);
 		geogProp.setValue(new Double(geogPropLimit));
 		geogPropPan.add(geogProp, BorderLayout.CENTER);		
+		*/
 		
 		variablesPanel.add(elementCompression);
 		variablesPanel.add(dtwComp);
@@ -314,7 +314,7 @@ public class StatOptionPanel extends JPanel implements PropertyChangeListener, A
 		//variablesPanel.add(popComp);
 		variablesPanel.add(songPropUpperPan);
 		variablesPanel.add(songPropLowerPan);
-		variablesPanel.add(geogPropPan);
+		//variablesPanel.add(geogPropPan);
 		
 		elementCompression.setSelected(miscOptions[0]);
 		useTransForSong.setSelected(miscOptions[1]);
@@ -357,10 +357,6 @@ public class StatOptionPanel extends JPanel implements PropertyChangeListener, A
 		return songLowerLimit;
 	}
 	
-	public double getGeogPropLimit(){
-		return geogPropLimit;
-	}
-	
 	public void setAnalysisTypes(boolean[] a){
 		analysisTypes=a;
 	}
@@ -379,12 +375,7 @@ public class StatOptionPanel extends JPanel implements PropertyChangeListener, A
 	
 	public void setSongLowerLimit(double a){
 		songLowerLimit=a;
-	}
-	
-	public void setGeogPropLimit(double a){
-		geogPropLimit=a;
-	}
-		
+	}	
 	
 	public void writeDefaults(){
 		analysisTypes[0]=matrix.isSelected();
@@ -541,12 +532,14 @@ public class StatOptionPanel extends JPanel implements PropertyChangeListener, A
 			if (songUpperLimit<songLowerLimit){songLowerLimit=songUpperLimit;}
 			songLowerProp.setValue(new Double(songLowerLimit));
 		}
+		/*
 		if (source==geogProp){
 			geogPropLimit=((Number)geogProp.getValue()).doubleValue();
 			if (geogPropLimit<0){geogPropLimit=0;}
 			if (geogPropLimit>100){geogPropLimit=100;}
 			geogProp.setValue(new Double(geogPropLimit));
 		}
+		*/
 	}
 
 }

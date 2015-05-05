@@ -448,6 +448,16 @@ public class DatabaseView extends TabType implements ActionListener {
 		return p;
 	}
 	
+	public void updateIndividualAllocation(myNode node, myNode[] nodes){
+		int ID=node.dex;
+		for (int i=0; i<nodes.length; i++){
+			Song song=dbc.loadSongFromDatabase(nodes[i].dex, 0);
+			song.setIndividualID(ID);
+			dbc.writeSongInfo(song);
+		}
+		refreshTree();
+		
+	}
 	    
     public void actionPerformed(ActionEvent e) {
         String command = e.getActionCommand();
