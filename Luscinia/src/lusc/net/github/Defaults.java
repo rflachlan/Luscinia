@@ -32,7 +32,7 @@ public class Defaults {
 	public Properties props=new Properties();
 	
 	static LookAndFeel lnf;
-	int scaleFactor;
+	int scaleFactor=1;
 	JMenuBar menuBar;
 	
 	/**
@@ -750,6 +750,10 @@ public class Defaults {
 	 */
 	public void setScaleFactor(int a){
 		scaleFactor=a;
+		if (scaleFactor<1){
+			System.out.println("ERROR WITH SCALE FACTOR DEFAULTING TO 1");
+			scaleFactor=1;
+		}
 	}
 	
 	/**
