@@ -383,6 +383,11 @@ public class AnalysisChoose extends JPanel implements ActionListener, ChangeList
 			if (l1<0){
 				p=-1;
 			}
+			if (l1==0){
+				p=0;
+				System.out.println(a.getName()+" "+b.getName()+" "+p);
+			}
+			//System.out.println(a.getName()+" "+b.getName()+" "+p);
 		    return p;
 		}
 	}

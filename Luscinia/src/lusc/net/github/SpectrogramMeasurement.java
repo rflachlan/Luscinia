@@ -2987,7 +2987,7 @@ void measureFrequencyChange2a(LinkedList<double[][]> freqList, LinkedList<double
 	/**
 	 * Deprecated method to update frequency change measures
 	 */
-	public void updateChangeMeasuresX(){
+	public void updateChangeMeasures(){
 		//System.out.print(song.eleList.size()+" P ");
 		LinkedList<Element> eleList=new LinkedList<Element>();
 		for (int i=0; i<song.eleList.size(); i++){

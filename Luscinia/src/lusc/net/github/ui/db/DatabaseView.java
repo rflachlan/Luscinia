@@ -278,10 +278,13 @@ public class DatabaseView extends TabType implements ActionListener {
 		ustore=null;
 		ustore=new LinkedList();
 		ustore=dbc.loadSongDetailsFromDatabase();
-		
-		Collections.sort(ustore, new ByDate());
-		Collections.sort(ustore, new HasSylls());
-		
+		try{
+			Collections.sort(ustore, new ByDate());
+			Collections.sort(ustore, new HasSylls());
+		}
+		catch(Exception e){
+			e.printStackTrace();
+		}
 		
 		
 		System.out.println("NUM SONGS: "+ustore.size());
@@ -303,6 +306,11 @@ public class DatabaseView extends TabType implements ActionListener {
 			if (l1<0){
 				p=-1;
 			}
+			if (l1==0){
+				p=0;
+				System.out.println(a.getName()+" "+b.getName()+" "+p);
+			}
+			//System.out.println(a.getName()+" "+b.getName()+" "+p);
 		    return p;
 		}
 	}

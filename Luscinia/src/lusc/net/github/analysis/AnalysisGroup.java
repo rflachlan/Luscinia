@@ -8,8 +8,10 @@ import javax.swing.*;
 import lusc.net.github.Defaults;
 import lusc.net.github.Element;
 import lusc.net.github.Song;
+import lusc.net.github.SpectrogramMeasurement;
 import lusc.net.github.db.DataBaseController;
 import lusc.net.github.ui.SpectrogramSideBar;
+import lusc.net.github.ui.spectrogram.SpectrPane;
 
 
 /**
@@ -48,6 +50,8 @@ public class AnalysisGroup {
 	 */
 	public AnalysisGroup(Song[] songs, Defaults defaults, DataBaseController dbc){
 		this.songs=songs;
+		
+		//updateFrequencyChange();
 		
 		calculateSyllableRepetitions();
 		countEleNumber();
@@ -88,6 +92,32 @@ public class AnalysisGroup {
 		songNumber=songs.length;
 		this.defaults=defaults;
 		this.dbc=dbc;
+	}
+	
+	public void updateFrequencyChange(){
+
+		//SpectrPane sp=new SpectrPane(defaults);
+		for (int i=0; i<songs.length; i++){
+			checkAndLoadRawData(i);
+			try{
+				//System.out.println("updating: "+i+" "+songs[i].eleList.size()+" "+songs.length+" "+songs[i].individualName+" "+songs[i].name);
+				//System.out.println(songs[i].timeStep+" "+songs[i].dy);
+				//songs[i].setFFTParameters();
+				//songs[i].setFFTParameters2(songs[i].getNx());
+				//songs[i].makeMyFFT(0, songs[i].getNx());
+				
+				SpectrogramMeasurement sm=new SpectrogramMeasurement(songs[i]);
+				sm.setUp();
+				
+				sm.updateChangeMeasures();
+				dbc.writeSongMeasurements(songs[i]);
+			}
+			catch (Exception e) {
+				//System.out.println(e);
+				e.printStackTrace();
+			}
+		}
+		System.out.println("done with update?");
 	}
 	
 	/**

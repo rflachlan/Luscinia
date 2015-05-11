@@ -2893,7 +2893,7 @@ public class Song {
 		
 		//System.out.println("ECHO: "+echoRange+" "+echoRange2+" "+anx);
 		
-		double minWeight=10;
+		double minWeight=5;
 		double decayFactor=(minWeight)/(echoRange2+0.0);
 		//System.out.println(decayFactor);
 		int i,j,k;

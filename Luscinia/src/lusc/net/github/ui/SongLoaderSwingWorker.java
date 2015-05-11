@@ -112,7 +112,12 @@ public class SongLoaderSwingWorker extends SwingWorker<AnalysisGroup, Object> {
 			songs=songList.toArray(songs);
 			
 			songList=null;
-			sg=new AnalysisGroup(songs, cs.defaults, ac.dbc);
+			try{
+				sg=new AnalysisGroup(songs, cs.defaults, ac.dbc);
+			}
+			catch(Exception e){
+				e.printStackTrace();
+			}
 			System.out.println("finished");
 			if (cs.selectOneSyllable2.isSelected()){
 				sg.pickJustOneExamplePerPhrase();

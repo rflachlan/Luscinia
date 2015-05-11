@@ -41,8 +41,9 @@ public class KMedoidsOptions extends JPanel implements PropertyChangeListener{
 		kcpana.add(kclab, BorderLayout.WEST);
 		clustKs=new JFormattedTextField(num);
 		clustKs.setColumns(6);
-		clustKs.addPropertyChangeListener("value", this);
 		clustKs.setValue(new Integer(maxClusterK));
+		clustKs.addPropertyChangeListener("value", this);
+		
 		kcpana.add(clustKs, BorderLayout.CENTER);
 		
 		JPanel kcpanb=new JPanel(new BorderLayout());
@@ -50,8 +51,9 @@ public class KMedoidsOptions extends JPanel implements PropertyChangeListener{
 		kcpanb.add(kclabb, BorderLayout.WEST);
 		clustKsb=new JFormattedTextField(num);
 		clustKsb.setColumns(6);
-		clustKsb.addPropertyChangeListener("value", this);
 		clustKsb.setValue(new Integer(minClusterK));
+		clustKsb.addPropertyChangeListener("value", this);
+		
 		kcpanb.add(clustKsb, BorderLayout.CENTER);
 		
 		JPanel reseedPan=new JPanel(new BorderLayout());
@@ -59,8 +61,9 @@ public class KMedoidsOptions extends JPanel implements PropertyChangeListener{
 		reseedPan.add(reseedLab, BorderLayout.WEST);
 		reseedField=new JFormattedTextField(num);
 		reseedField.setColumns(8);
-		reseedField.addPropertyChangeListener("value", this);
 		reseedField.setValue(new Integer(numReseeds));
+		reseedField.addPropertyChangeListener("value", this);
+		
 		reseedPan.add(reseedField, BorderLayout.CENTER);
 		
 		JPanel simPan=new JPanel(new BorderLayout());
@@ -68,8 +71,9 @@ public class KMedoidsOptions extends JPanel implements PropertyChangeListener{
 		simPan.add(simLab, BorderLayout.WEST);
 		simField=new JFormattedTextField(num);
 		simField.setColumns(8);
-		simField.addPropertyChangeListener("value", this);
 		simField.setValue(new Integer(nsims));
+		simField.addPropertyChangeListener("value", this);
+		
 		simPan.add(simField, BorderLayout.CENTER);
 		
 	
@@ -104,7 +108,7 @@ public class KMedoidsOptions extends JPanel implements PropertyChangeListener{
 			if (numReseeds<1){numReseeds=1;}
 			reseedField.setValue(new Integer(numReseeds));
 		}
-		if (source==clustKsb){
+		if (source==simField){
 			nsims = (int)((Number)simField.getValue()).intValue();
 			if (nsims<1){nsims=1;}
 			simField.setValue(new Integer(nsims));

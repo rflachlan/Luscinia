@@ -137,6 +137,10 @@ public class GeographicComparison {
 		return coordinates;
 	}
 	
+	public double[][] getGeographicalDistances(){
+		return geographicalDistances;
+	}
+	
 	public int[][] getRepertoires(){
 		return repertoires;
 	}
@@ -773,7 +777,7 @@ public class GeographicComparison {
 	
 	public double[][] calculateDistanceCategories(int numCategories, double[][] distances){
 		
-		double[][] distanceCategories=new double[2][numCategories];
+		double[][] distanceCategories=new double[3][numCategories];
 		//double[] distanceAverages=new double[numCategories];
 		double[] distanceSort=new double[cr.individualNumber*(cr.individualNumber-1)/2];
 		int count=0;
@@ -786,26 +790,46 @@ public class GeographicComparison {
 		Arrays.sort(distanceSort);
 		
 		double cut=distanceSort.length/(numCategories+0.0);
-		
+		int[] xc=new int[numCategories];
 		for (int i=0; i<numCategories; i++){
 			int j=(int)Math.round((i+1)*cut-1);
 			if (j>=distanceSort.length){j=distanceSort.length-1;}
 			distanceCategories[0][i]=distanceSort[j];
-			
+			int xc1=(int)Math.round(i*cut-1);
+			xc[i]=j-xc1;
 		}
 		
 		double[] counter=new double[numCategories];
+		
+		for (int i=0; i<numCategories; i++){
+			double[] p=new double[xc[i]];
+			int pi=0;
+			
+			double t2=distanceCategories[0][i];
+			double t1=0;
+			if (i>0){t1=distanceCategories[0][i-1];}
+			
+			for (int j=0; j<distanceSort.length; j++){
+				if ((distanceSort[j]<=t2)&&(distanceSort[j]>t1)){
+					p[pi]=distanceSort[j];
+					pi++;
+				}
+			}
+			Arrays.sort(p);
+			distanceCategories[1][i]=p[(int)Math.ceil(xc[i]*0.5)];
+		}
+		
 		for (int i=0; i<distanceSort.length; i++){
 			for (int j=0; j<numCategories; j++){
 				if (distanceSort[i]<=distanceCategories[0][j]){
-					distanceCategories[1][j]+=distanceSort[i];
+					distanceCategories[2][j]+=distanceSort[i];
 					counter[j]++;
 					j=numCategories;
 				}
 			}
 		}
 		for (int i=0; i<numCategories; i++){
-			distanceCategories[1][i]/=counter[i];
+			distanceCategories[2][i]/=counter[i];
 			//System.out.println("DCATS: "+i+" "+distanceCategories[1][i]+" "+distanceCategories[0][i]);
 		}
 				
