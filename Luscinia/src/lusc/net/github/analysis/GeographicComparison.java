@@ -22,7 +22,7 @@ public class GeographicComparison {
 	double[][] distanceCategories;
 	double[][] repertoireComparison;
 	double[][] coordinates;
-	int[][] repertoires;
+	int[][] repertoires, repertoires2;
 	int dataType;
 	int numCategories=0;
 	int numTypes=0;
@@ -145,6 +145,10 @@ public class GeographicComparison {
 		return repertoires;
 	}
 	
+	public int[][] getRepertoires2(){
+		return repertoires2;
+	}
+	
 	public int[] calculateCategories(int n){
 		
 		//int[][] cats=upgma.calculateClassificationMembers(n+1);
@@ -177,8 +181,20 @@ public class GeographicComparison {
 		
 		numCategories=distcats;
 		int[] categories=calculateCategories(songcats);
+		
+		
+		
 		int[] lookUps=cr.lookUpIndividual;
+		
+		
+		
 		calculateRepertoires(categories, lookUps, cr.individualNumber);
+		
+		if (dataType<4){
+			int[][] lookUps2=cr.getLookUp();
+			calculateRepertoires2(categories, lookUps, lookUps2, cr.individualNumber);
+		}
+		
 		repertoireComparison=calculateJaccardIndex(categories, lookUps, cr.individualNumber);
 		
 		
@@ -714,6 +730,52 @@ public class GeographicComparison {
 			System.out.println(reps[i].length);
 		}
 		repertoires=reps;
+	}
+	
+	public void calculateRepertoires2(int[] songIndex, int[] lookUps, int[][] lookUps2, int ind){
+		int n=lookUps.length;
+		int[][] reps=new int[ind][];
+		int[] counts=new int[ind];
+		for (int i=0; i<n; i++){
+			counts[lookUps[i]]++;		
+			boolean matched=false;
+			for (int j=0; j<i; j++){
+				if (lookUps2[i][0]==lookUps2[j][0]){
+					matched=true;
+					j=i;
+				}
+			}
+			if (!matched){counts[lookUps[i]]++;}
+		}
+		
+		for (int i=0; i<ind; i++){
+			reps[i]=new int[counts[i]];
+			for (int j=0; j<counts[i]; j++){
+				reps[i][j]=-1;
+			}
+		}
+		
+		for (int i=0; i<n; i++){
+			int l=lookUps[i];
+			for (int j=0; j<reps[l].length; j++){
+				if(reps[l][j]==-1){
+					reps[l][j]=songIndex[i];
+					
+					boolean matched=false;
+					for (int k=i+1; k<n; k++){
+						if (lookUps2[i][0]==lookUps2[k][0]){
+							matched=true;
+							k=n;
+						}
+					}
+					if (!matched){reps[l][j+1]=-100;}
+					
+					j=reps[l].length;
+				}
+			}
+		}
+		
+		repertoires2=reps;
 	}
 	
 	public double haversinAlgorithm(double lat1, double lon1, double lat2, double lon2){

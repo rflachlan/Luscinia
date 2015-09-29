@@ -179,8 +179,9 @@ public class ElementOutput extends JPanel{
 				for (int j=0; j<a; j++){
 					Element ele=(Element)songs[i].getElement(j);
 					int syll=-1;
-					int aa=a-1;
+					
 					int[][] signal=ele.getSignal();
+					int aa=signal.length-1;
 					for (int b=0; b<songs[i].getNumSyllables(); b++){
 						int[] dat=(int[])songs[i].getSyllable(b);
 						if ((signal[0][0]>=dat[0])&&(signal[aa][0]<=dat[1])){
@@ -221,7 +222,7 @@ public class ElementOutput extends JPanel{
 								p=ele.getLength();
 							}
 							double[] meas=ele.getMeasurements(i, p);
-							for (int k=0; k<numPoints; k++){
+							for (int k=0; k<p; k++){
 								sd.writeDouble(meas[k]);
 							}
 							sd.writeLine();

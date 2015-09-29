@@ -24,7 +24,8 @@ public class DTWSwingWorker extends SwingWorker{
 	//SongGroup sg;
 	AnalysisGroup ag;
 	Defaults defaults;
-	
+	PrepareDTW pdtw;
+			
 	public DTWSwingWorker(AnalysisChoose ac, DTWPanel dtwp, AnalysisGroup ag, Defaults defaults){
 	//public DTWSwingWorker(AnalysisChoose ac, DTWPanel dtwp, SongGroup sg, Defaults defaults){
 		this.ac=ac;
@@ -41,7 +42,7 @@ public class DTWSwingWorker extends SwingWorker{
 		
 		
 	public PrepareDTW analyze(){	
-		PrepareDTW pdtw=new PrepareDTW(dtwp, ag);
+		pdtw=new PrepareDTW(dtwp, ag);
 		ag.setSyllableRepetitionWeighting(dtwp.getSyllableRepetitionWeighting());
 		ag.setStitchPunishment(dtwp.getStitchPunishment());
 		ag.setAlignmentCost(dtwp.getAlignmentCost());
@@ -110,5 +111,8 @@ public class DTWSwingWorker extends SwingWorker{
 		}
 	}
 	
+	public PrepareDTW getPDTW(){
+		return pdtw;
+	}
 
 }

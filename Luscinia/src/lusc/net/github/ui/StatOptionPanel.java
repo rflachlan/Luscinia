@@ -43,6 +43,7 @@ public class StatOptionPanel extends JPanel implements PropertyChangeListener, A
 	JRadioButton hopkins=new JRadioButton("Hopkins statistic", false);
 	JRadioButton cluster=new JRadioButton("K-Medoids clustering", false);
 	JRadioButton snn=new JRadioButton("SNN density clustering", false);
+	JRadioButton affprop=new JRadioButton("Affinity Propagation", false);
 	JRadioButton syntaxCluster=new JRadioButton("Syntactical clustering", true);
 	
 	
@@ -63,7 +64,7 @@ public class StatOptionPanel extends JPanel implements PropertyChangeListener, A
 	JFormattedTextField songUpperProp, songLowerProp;
 	
 	JButton dendOptionsButton, distDOptionsButton, mdsOptionsButton, hopkinsOptionsButton, mrppOptionsButton, andersonOptionsButton,
-		distFuncOptionsButton, kMedOptionsButton, snnOptionsButton, syntOptionsButton;
+		distFuncOptionsButton, kMedOptionsButton, snnOptionsButton, apOptionsButton, syntOptionsButton;
 	
 	DendrogramOptions dendOptions;
 	DistanceDistributionOptions distDOptions;
@@ -75,9 +76,10 @@ public class StatOptionPanel extends JPanel implements PropertyChangeListener, A
 	KMedoidsOptions kMedOptions;
 	SNNOptions snnOptions;
 	SyntaxOptions syntOptions;
+	APOptions apOptions;
 	
 	
-	boolean[] analysisTypes=new boolean[12];
+	boolean[] analysisTypes=new boolean[13];
 	boolean[] analysisLevels=new boolean[5];
 	boolean[] miscOptions=new boolean[4];
 	
@@ -174,6 +176,10 @@ public class StatOptionPanel extends JPanel implements PropertyChangeListener, A
 		snnOptionsButton=new JButton("options");
 		snnOptionsButton.addActionListener(this);
 		
+		apOptions=new APOptions(defaults);
+		apOptionsButton=new JButton("options");
+		apOptionsButton.addActionListener(this);
+		
 		syntOptions=new SyntaxOptions(defaults);
 		syntOptionsButton=new JButton("options");
 		syntOptionsButton.addActionListener(this);
@@ -230,6 +236,11 @@ public class StatOptionPanel extends JPanel implements PropertyChangeListener, A
 		snnPanel.add(snnOptionsButton, BorderLayout.EAST);
 		optionsettings.add(snnPanel);
 		
+		JPanel apPanel=new JPanel(new BorderLayout());
+		apPanel.add(affprop, BorderLayout.WEST);
+		apPanel.add(apOptionsButton, BorderLayout.EAST);
+		optionsettings.add(apPanel);
+		
 		JPanel syntPanel=new JPanel(new BorderLayout());
 		syntPanel.add(syntaxCluster, BorderLayout.WEST);
 		syntPanel.add(syntOptionsButton, BorderLayout.EAST);
@@ -247,6 +258,7 @@ public class StatOptionPanel extends JPanel implements PropertyChangeListener, A
 		snn.setSelected(analysisTypes[10]);
 		syntaxCluster.setSelected(analysisTypes[7]);
 		mrpp.setSelected(analysisTypes[11]);
+		affprop.setSelected(analysisTypes[12]);
 		
 		JPanel opane=new JPanel();
 		opane.setLayout(new BorderLayout());
@@ -390,6 +402,7 @@ public class StatOptionPanel extends JPanel implements PropertyChangeListener, A
 		analysisTypes[8]=anderson.isSelected();
 		analysisTypes[9]=distfunc.isSelected();
 		analysisTypes[11]=mrpp.isSelected();
+		analysisTypes[12]=affprop.isSelected();
 		analysisLevels[0]=element.isSelected();
 		analysisLevels[1]=syllable.isSelected();
 		analysisLevels[2]=syllableTransition.isSelected();
@@ -514,6 +527,10 @@ public class StatOptionPanel extends JPanel implements PropertyChangeListener, A
 		if (e.getSource()==syntOptionsButton){
 			JOptionPane.showMessageDialog(this, syntOptions);
 			syntOptions.wrapUp();
+		}
+		if (e.getSource()==apOptionsButton){
+			JOptionPane.showMessageDialog(this, apOptions);
+			apOptions.wrapUp();
 		}
 	}
 	

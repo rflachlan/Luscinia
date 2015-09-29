@@ -631,9 +631,7 @@ public class DatabaseView extends TabType implements ActionListener {
 					idTranslater[i][1]=dbc2.readIndividualNameFromDB(individual.getName());
 					System.out.println(idTranslater[i][0]+" "+idTranslater[i][1]);
 				}
-				
-				
-				
+			
 				int[][] songTranslater=new int[ustore.size()][2];
 				
 				for (int i=0; i<ustore.size(); i++){
@@ -653,13 +651,12 @@ public class DatabaseView extends TabType implements ActionListener {
 								j=idTranslater.length;
 							}
 						}
-						
+						System.out.println("MATCH: "+song.getIndividualID()+" "+newid);
 						File f=File.createTempFile("ltmp", "wav");
-						
+						song.setIndividualID(newid);
 						SaveSound ss=new SaveSound(song, song.getAf(), 0, song.getRDLength(), f); 
 						dbc2.writeWholeSong(song, newid, f);
-						
-						
+			
 						f.delete();
 					}
 					catch(Exception e){

@@ -707,12 +707,16 @@ public class DbConnection {
 			
 			String queryb="CREATE TABLE ";
 			String dbdetails="dbdetails (version VARCHAR, luscvers VARCHAR)";
+			String dbdetailsHSQLDB="dbdetails (version CHAR(100), luscvers CHAR(100))";
 			stmt = con.createStatement(); 
 			if (DBMODE==1){
 				stmt.executeUpdate(queryb+dbase+"."+dbdetails);
 			}
-			else{
+			else if (DBMODE==2){
 				stmt.executeUpdate(queryb+dbdetails);
+			}
+			else{
+				stmt.executeUpdate(queryb+dbdetailsHSQLDB);
 			}
 		} 
 		catch (Exception e){
@@ -1190,7 +1194,7 @@ public class DbConnection {
 	
 	public void writeSongIntoDatabase(String name, int p, File f){
 		String insertStmt = "INSERT INTO wavs (songid, filename, wav, samplerate, framesize, stereo, bigend, ssizeinbits, time, signed) values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-		System.out.println("trying to read song");
+		//System.out.println("trying to read song");
 		PreparedStatement stmt = null; 
 		ResultSet rs = null; 
 		try {
@@ -1230,7 +1234,7 @@ public class DbConnection {
 			if (afe.toString().startsWith("PCM_SIGNED")){signed=1;}
 			int ssizebits=AFStream.getFormat().getSampleSizeInBits();
 			
-			System.out.println(samplerate+" "+stereo+" "+FrameSize+" "+length+" "+afe.toString());
+			//System.out.println(samplerate+" "+stereo+" "+FrameSize+" "+length+" "+afe.toString());
 			
 			
 			stmt = con.prepareStatement(insertStmt);

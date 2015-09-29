@@ -822,6 +822,12 @@ public class PCPane extends JPanel implements MouseInputListener{
 				while(best>6){best-=6;}
 				paintIcon(best, x,y,iconSize, false, g);
 			}
+			else if (labelType==8){
+				int best=dpc.af.getAssignments()[i];
+				g.setColor(palette[best]);
+				while(best>6){best-=6;}
+				paintIcon(best, x,y,iconSize, false, g);
+			}
 		}
 		
 		//DRAW SONGLINE!

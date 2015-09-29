@@ -10,6 +10,7 @@ import java.util.*;
 
 import lusc.net.github.Defaults;
 import lusc.net.github.analysis.*;
+import lusc.net.github.analysis.clustering.AffinityPropagation;
 import lusc.net.github.analysis.clustering.ClusterValidation;
 import lusc.net.github.analysis.clustering.KMedoids;
 import lusc.net.github.analysis.clustering.SNNDensity;
@@ -49,6 +50,7 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 	KMedoids km[]=new KMedoids[6];
 	DisplaySimilarityProportions[] dsp=new DisplaySimilarityProportions[6];
 	SNNDensity[] snn=new SNNDensity[6];
+	AffinityPropagation[] ap=new AffinityPropagation[6];
 	EntropyAnalysis[] ent=new EntropyAnalysis[6];
 	DisplayPC[] dpc=new DisplayPC[6];
 	
@@ -71,7 +73,7 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 	int xd, yd;
 	boolean mdsNeeded;
 	
-	boolean matrixcomp, distcomp, treecomp, geogcomp, clustcomp, syntcomp, hopcomp, mdscomp, mrppcomp, andcomp, distfunc, snncomp;
+	boolean matrixcomp, distcomp, treecomp, geogcomp, clustcomp, syntcomp, hopcomp, mdscomp, mrppcomp, andcomp, distfunc, snncomp, affprop;
 	
 	//boolean popcomp=true;
 	
@@ -144,6 +146,7 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 		andcomp=sop.anderson.isSelected();
 		mrppcomp=sop.mrpp.isSelected();
 		distfunc=sop.distfunc.isSelected();
+		affprop=sop.affprop.isSelected();
 		
 		songUpperLimit=sop.songUpperLimit;
 		songLowerLimit=sop.songLowerLimit;
@@ -262,7 +265,7 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 			for (int i=0; i<levels.length; i++){
 				if (levels[i]){
 					//dp[i]=new DisplaySimilarity(comps[i].getDiss(), i, sg, dbc, xd, yd, defaults);
-					dp[i]=new DisplaySimilarity(comps[i], sg.getSSB(), dbc, xd, yd, defaults);
+					dp[i]=new DisplaySimilarity(comps[i], this, sg.getSSB(), dbc, xd, yd, defaults);
 					//MRPP mrpp=new MRPP(sg.scoresSyll, popId);
 				}
 			}
@@ -366,13 +369,29 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 			
 			for (int i=0; i<levels.length; i++){
 				if (levels[i]){
-					snn[i]=new SNNDensity(comps[i].getDissT(), sop.snnOptions.snnK, sop.snnOptions.snnEps, sop.snnOptions.snnMinPts, i);
+					//snn[i]=new SNNDensity(comps[i].getDissT(), sop.snnOptions.snnK, sop.snnOptions.snnEps, sop.snnOptions.snnMinPts, i);
+					snn[i]=new SNNDensity(comps[i].getDiss(), sop.snnOptions.snnK, sop.snnOptions.snnEps, sop.snnOptions.snnMinPts, i);
 					//if (popcomp){
 						//snn[i].runMRPP(comps[i].getPopulationListArray(), comps[i].getDissT());
 					//}
 					progress();
 					ds.addSNNCluster(snn[i]);
 					comps[i].setSNNCluster(snn[i]);
+				}	
+			}
+		}	
+		
+		if (affprop){
+			updateProgressLabel("AP clustering");
+			
+			for (int i=0; i<levels.length; i++){
+				if (levels[i]){
+					
+					ap[i]=new AffinityPropagation(comps[i].getDiss(), i, sop.apOptions.skk, sop.apOptions.lambda, sop.apOptions.reps);
+					
+					
+					progress();
+					comps[i].setAPCluster(ap[i]);
 				}	
 			}
 		}	
@@ -403,7 +422,7 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 		if (mdscomp){
 			for (int i=0; i<levels.length; i++){
 				if (levels[i]){
-					dpc[i]=new DisplayPC(comps[i], sg.getSSB(), km[i], ent[i], snn[i], i, (int)dim.getWidth(), (int)dim.getHeight(), defaults);
+					dpc[i]=new DisplayPC(comps[i], sg.getSSB(), km[i], ent[i], snn[i], ap[i], i, (int)dim.getWidth(), (int)dim.getHeight(), defaults);
 				}
 			}
 		}
@@ -590,6 +609,10 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 		pcs=null;
 		
 		return(out);
+	}
+	
+	public AnalysisChoose getAC(){
+		return ac;
 	}
 	
 	

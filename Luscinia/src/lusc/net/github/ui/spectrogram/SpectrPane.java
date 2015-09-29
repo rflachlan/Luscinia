@@ -227,7 +227,6 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 				viewParameters[i]=false;
 			}
 		}
-
 		if (start){restart();}
 	}
 	
@@ -357,7 +356,7 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 		majorTickMarkLength=(int)Math.round(majorTickMarkLength*ratio);
 		minorTickMarkLength=(int)Math.round(minorTickMarkLength*ratio);
 		
-		yspace=(int)Math.round(yspace*ratio);
+		//yspace=(int)Math.round(yspace*ratio);
 		xspace=(int)Math.round(xspace*ratio);
 		xspace2=(int)Math.round(xspace2*ratio);
 		
@@ -462,7 +461,7 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 		tnx=(int)Math.round(stretchX*nx);
 		ny=song.getNy();
 		tny=(int)Math.round(ny*stretchY);
-		nny=tny+yspace*3;
+		nny=tny+yspace;
 		if (compressYToFit>0){
 			tny=ny;
 			nny=tny+yspace*3;
@@ -489,6 +488,7 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 		tdy=tdy/multiplier;
 			
 		unx=(int)Math.round(tnx/stretchX);
+		System.out.println("PANEL DIMENSIONS: "+nny+" "+nnx+" "+nx+" "+ny+" "+tny+" "+tnx+" "+yspace);
 		this.setPreferredSize(new Dimension(nnx, nny));
 		this.revalidate();
 		nnx2=(int)Math.round(nnx*multiplier);
@@ -1410,7 +1410,41 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 		freqLabelFont=new Font(fontFace, axisLabelFontStyle, y);
 		eleLabelFont=new Font(fontFace, labelFontStyle, z);
 		syllLabelFont=new Font(fontFace, labelFontStyle, z);
+		
+		BufferedImage imtemp=new BufferedImage(100, 100, BufferedImage.TYPE_INT_ARGB);
+		Graphics2D h=imtemp.createGraphics();
+		FontMetrics fm=h.getFontMetrics(freqLabelFont);
+		int ma=fm.getMaxAscent();
+		int md=fm.getMaxDescent();
+		int w1=ma+md;
+		
+		String label="10000";
+		fm=h.getFontMetrics(freqAxisFont);
+		int w2=fm.stringWidth(label);
+		
+		int w3=(int)(1.5*w1+1.5*w2);
+		
+		fm=h.getFontMetrics(timeAxisFont);
+		ma=fm.getMaxAscent();
+		md=fm.getMaxDescent();
+		int h1=ma+md;
+		
+		fm=h.getFontMetrics(timeLabelFont);
+		ma=fm.getMaxAscent();
+		md=fm.getMaxDescent();
+		int h2=ma+md;
+		
+		int h3= (int)(1.5*h1+1.5*h2);
+		
+		System.out.println("Font heights: "+h3+" "+w3+" "+yspace+" "+xspace);
+		
+		yspace=h3;
+		xspace=w3;
+		
+		//restart();
+		
 		fs=new BasicStroke((float)(lineWeight*multiplier), BasicStroke.CAP_SQUARE, BasicStroke.JOIN_MITER);
+		h.dispose();
 	}
 	
 	void resetMultiplier(){
@@ -1703,8 +1737,8 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 		FontMetrics fm=h.getFontMetrics(timeAxisFont);
 		int heightSpace=fm.getMaxAscent()+tickMarkOffset;
 		
-		int begin100=(int)(100*Math.ceil((currentMinX*stretchX*multiplier)*tdx*0.01));
-		double xtick=xspace+(begin100/tdx)-(currentMinX*stretchX*multiplier);
+		int begin100=(int)(100*Math.ceil((currentMinX*stretchX)*tdx*0.01));
+		double xtick=xspace+(begin100/tdx)-(currentMinX*stretchX);
 		int xt=(int)Math.round(xtick);
 		
 		int mtl=(int)Math.round(minorTickMarkLength*multiplier);
@@ -1715,16 +1749,19 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 			mtl=yspace+tny+mtl;
 		}
 		
+		double maxX=(xspace+tnx);
+		
 		if (showMinorTimeTickMarks){
-			while (xtick<xspace+tnx){
+			while (xtick<maxX){
 				h.drawLine(xt, yspace+tny+1, xt, mtl);
-				xtick+=100/tdx;
+				xtick+=100/(multiplier*tdx);
 				xt=(int)Math.round(xtick);
 			}
 		}
 		
 		int begin500=(int)(500*Math.ceil((currentMinX*stretchX*multiplier)*tdx*0.002));
-		xtick=xspace+(multiplier*begin500/tdx)-(currentMinX*stretchX*multiplier);
+		xtick=xspace+(begin500/(multiplier*tdx))-(currentMinX*stretchX);
+		System.out.println(currentMinX+" "+begin500+" "+begin100+" "+tdx+" "+xtick);
 		xt=(int)Math.round(xtick);
 		int xm=begin500;
 		
@@ -1741,7 +1778,9 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 			mtl=yspace+tny+mtl;
 		}
 		
-		while (xtick<xspace+tnx){
+		
+		
+		while (xtick<maxX){
 			//Integer p=new Integer((int)Math.round(0.001*xm));
 			if (showTimeTickMarkLabels){
 				Double p=new Double(timeCorrector*xm);
@@ -2139,6 +2178,7 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 		xx=(int)Math.round(multiplier*im.getWidth());
 		yy=(int)Math.round(multiplier*im.getHeight());
 		
+		
 		g.drawImage(im, 0, 0, xx, yy, this);
 		AlphaComposite ac = AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1f);
 		AlphaComposite ac2 = AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.5f);
@@ -2301,6 +2341,7 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 		Graphics2D h=imf.createGraphics();
 		h.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
                 RenderingHints.VALUE_ANTIALIAS_ON);
+		System.out.println("IMF DIMS: "+nnx2+" "+nny2);
 		h.fillRect(0, 0, nnx2, nny2);
 		
 		if ((stretchX!=1)||(stretchY!=1)){

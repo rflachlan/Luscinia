@@ -965,12 +965,14 @@ public class DisplayUPGMA extends DisplayPane implements ActionListener, MouseIn
 		JRadioButton validation=new JRadioButton("Validation statistics");
 		JRadioButton repSize=new JRadioButton("Repertoire sizes");
 		JRadioButton classif=new JRadioButton("Classification stats");
+		JRadioButton central=new JRadioButton("Centrality stats");
 		
 		//optionPanel.add(choose);
 		optionPanel.add(dendro);
 		optionPanel.add(validation);
 		optionPanel.add(repSize);
 		optionPanel.add(classif);
+		optionPanel.add(central);
 		
 		int co=JOptionPane.showConfirmDialog(this, optionPanel, "Select items to save", JOptionPane.OK_CANCEL_OPTION);
 		System.out.println("CO out "+co);							
@@ -979,6 +981,7 @@ public class DisplayUPGMA extends DisplayPane implements ActionListener, MouseIn
 			boolean vOut=validation.isSelected();
 			boolean rOut=repSize.isSelected();
 			boolean cOut=classif.isSelected();
+			boolean centOut=central.isSelected();
 			
 			SaveDocument sd=new SaveDocument(this, defaults);
 			boolean readyToWrite=sd.makeFile();
@@ -1035,6 +1038,49 @@ public class DisplayUPGMA extends DisplayPane implements ActionListener, MouseIn
 						}
 						sd.writeLine();
 					}
+				}
+				if (centOut){
+					sd.writeSheet("Centrality");
+					sd.writeDouble(cutoff);
+					sd.writeLine();
+					sd.writeString("y points");
+					//sd.writeString("upgma scores");
+					sd.writeString("node children...");
+					sd.writeLine();
+			
+					int[][] cats=upgma.calculateClassificationMembers(100);
+					//float[][] scores=upgma.calculateMeanClusterDistances(100);
+			
+					double[][] dist=cr.getDiss();
+					
+					for (int i=0; i<upgma.getLength(); i++){
+						sd.writeString(names[i]);
+						
+				
+						for	(j=1; j<cats[i].length; j++){
+							double p=0;
+							double q=0;
+							for (int k=0; k<upgma.getLength(); k++){
+								if (cats[i][j]==cats[k][j]){
+									if (i<k){
+										p+=dist[k][i];
+										q++;
+									}
+									if (i>k){
+										p+=dist[i][k];
+										q++;
+									}
+								}
+							}
+							if (q==0){q=1;}
+							sd.writeDouble(p/q);
+						}
+
+						sd.writeLine();
+					}
+					
+					
+					
 				}
 				if (rawOut){
 					sd.writeSheet("Raw data");

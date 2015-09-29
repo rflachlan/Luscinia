@@ -513,8 +513,65 @@ public class PrepareDTW {
 	}
 	
 	
+	public synchronized CompareThread runDTWpair(DTWSwingWorker dtws, boolean stitch, int id1, int id2){
+		
+		int eleSize=data.length;
+		if(stitch){
+			eleSize=dataSyls.length;
+		}
+		
+		
+		int[][] elpos=null;
+		//double[][][] data1=data;
+		//double[][] data2=dataTemp;
+		//double[][][] data3=dataExtra;
+		if(stitch){
+			elpos=elementPos;
+			//data1=dataSyls;
+			//data2=dataSylsTemp;
+			//data3=dataSylsExtra;
+			System.out.println("STITCHING ENABLED");
+		}
+		
+		double[][] scores=new double[eleSize][eleSize];
+		
+		for (int i=0; i<sdReal.length; i++){
+			System.out.println(i+" "+sdReal[i]);
+		}
+		double[] sdOver=new double[15];
+		
+		
+		int maxlength=0;
+		int e=eleSize;
+		if (stitch){e=dataSyls.length;}
+		if (!stitch){
+			for (int lb=0; lb<eleSize; lb++){
+				if (data[lb][0].length>maxlength){maxlength=data[lb][0].length;}
+			}
+		}
+		else{
+			for (int lb=0; lb<e; lb++){
+				if (dataSyls[lb][0].length>maxlength){maxlength=dataSyls[lb][0].length;}
+			}
+		}		
+		
+		double[] scoresX=new double[id1+1];
+		System.out.println("STARTING COMPARISON");
+		CompareThread ct=null;
+		try{
+			ct=new CompareThread(maxlength, this, stitch, scoresX, id1, id1+1, id2, true);
+			ct.setPriority(Thread.MIN_PRIORITY);
+			ct.start();
+			ct.join();
+		}
+		catch (Exception f){
+			f.printStackTrace();			
+		}
+
+		return ct;	
+	}
 	
-	
+
 	public synchronized double[][] runDTW(DTWSwingWorker dtws, boolean stitch){
 		
 		int ncores=Runtime.getRuntime().availableProcessors();
@@ -583,7 +640,7 @@ public class PrepareDTW {
 		
 			for (int cores=0; cores<ncores; cores++){
 				//ct[cores]=new CompareThread(maxlength, data1, data2, data3, elpos, sdReal, sdRatio, validParameters, weightByAmp, scoresX[cores], starts[cores], stops[cores], k);
-				ct[cores]=new CompareThread(maxlength, this, stitch, scoresX[cores], starts[cores], stops[cores], k);
+				ct[cores]=new CompareThread(maxlength, this, stitch, scoresX[cores], starts[cores], stops[cores], k, false);
 				//ct[cores]=new CompareThread4(maxlength, data, elpos, sdOver, sdRatio, validParameters, weightByAmp, scoresX[cores], starts[cores], stops[cores], k);
 				ct[cores].setPriority(Thread.MIN_PRIORITY);
 				ct[cores].start();

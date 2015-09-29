@@ -760,4 +760,8 @@ public class AnalysisChoose extends JPanel implements ActionListener, ChangeList
 		}
 	}
 	
+	public DTWSwingWorker getDTWSW(){
+		return dtwsw;
+	}
+	
 }

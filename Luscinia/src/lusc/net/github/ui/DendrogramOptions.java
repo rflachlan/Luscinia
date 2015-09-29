@@ -37,7 +37,10 @@ public class DendrogramOptions extends JPanel {
 		printView=defaults.getBooleanProperty("dendprintview", false);
 		useRaw=defaults.getBooleanProperty("denduseraw", false);
 		dendType=defaults.getIntProperty("dendtype", 0);
-		beta=defaults.getDoubleProperty("dendbeta", -0.25);
+		beta=defaults.getDoubleProperty("dendbeta", 100000, -0.25);
+		
+		System.out.println("DEF GET: "+intView+" "+printView+" "+useRaw+" "+dendType+" "+beta);
+
 		
 		interactiveViewBox.setSelected(intView);
 		printViewBox.setSelected(printView);
@@ -77,10 +80,12 @@ public class DendrogramOptions extends JPanel {
 		useRaw=useRawBox.isSelected();
 		dendType=dendOpts.getSelectedIndex();
 		beta=(double)((Number)betaField.getValue()).doubleValue();
+		System.out.println("DEF SET: "+intView+" "+printView+" "+useRaw+" "+dendType+" "+beta);
+
 		defaults.setBooleanProperty("dendintview", intView);
 		defaults.setBooleanProperty("dendprintview", printView);
 		defaults.setBooleanProperty("denduseraw", useRaw);
 		defaults.setIntProperty("dendtype", dendType);
-		defaults.setDoubleProperty("dendbeta", beta, 5);
+		defaults.setDoubleProperty("dendbeta", beta, 100000);
 	}
 }

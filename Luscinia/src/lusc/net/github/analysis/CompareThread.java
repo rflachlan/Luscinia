@@ -40,6 +40,11 @@ public class CompareThread extends Thread{
 	double lowerCutOff=0.02;
 	int alignPoints=3;
 	
+	boolean saveMatrix=false;
+	
+	double[][] tempMatrix, bestMatrix;
+	int[][] trajectory, bestTrajectory;
+	int al1, al2;
 	/**
 	 * Depreprecated
 	 * @param maxlength
@@ -106,9 +111,11 @@ public class CompareThread extends Thread{
 	 * @param stop	 position to stop comparing
 	 * @param f
 	 */
-	public CompareThread(int maxlength, PrepareDTW pdtw, boolean stitch, double[] scores, int start, int stop, int f){
-		
+	public CompareThread(int maxlength, PrepareDTW pdtw, boolean stitch, double[] scores, int start, int stop, int f, boolean saveMatrix){
+		//System.out.println("0");
+		this.saveMatrix=saveMatrix;
 		numTempPars=pdtw.getNumTempPars();
+		//System.out.println("1");
 		this.stitch=stitch;
 		if (stitch){
 			data=pdtw.getData(2);
@@ -134,16 +141,17 @@ public class CompareThread extends Thread{
 		if (numTempPars>0){
 			validTempPars=pdtw.getValidTempPar();
 		}
-		
+		//System.out.println("2");
 		sdRatio=pdtw.getSDRatio();
 		validParameters=pdtw.getValidParameters();
 		weightByAmp=pdtw.getWeightByAmp();
+		//System.out.println("3");
 		normaliseWithSDs=pdtw.getNormaliseWithSds();
 		alignPoints=pdtw.getAlignmentPoints();
 		interpolateWarp=pdtw.getInterpolateWarp();
 		dynamicWarp=pdtw.getDynamicWarp();
 		maximumWarp=pdtw.getMaximumWarp()*0.01;
-		
+		//System.out.println("4");
 		this.maxlength=maxlength;
 		this.scores=scores;		
 		this.start=start;
@@ -171,6 +179,7 @@ public class CompareThread extends Thread{
 		
 		dims=dataFocal.length;
 		dimsE=dataFocalE.length;
+		if (saveMatrix){System.out.println("PREPARED");}
 	}
 	
 	/**
@@ -184,6 +193,12 @@ public class CompareThread extends Thread{
 		s=new double[maxlength][maxlength];
 		t=new double[maxlength][maxlength];
 		proute=new int[maxlength][maxlength];
+		bestMatrix=new double[maxlength][maxlength];
+		trajectory=new int[2*maxlength][2];
+		bestTrajectory=new int[2*maxlength][2];
+		if (saveMatrix){
+			System.out.println(f+" "+start+" "+stop);
+		}
 		
 		for (int i=start; i<stop; i++){
 			dataComp=data[i];
@@ -215,6 +230,9 @@ public class CompareThread extends Thread{
 			double score1=runComp();
 			if (score1<scoreb){
 				scoreb=score1;
+				if (saveMatrix){
+					copyS();
+				}
 			}
 		}
 		
@@ -225,7 +243,12 @@ public class CompareThread extends Thread{
 					dataFocalT[i]-=diff;
 				}
 				double score3=runComp();
-				if (score3<scoreb){scoreb=score3;}
+				if (score3<scoreb){
+					scoreb=score3;
+					if (saveMatrix){
+						copyS();
+					}
+				}
 			}
 		
 			if (alignPoints>1){
@@ -235,7 +258,12 @@ public class CompareThread extends Thread{
 					dataFocalT[i]+=diff;
 				}
 				double score5=runComp();
-				if (score5<scoreb){scoreb=score5;}
+				if (score5<scoreb){
+					scoreb=score5;
+					if (saveMatrix){
+						copyS();
+					}
+				}
 			}
 		
 			if (alignPoints>3){
@@ -245,19 +273,46 @@ public class CompareThread extends Thread{
 					dataFocalT[i]+=diff2;
 				}
 				double score5=runComp();
-				if (score5<scoreb){scoreb=score5;}
+				if (score5<scoreb){
+					if (saveMatrix){
+						copyS();
+					}
+					scoreb=score5;
+				}
 				double diff3=diff*0.75;
 				for (int i=0; i<dataFocalT.length; i++){
 					dataFocalT[i]+=diff3;
 				}
 				double score6=runComp();
-				if (score6<scoreb){scoreb=score6;}
+				if (score6<scoreb){
+					scoreb=score6;
+					if (saveMatrix){
+						copyS();
+					}
+				}
 			}
 		}
 		
-
+		
 		
 		return scoreb;
+	}
+	
+	public void copyS(){
+		
+		for (int i=0; i<s.length; i++){
+			for (int j=0; j<s[i].length; j++){
+				bestMatrix[i][j]=s[i][j];
+			}
+		}
+		
+		for (int i=0; i<trajectory.length; i++){
+			for (int j=0; j<2; j++){
+				bestTrajectory[i][j]=trajectory[i][j];
+			}
+		}
+		
+		
 	}
 
 	
@@ -521,6 +576,7 @@ public class CompareThread extends Thread{
 	 */
 	
 	public double timeWarping(int length1, int length2){
+		
 		int x, y, i, j, k, locx, locy;
 		double min, sc, s2, f;
 		double thresh=length1*maximumWarp;
@@ -569,6 +625,42 @@ public class CompareThread extends Thread{
 						p[i][j]=p[locx][locy]+1;
 					}
 				}
+			}
+		}
+		
+		if (saveMatrix){
+			
+			al1=length1;
+			al2=length2;
+			
+			int a1=length1-1;
+			int a2=length2-1;
+	
+			trajectory[0][0]=a1;
+			trajectory[0][1]=a2;
+			int co=1;
+			while ((a1>0)||(a2>0)){
+				min=1000000000;
+				locx=0;
+				locy=0;
+				for (k=0; k<3; k++){
+					x=a1+locsX[k];
+					y=a2+locsY[k];
+							
+					if ((x>=0)&&(y>=0)){
+						sc=q[x][y];
+						if (sc<min){
+							min=sc;
+							locx=x;
+							locy=y;
+						}
+					}
+				}
+				a1=locx;
+				a2=locy;
+				trajectory[co][0]=a1;
+				trajectory[co][1]=a2;
+				co++;
 			}
 		}
 				
@@ -642,7 +734,17 @@ public class CompareThread extends Thread{
 		return score;
 	}
 	
+	public double[][] getCompMatrix(){
+		return bestMatrix;
+	}
 	
+	public int[] getLengths(){
+		return new int[]{al1, al2};
+	}
+	
+	public int[][] getTrajectory(){
+		return bestTrajectory;
+	}
 	
 }
 	

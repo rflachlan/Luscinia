@@ -5,6 +5,7 @@ import java.util.LinkedList;
 
 import lusc.net.github.Element;
 import lusc.net.github.Song;
+import lusc.net.github.analysis.clustering.AffinityPropagation;
 import lusc.net.github.analysis.clustering.KMedoids;
 import lusc.net.github.analysis.clustering.SNNDensity;
 import lusc.net.github.analysis.multivariate.MultiDimensionalScaling;
@@ -35,6 +36,7 @@ public class ComparisonResults {
 	KMedoids km;
 	SNNDensity snn;
 	EntropyAnalysis ent;
+	AffinityPropagation ap;
 	
 	
 	public ComparisonResults(Song[] songs, double[][] diss, int type){
@@ -307,6 +309,10 @@ public class ComparisonResults {
 	
 	public void setSyntaxCluster(EntropyAnalysis ent){
 		this.ent=ent;
+	}
+	
+	public void setAPCluster(AffinityPropagation ap){
+		this.ap=ap;
 	}
 	
 	public void makeLookUps(){

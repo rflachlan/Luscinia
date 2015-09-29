@@ -23,6 +23,7 @@ import lusc.net.github.Song;
 //import lusc.net.github.analysis.SongGroup;
 import lusc.net.github.analysis.AnalysisGroup;
 import lusc.net.github.analysis.ComparisonResults;
+import lusc.net.github.analysis.clustering.AffinityPropagation;
 import lusc.net.github.analysis.clustering.KMedoids;
 import lusc.net.github.analysis.clustering.SNNDensity;
 import lusc.net.github.analysis.multivariate.MultiDimensionalScaling;
@@ -32,7 +33,7 @@ import lusc.net.github.ui.SaveImage;
 import lusc.net.github.ui.SpectrogramSideBar;
 
 public class DisplayPC  extends DisplayPane implements  ActionListener, ChangeListener{	
-	private static String labs[] = {"None","Individual", "Population", "Position", "Time", "K-Medoid Cluster", "Syntax Cluster", "SNN Cluster"};
+	private static String labs[] = {"None","Individual", "Population", "Position", "Time", "K-Medoid Cluster", "Syntax Cluster", "SNN Cluster", "Aff. Prop. Cluster"};
 	
 	Defaults defaults;
 	ComparisonResults cr;
@@ -79,11 +80,12 @@ public class DisplayPC  extends DisplayPane implements  ActionListener, ChangeLi
 	MultiDimensionalScaling mds;
 	KMedoids km;
 	SNNDensity snn;
+	AffinityPropagation af;
 	EntropyAnalysis ent;
 	Font font=new Font("Sans-Serif", Font.PLAIN, 8);
 
 	
-	public DisplayPC(ComparisonResults cr, SpectrogramSideBar ssb, KMedoids km, EntropyAnalysis ent, SNNDensity snn, int dataType, int width, int height, Defaults defaults){
+	public DisplayPC(ComparisonResults cr, SpectrogramSideBar ssb, KMedoids km, EntropyAnalysis ent, SNNDensity snn, AffinityPropagation af, int dataType, int width, int height, Defaults defaults){
 		
 		this.cr=cr;
 		this.mds=cr.getMDS();
@@ -91,6 +93,7 @@ public class DisplayPC  extends DisplayPane implements  ActionListener, ChangeLi
 		this.km=km;
 		this.ent=ent;
 		this.snn=snn;
+		this.af=af;
 		this.dataType=dataType;
 		this.width=width;
 		this.height=height;
@@ -186,6 +189,7 @@ public class DisplayPC  extends DisplayPane implements  ActionListener, ChangeLi
 		if (km!=null){p++;}
 		if (ent!=null){p++;}
 		if (snn!=null){p++;}
+		if (af!=null){p++;}
 		
 		String[] labelTypes=new String[p];
 		
@@ -205,6 +209,10 @@ public class DisplayPC  extends DisplayPane implements  ActionListener, ChangeLi
 		}
 		if (snn!=null){
 			labelTypes[p]=labs[7];
+			p++;
+		}
+		if (af!=null){
+			labelTypes[p]=labs[8];
 			p++;
 		}
 					
@@ -537,6 +545,25 @@ public class DisplayPC  extends DisplayPane implements  ActionListener, ChangeLi
 							}
 							ssb.draw(dataType, wr);
 						}	
+						else if (labelType==8){
+							int[] db=af.getAssignments();
+							int b=db[a];
+							int c=0;
+							for (int j=0; j<db.length; j++){
+								if (db[j]==b){
+									c++;
+								}
+							}
+							int[] wr=new int[c];
+							c=0;
+							for (int j=0; j<db.length; j++){
+								if (db[j]==b){
+									wr[c]=j;
+									c++;
+								}
+							}
+							ssb.draw(dataType, wr);
+						}	
 					}
 					
 				}
@@ -568,7 +595,7 @@ public class DisplayPC  extends DisplayPane implements  ActionListener, ChangeLi
 					for (int i=0; i<labs.length; i++){
 						if (labs[i]==s){labelType=i;}
 					}
-					if ((labelType==5)||(labelType==6)||(labelType==7)){
+					if ((labelType==5)||(labelType==6)||(labelType==7)||(labelType==8)){
 						selectAllCat.setEnabled(true);
 					}
 					else{
@@ -583,6 +610,9 @@ public class DisplayPC  extends DisplayPane implements  ActionListener, ChangeLi
 		int tcluster=cluster;
 		if (labelType==7){
 			tcluster=snn.getNumClusts()+1;
+		}
+		if (labelType==8){
+			tcluster=af.getNC();
 		}
 		
 		pcp.paintPanel(cr, data, dimensionX, dimensionY, labelType, dataType, tcluster, connected, gridlines, flipX, flipY, linked, alpha, iconSize, lineWeight);
@@ -601,6 +631,8 @@ public class DisplayPC  extends DisplayPane implements  ActionListener, ChangeLi
 			}
 			int[][] kmov=null;
 			int[][] entov=null;
+			int[] snnov=null;
+			int[] afov=null;
 			if (km!=null){
 				for (int i=0; i<km.getAssignmentLength(); i++){
 					sd.writeString("# km_cats_"+(i+2)+"_value");
@@ -612,6 +644,14 @@ public class DisplayPC  extends DisplayPane implements  ActionListener, ChangeLi
 					sd.writeString("# end_cats_"+(i+2)+"_value");
 				}
 				entov=ent.getOverallAssignment();
+			}
+			if (snn!=null){
+				sd.writeString("SNN cats");
+				snnov=snn.getDBSCANClusters();
+			}
+			if (af!=null){
+				sd.writeString("Aff. Prop. cats");
+				afov=af.getAssignments();
 			}
 			sd.writeLine();
 			Song[] songs=cr.getSongs();
@@ -641,6 +681,12 @@ public class DisplayPC  extends DisplayPane implements  ActionListener, ChangeLi
 					for (int j=0; j<entov.length; j++){
 						sd.writeInt(entov[j][i]+1);
 					}
+				}
+				if (snn!=null){
+					sd.writeInt(snnov[i]+1);
+				}
+				if (af!=null){
+					sd.writeInt(afov[i]+1);
 				}
 				
 				sd.writeLine();

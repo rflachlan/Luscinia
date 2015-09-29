@@ -587,7 +587,7 @@ public class Defaults {
 	 */
 	
 	public void getAnalysisOptions(StatOptionPanel sop){
-		boolean[] results1=getBooleanArray("anatyp", 12);
+		boolean[] results1=getBooleanArray("anatyp", 13);
 		if (results1!=null){
 			sop.setAnalysisTypes(results1);
 		}

@@ -405,6 +405,7 @@ public class DisplayGeographicComparison extends DisplayPane implements Property
 			double[] meanScore=ci.getMeanScore();
 			double[][] coordinates=ci.getCoordinates();
 			int[][] repertoires=ci.getRepertoires();
+			int[][] repertoires2=ci.getRepertoires2();
 			
 			for (int i=0; i<nc; i++){
 				sd.writeDouble(distanceCategories[0][i]);
@@ -414,7 +415,7 @@ public class DisplayGeographicComparison extends DisplayPane implements Property
 				sd.writeDouble(confidenceIntervals[1][i]);
 				sd.writeLine();
 			}
-			sd.writeSheet("details");
+			sd.writeSheet("repertoires");
 			for (int i=0; i<coordinates.length; i++){
 				sd.writeInt(i+1);
 				sd.writeDouble(coordinates[i][0]);
@@ -424,6 +425,20 @@ public class DisplayGeographicComparison extends DisplayPane implements Property
 				}
 				sd.writeLine();
 			}
+			
+			if (repertoires2!=null){
+				sd.writeSheet("repertoires2");
+				for (int i=0; i<coordinates.length; i++){
+					sd.writeInt(i+1);
+					sd.writeDouble(coordinates[i][0]);
+					sd.writeDouble(coordinates[i][1]);
+					for (int j=0; j<repertoires2[i].length; j++){
+						sd.writeInt(repertoires2[i][j]);
+					}
+					sd.writeLine();
+				}
+			}
+			
 			sd.writeSheet("distances");
 			double[][] geog=ci.getGeographicalDistances();
 			for (int i=0; i<geog.length; i++){

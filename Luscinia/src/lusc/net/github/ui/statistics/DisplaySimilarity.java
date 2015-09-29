@@ -20,8 +20,11 @@ import lusc.net.github.Defaults;
 import lusc.net.github.Song;
 //import lusc.net.github.analysis.SongGroup;
 import lusc.net.github.analysis.AnalysisGroup;
+import lusc.net.github.analysis.CompareThread;
 import lusc.net.github.analysis.ComparisonResults;
+import lusc.net.github.analysis.PrepareDTW;
 import lusc.net.github.db.DataBaseController;
+import lusc.net.github.ui.AnalysisSwingWorker;
 import lusc.net.github.ui.SaveDocument;
 import lusc.net.github.ui.SaveImage;
 import lusc.net.github.ui.SpectrogramSideBar;
@@ -42,14 +45,17 @@ public class DisplaySimilarity extends DisplayPane implements MouseInputListener
 	JPanel mainPanel=new JPanel(new BorderLayout());
 	int height, width, dataType;
 	
+	AnalysisSwingWorker asw;
+	
 	//public DisplaySimilarity (double[][]scores, int dataType, SongGroup sg, DataBaseController dbc, int width, int height, Defaults defaults){
-	public DisplaySimilarity (ComparisonResults cr, SpectrogramSideBar ssb, DataBaseController dbc, int width, int height, Defaults defaults){
+	public DisplaySimilarity (ComparisonResults cr, AnalysisSwingWorker asw, SpectrogramSideBar ssb, DataBaseController dbc, int width, int height, Defaults defaults){
 		this.scores=cr.getDiss();
 		this.cr=cr;
 		this.ssb=ssb;
 		this.dbc=dbc;
 		this.height=height;
 		this.width=width;
+		this.asw=asw;
 		System.out.println("Displaying matrix "+width+" "+height);
 		this.dataType=cr.getType();
 		this.defaults=defaults;
@@ -130,6 +136,24 @@ public class DisplaySimilarity extends DisplayPane implements MouseInputListener
 			if (xchoice<0){xchoice=0;}
 			int []wrap={xchoice, ychoice};
 			ssb.draw(dataType, wrap);
+			try{
+				PrepareDTW pdtw=asw.getAC().getDTWSW().getPDTW();
+				int st=pdtw.getStitchSyllables();
+				boolean stitch=false;
+				if (st>0){
+					stitch=true;
+				}
+				if ((dataType==0)||((dataType==2)&&stitch)){
+					CompareThread ct=pdtw.runDTWpair(null, stitch, wrap[0], wrap[1]);
+					DisplayDTW ddtw=new DisplayDTW(wrap, pdtw, ct);
+					JOptionPane.showMessageDialog(this, ddtw);
+				}
+			}
+			catch(Exception f){
+				f.printStackTrace();
+			}
+			
+			
 			score=scores[xchoice][ychoice];
 			System.out.println("SCORE: "+score);
 			paintPanel(width, height);

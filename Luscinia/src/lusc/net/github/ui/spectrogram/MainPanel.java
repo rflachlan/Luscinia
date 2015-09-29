@@ -2315,7 +2315,7 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		}
 		
 		if (ZOOM_TO_ALL_COMMAND.equals(command)){
-			double ratio=song.getNx()/(s.nnx-s.xspace-s.xspace2-0.0);
+			double ratio=song.getNx()/(s.multiplier*(s.nnx-s.xspace-s.xspace2-0.0));
 			ratio=100*ratio;
 			timeZoom.setValue(new Double(ratio));
 		}	
@@ -2326,6 +2326,7 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		if (FONT_FACE.equals(command)){
 			s.fontFace=(String)fontFace.getSelectedItem();
 			s.resetFonts();
+			s.restart();
 			s.paintFound();
 		}
 		if (AXIS_LABEL_FONT_STYLE.equals(command)){
@@ -2335,6 +2336,7 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 			else if (p==2){s.axisLabelFontStyle=Font.ITALIC;}
 			else if (p==3){s.axisLabelFontStyle=Font.BOLD+Font.ITALIC;}
 			s.resetFonts();
+			s.restart();
 			s.paintFound();
 		}
 		if (TICK_LABEL_FONT_STYLE.equals(command)){
@@ -2344,26 +2346,31 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 			else if (p==2){s.tickLabelFontStyle=Font.ITALIC;}
 			else if (p==3){s.tickLabelFontStyle=Font.BOLD+Font.ITALIC;}
 			s.resetFonts();
+			s.restart();
 			s.paintFound();
 		}
 		if (FREQ_UNIT_KHZ.equals(command)){
 			s.frequencyUnit=true;
 			s.resetFonts();
+			s.restart();
 			s.paintFound();
 		}
 		if (FREQ_UNIT_HZ.equals(command)){
 			s.frequencyUnit=false;
 			s.resetFonts();
+			s.restart();
 			s.paintFound();
 		}
 		if (TIME_UNIT_S.equals(command)){
 			s.timeUnit=true;
 			s.resetFonts();
+			s.restart();
 			s.paintFound();
 		}
 		if (TIME_UNIT_MS.equals(command)){
 			s.timeUnit=false;
 			s.resetFonts();
+			s.restart();
 			s.paintFound();
 		}
 		if (SHOW_FRAME.equals(command)){

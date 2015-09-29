@@ -392,6 +392,7 @@ public class SdLogin extends TabType implements ActionListener, ListSelectionLis
 	public void addLocalLocation(String s, boolean isH2){
 		System.out.println("added file: "+s);
 		int recentMemory=10;
+		System.out.println("IS H2"+isH2);
 		if (isH2){
 			LinkedList localLocations=defaults.getStringList("h2locs");
 			if (localLocations.size()==recentMemory){
@@ -676,9 +677,9 @@ public class SdLogin extends TabType implements ActionListener, ListSelectionLis
 			sloc=(String)locationsList.get(p);
 			//System.out.println(locationsList);
 			if (sloc!=null){
-				
-				if (sloc.endsWith(" *")){
-					sloc=sloc.substring(0, sloc.length()-2);
+				System.out.println("LOGGING IN: "+sloc);
+				if (sloc.contains("luschsqldb")){
+					//sloc=sloc.substring(0, sloc.length()-2);
 					DBMODE=0;
 				}
 				
@@ -1240,13 +1241,14 @@ public class SdLogin extends TabType implements ActionListener, ListSelectionLis
 			String defPath=defaults.props.getProperty("path");
 			if (defPath!=null){fc=new JFileChooser(defPath);}
 			if (System.getProperty("os.name").startsWith("Mac")){
-				fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
+				fc.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
 			}
 			else{
 				fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 			}
 			fc.addChoosableFileFilter(new HSQLDBFileFilter());
 			fc.addChoosableFileFilter(new H2FileFilter());
+			System.out.println(fc.getFileFilter().getDescription());
 			int returnVal = fc.showOpenDialog(this);
 			if (returnVal == JFileChooser.APPROVE_OPTION) {
 				File file=fc.getSelectedFile();

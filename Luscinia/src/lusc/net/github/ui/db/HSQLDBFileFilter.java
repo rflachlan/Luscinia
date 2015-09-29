@@ -15,11 +15,12 @@ public class HSQLDBFileFilter extends FileFilter {
 
 	public final static String data="luschsqldb";
     public boolean accept(File f) {
-        if (f.isDirectory()) {
-            return true;
-        }
+        //if (f.isDirectory()) {
+           // return true;
+        //}
 
         String extension = getExtension(f);
+        System.out.println(extension+" "+extension.equals(data));
         if (extension != null) {
             if (extension.equals(data))
 			 {
