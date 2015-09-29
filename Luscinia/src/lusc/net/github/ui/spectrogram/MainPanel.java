@@ -567,8 +567,10 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		timeZoom.setValue(new Double(100/s.stretchX));
 		timeZoom.setFont(font);
 		
-
-		timeZoomSL=new JSlider(0, 100, (int)(50/s.stretchX));
+		int fsl=(int)(50/s.stretchX);
+		if (fsl<0){fsl=0;}
+		if (fsl>100){fsl=100;}
+		timeZoomSL=new JSlider(0, 100, fsl);
 		timeZoomSL.addChangeListener(this);
 		timeZoomSL.setFont(font);
 		timeZoomSL.setPreferredSize(dimSlider);
@@ -580,7 +582,10 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		freqZoom.setValue(new Double(100*s.stretchY));
 		freqZoom.setFont(font);
 		
-		freqZoomSL=new JSlider(0, 100, (int)(50*s.stretchY));
+		fsl=(int)(50*s.stretchY);
+		if (fsl<0){fsl=0;}
+		if (fsl>100){fsl=100;}
+		freqZoomSL=new JSlider(0, 100, fsl);
 		freqZoomSL.addChangeListener(this);
 		freqZoomSL.setFont(font);
 		freqZoomSL.setPreferredSize(dimSlider);
