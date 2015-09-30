@@ -738,6 +738,7 @@ public class DatabaseView extends TabType implements ActionListener {
 				luscinia.loggedOut();
 			}
 		}
+		JOptionPane.showMessageDialog(this, "Copying completed");
 	}
 	
 	public void openWav(myNode parentNode, Object child){

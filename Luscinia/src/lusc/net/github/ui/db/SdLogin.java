@@ -681,6 +681,7 @@ public class SdLogin extends TabType implements ActionListener, ListSelectionLis
 				if (sloc.contains("luschsqldb")){
 					//sloc=sloc.substring(0, sloc.length()-2);
 					DBMODE=0;
+					JOptionPane.showMessageDialog(this, "This is an older HSQLDB database. Consider upgrading to the newer H2 database.");
 				}
 				
 				if (enableRemoteAccess.isSelected()){
