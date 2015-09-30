@@ -12,6 +12,7 @@ import java.sql.*;
 import java.io.*;
 
 import javax.sound.sampled.*;
+import javax.swing.JOptionPane;
 
 import java.net.InetAddress;
 import java.nio.*;
@@ -20,6 +21,8 @@ import lusc.net.github.Element;
 import lusc.net.github.Song;
 
 import org.h2.tools.*;
+
+//import sun.misc.IOUtils;
 
 
 public class DbConnection {
@@ -72,8 +75,9 @@ public class DbConnection {
 
 	@SuppressWarnings("finally")
 	public boolean doConnect(){
+		String url=" ";
 		try{	
-			String url=" ";
+			
 			
 			if (DBMODE==1){
 				url="jdbc:mysql://"+loc+":3306/"+dbase;
@@ -136,9 +140,27 @@ public class DbConnection {
             System.out.println("SQLState: " + ex.getSQLState()); 
             System.out.println("VendorError: " + ex.getErrorCode());
 			ex.printStackTrace();
+			
+			if ((DBMODE==2)&&(ex.getErrorCode()==90048)){
+				JOptionPane.showMessageDialog(null,"Migrating H2 database to latest version");
+				System.out.println("MIGRATING DATABASE");
+				new Migrate().execute(new File(loc+".data.db"), true, "SA", "", false);
+				JOptionPane.showMessageDialog(null,"Migration completed");
+				con = DriverManager.getConnection(url, uname, pword);
+				//System.out.println("DBC: "+uname+" "+pword);
+				if (con!=null){
+					connected=true;					
+					checkVersion();
+				}
+			}
+			
+			
         }
         finally {return connected;}
     }
+	
+	
+
 	
 	public void setMaxPacket(){
 		Statement stmt = null; 
