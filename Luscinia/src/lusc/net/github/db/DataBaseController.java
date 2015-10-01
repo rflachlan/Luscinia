@@ -200,6 +200,17 @@ public class DataBaseController {
 		//is that all???
 	}
 	
+	public void writeWholeSong(Song song, int indID){
+		
+		String sname=song.getName();
+		writeToDataBase("INSERT INTO songdata (name, IndividualID) VALUES ('"+sname+"' , "+indID+")");		
+		song.setSongID(readSongID(sname, indID));
+		writeSongIntoDatabase(song);
+		writeSongMeasurements(song);
+		writeSongInfo(song);
+		//is that all???
+	}
+	
 	public void writeSongMeasurements(Song song){
 		//db.doConnect();
 		db.writeSongMeasurements(song);

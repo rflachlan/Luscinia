@@ -347,7 +347,7 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 					//int maxClusterK=sop.kMedOptions.maxClusterK;
 					//km[i]=new KMedoids(comps[i].getDissT(), minClusterK, maxClusterK, i, comps[i].getMDS().getSDS(), 10);
 					km[i]=new KMedoids(comps[i], sop.kMedOptions);
-					
+					km[i].calculateKMedoids();
 					//if ((i<3)&&(popcomp)){
 						//int[] popIds=comps[i].getPopulationListArray();
 						//int[] specIds=comps[i].getSpeciesListArray();

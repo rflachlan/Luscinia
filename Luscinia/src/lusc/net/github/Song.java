@@ -1792,15 +1792,15 @@ public class Song {
 				if (adEndTime>overSize){adEndTime=overSize;}
 				//int adStartTime=sTime;
 				//int adEndTime=eTime;
-				System.out.println("PARSESOUND");
+				//System.out.println("PARSESOUND "+adStartTime+" "+adEndTime);
 				parseSound(adStartTime*stereo, adEndTime*stereo);
 				//System.out.println("a: "+data.length+" "+adEndTime+" "+adStartTime+" "+rawData.length);
-				System.out.println("FILTERSOUND");
+				//System.out.println("FILTERSOUND "+(sTime-adStartTime)+" "+(eTime-adStartTime));
 				filter(sTime-adStartTime, eTime-adStartTime);
 				//System.out.println("b: "+data.length);
-				System.out.println("FFTSOUND");
+				//System.out.println("FFTSOUND");
 				calculateFFT(L);
-				System.out.println("DONECHUNK");
+				//System.out.println("DONECHUNK");
 			}
 		}
 	}
@@ -2433,19 +2433,25 @@ public class Song {
 	 */
 	private void filter(int startd, int endd){
 		int size=endd-startd;
+		//System.out.println("SIZE: "+size+" "+endd+" "+startd);
 		if (frequencyCutOff>0){
-			float[] data1=fir(startd, endd, filtu, data);
-			float[] data2=fir(startd, endd, filtl, data1);
-			for (int i=0; i<data.length; i++){
-				data1[i]=data2[i];
-			}
-		
+			float[] data1=fir(filtu, data);
+			float[] data2=fir(filtl, data1);
+			//for (int i=0; i<data.length; i++){
+				//data1[i]=data2[i];
+			//}
 
-			
 			data=new float[size];
 			for (int i=0; i<size; i++){
-				data[i]=data1[i+startd];
+				data[i]=data2[i+startd];
 			}
+		}
+		else{
+			float data1[]=new float[size];
+			for (int i=0; i<size; i++){
+				data1[i]=data[i+startd];
+			}
+			data=data1;
 		}
 		//else{
 			//data=new float(size);
@@ -2461,7 +2467,7 @@ public class Song {
 	 * @param d signal to be filtered
 	 * @return a float[] of filtered signal
 	 */
-	private float[] fir(int startd, int endd, double[] filt, float[] d){
+	private float[] fir(double[] filt, float[] d){
 		///System.out.println(startd+" "+endd+" "+frequencyCutOff+" "+data.length);
 		int i, j, k;
 		int size=d.length;
@@ -3249,6 +3255,16 @@ public class Song {
 				count++;
 			}
 		}
+	}
+	
+	public void updateElements(){
+		for (int i=0; i<eleList.size(); i++){
+			Element ele=(Element)eleList.get(i);
+			ele.begintime+=7;
+			for (int j=0; j<ele.signal.length; j++){
+				ele.signal[j][0]+=7;
+			}
+		}	
 	}
 	
 	/**

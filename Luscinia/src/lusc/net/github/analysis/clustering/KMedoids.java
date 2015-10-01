@@ -86,9 +86,8 @@ public class KMedoids {
 		globalSilhouette=new double[assignmentLength];
 		simulatedSilhouette=new double[assignmentLength];
 		int ncores=Runtime.getRuntime().availableProcessors();
-		int nr=(int)Math.ceil(numReseeds/ncores);
+		int nr=(int)Math.ceil(numReseeds/(ncores+0.0));
 		KMedoidsThread[] kmt=new KMedoidsThread[numReseeds];
-		
 		
 		
 		
@@ -108,13 +107,14 @@ public class KMedoids {
 			
 			int[] assignments=assignToClusters(kmb.results, i);
 			double bestScore=kmb.bestscore;
-			
+			System.out.println("FIRST SCORE: "+bestScore);
 			
 			for (int j=0; j<nr; j++){
 				int b=a+ncores;
 				if(b>numReseeds){b=numReseeds;}
 				
 				for (int k=a; k<b; k++){
+					System.out.println(k);
 					kmt[k]=new KMedoidsThread(mat2, rowheads, i, nr, false);
 					kmt[k].setPriority(Thread.MIN_PRIORITY);
 					kmt[k].start();
@@ -132,6 +132,8 @@ public class KMedoids {
 			}
 			
 			for (int k=0; k<numReseeds; k++){
+				System.out.println(k+" "+numReseeds+" "+nr);
+				System.out.println(kmt[k].bestscore);
 				if (kmt[k].bestscore<bestScore){
 					int[] overallPrototypes=kmt[k].results;
 					assignments=assignToClusters(overallPrototypes, i);
@@ -303,7 +305,7 @@ public class KMedoids {
 		int reps;
 		int p=0;
 		double oscore;
-		double bestscore;
+		double bestscore=1000000000;
 		int[] results;
 		double[] dat;
 		int[] rowhead;
