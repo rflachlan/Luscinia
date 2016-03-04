@@ -415,6 +415,13 @@ public class CompressComparisons {
 		return scores;
 	}
 	
+	/**
+	 * This method generates a phrase x phrase dissimilarity matrix from syllable scores
+	 * @param scores
+	 * @param songs
+	 * @param sp
+	 * @return
+	 */
 	
 	public double[][] phraseComp(double[][] scores, Song[] songs, double sp){
 		
@@ -547,6 +554,14 @@ public class CompressComparisons {
 		return bestScore;		
 	}
 	
+	/**
+	 * This method takes stitched syllable dissimilarities and outputs a phrase dissimilarity matrix
+	 * @param syScores
+	 * @param songs
+	 * @param synco
+	 * @return
+	 */
+	
 	
 	public double[][] compareSyllables5(double[][] syScores, Song[] songs, double synco){
 	
@@ -557,6 +572,7 @@ public class CompressComparisons {
 		//System.out.println("Syls: "+syScores.length);
 		
 		int[] phraseID=new int[syScores.length];
+		
 		
 		int phraseCount=0;
 		int syllCount=0;
@@ -587,15 +603,20 @@ public class CompressComparisons {
 				phraseCount++;
 			}
 		}
+		
+		int[] counter=new int[phraseCount];
+		for (int i=0; i<syScores.length; i++){
+			counter[phraseID[i]]++;
+		}
 	
 		double[][] results=new double[phraseCount][];
 		double[][] count=new double[phraseCount][];
-		
+		/*
 		for (int i=0; i<phraseCount; i++){
 			results[i]=new double[i+1];
-			for (int j=0; j<i; j++){
+			//for (int j=0; j<i; j++){
 				//results[i][j]=1000000f;
-			}
+			//}
 			count[i]=new double[i+1];
 		}
 		
@@ -619,9 +640,79 @@ public class CompressComparisons {
 			}
 			results[i][i]=0;
 		}
+		*/
+		for (int i=0; i<results.length; i++){
+			results[i]=new double[i+1];
+			int c1=counter[i];		
+			for (int j=0; j<i; j++){
+				int c2=counter[j];
+				double[][] submat=new double[c1][c2];
+				int a=0;
+				int b=0;
+				for (int g=0; g<syScores.length; g++){
+					if (phraseID[g]==i){
+						b=0;
+						for (int h=0; h<syScores.length; h++){
+							if (phraseID[h]==j){
+								if (g>h){
+									submat[a][b]=syScores[g][h];
+								}
+								else{
+									submat[a][b]=syScores[h][g];
+								}
+								//submat[b][a]=submat[a][b];
+								b++;
+							}
+						}
+						a++;
+					}	
+				}
+				results[i][j]=DTW(submat);
+				
+			}
+		}
+		
+		
 		count=null;
 		
 		return results;
+	}
+	
+	public double DTW(double[][] input){
+		int n=input.length;
+		int m=input[0].length;
+		
+		double[][] temp=new double[n][m];
+		
+		int[] x1={-1, 0, -1};
+		int[] y1={-1, -1, 0};
+		
+		
+		for (int i=0; i<n; i++){
+			for (int j=0; j<m; j++){
+				
+				temp[i][j]=input[i][j];
+				
+				double min=10000000;
+				for (int k=0; k<3; k++){
+					int a=i+x1[k];
+					int b=j+y1[k];
+					if ((a>=0)&&(b>=0)){
+						if (temp[a][b]<min){
+							min=temp[a][b];
+						}
+					}
+				}
+				if (min<10000000){
+					temp[i][j]+=min;
+				}	
+			}
+		}
+		
+		double p=Math.max(n, m);
+		
+		return(temp[n-1][m-1]/p);
+		
 	}
 	
 	/*
@@ -1578,12 +1669,12 @@ public class CompressComparisons {
 		for (int i=0; i<songNumber; i++){
 			int[] r1=id[i];
 			int r1l=r1.length;
-			int r3=0;
+			int r3=1;
 			if (cycle){r3=r1l;}
 			for (int j=0; j<i; j++){
 				int[]r2=id[j];
 				int r2l=r2.length;
-				int r4=0;
+				int r4=1;
 				if (cycle){r4=r2l;}
 				dtw=new double[r1l][r2l];
 				double oscore=100000000;

@@ -8,6 +8,7 @@ import java.beans.PropertyChangeListener;
 import java.text.NumberFormat;
 
 import javax.swing.BorderFactory;
+import javax.swing.JCheckBox;
 import javax.swing.JFormattedTextField;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -18,11 +19,14 @@ public class KMedoidsOptions extends JPanel implements PropertyChangeListener{
 	
 	JFormattedTextField clustKs, clustKsb, reseedField, simField;
 	Defaults defaults;
+	JCheckBox useRawBox=new JCheckBox("Use raw dissimilarity matrix");
 	
 	public int minClusterK=2;
 	public int maxClusterK=10;
 	public int numReseeds=20;
 	public int nsims=10;
+	public boolean useRaw=false;
+	
 	
 	public KMedoidsOptions(Defaults defaults){
 		this.defaults=defaults;
@@ -31,7 +35,9 @@ public class KMedoidsOptions extends JPanel implements PropertyChangeListener{
 		maxClusterK=defaults.getIntProperty("kmedmaxk", 10);
 		numReseeds=defaults.getIntProperty("kmedreseed", 20);
 		nsims=defaults.getIntProperty("kmednsim", 10);
-
+		useRaw=defaults.getBooleanProperty("kmeduseraw", false);
+		
+		useRawBox.setSelected(useRaw);
 		
 		NumberFormat num=NumberFormat.getNumberInstance();
 		num.setMaximumFractionDigits(0);
@@ -85,6 +91,7 @@ public class KMedoidsOptions extends JPanel implements PropertyChangeListener{
 		this.add(kcpanb);
 		this.add(reseedPan);
 		this.add(simPan);
+		this.add(useRawBox);
 
 	}
 	
@@ -116,9 +123,11 @@ public class KMedoidsOptions extends JPanel implements PropertyChangeListener{
 	}
 	
 	public void wrapUp(){
+		useRaw=useRawBox.isSelected();
 		defaults.setIntProperty("kmedmink", minClusterK);
 		defaults.setIntProperty("kmedmaxk", maxClusterK);
 		defaults.setIntProperty("kmedreseed", numReseeds);
 		defaults.setIntProperty("kmednsim", nsims);
+		defaults.setBooleanProperty("kmeduseraw", useRaw);
 	}
 }

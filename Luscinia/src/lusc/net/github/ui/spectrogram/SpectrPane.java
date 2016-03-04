@@ -40,6 +40,8 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 	boolean automaticMerge=false;
 	boolean paintOver=true;
 	boolean clickDrag=false;
+	
+	boolean erase=false;
 			
 	boolean[]viewParameters=new boolean[19];
 	
@@ -117,6 +119,10 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 	int compressYToFit=0;
 	int compressXToFit=0;
 	
+	
+	int ny2, brushAdj, bt;
+	double maxyp, minyp;
+	
 	int displayMode=0;			//displayMode =0 means spectrogram; =1 means amp envelope; 2=pitch
 	
 	int location=-1;
@@ -144,7 +150,7 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 	int archiveMaxX=0;
 	int xspace=75;
 	int xspace2=10;
-	int yspace=75;
+	int yspace=150;
 	int maxsl=0;
 	double dx,dy, tdx, tdy;
 	int nx, ny, tny;
@@ -453,7 +459,6 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 		
 		System.out.println("PROGRESS: Setting the bounds");		
 		
-		
 		nnx=(int)d.getWidth()-100;
 		dx=song.getDx();
 		tdx=dx/stretchX;
@@ -461,7 +466,7 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 		tnx=(int)Math.round(stretchX*nx);
 		ny=song.getNy();
 		tny=(int)Math.round(ny*stretchY);
-		nny=tny+yspace;
+		nny=(int)Math.round(tny+(2*yspace/multiplier));
 		if (compressYToFit>0){
 			tny=ny;
 			nny=tny+yspace*3;
@@ -488,11 +493,11 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 		tdy=tdy/multiplier;
 			
 		unx=(int)Math.round(tnx/stretchX);
-		System.out.println("PANEL DIMENSIONS: "+nny+" "+nnx+" "+nx+" "+ny+" "+tny+" "+tnx+" "+yspace);
 		this.setPreferredSize(new Dimension(nnx, nny));
 		this.revalidate();
 		nnx2=(int)Math.round(nnx*multiplier);
 		nny2=(int)Math.round(nny*multiplier);
+		System.out.println("PANEL DIMENSIONS: "+nny+" "+nnx+" "+nx+" "+ny+" "+tny+" "+tnx+" "+yspace+" "+multiplier+" "+nny2);
 		imf=new BufferedImage(nnx2, nny2, BufferedImage.TYPE_INT_ARGB);
 		im=new BufferedImage(unx, ny, BufferedImage.TYPE_INT_ARGB);
 		//paintFrame();
@@ -1120,29 +1125,45 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 	private void updateElement(){
 		if (pointList!=null){
 			getLastPointList();
-			LinkedList<int[][]> signals=songMeas.getSignal(lastPointList, unx);
-			if (signals.size()>0){
-				archiveMinX=currentMinX;
-				archiveMaxX=currentMaxX;
-				archivePointList=new int[lastPointList.length][];
-				for (int i=0; i<lastPointList.length; i++){
-					archivePointList[i]=new int[lastPointList[i].length];
+			if (!erase){
+				
+				LinkedList<int[][]> signals=songMeas.getSignal(lastPointList, unx);
+				if (signals.size()>0){
+					archiveMinX=currentMinX;
+					archiveMaxX=currentMaxX;
+					archivePointList=new int[lastPointList.length][];
+					for (int i=0; i<lastPointList.length; i++){
+						archivePointList[i]=new int[lastPointList[i].length];
 					//for (int j=0; j<lastPointList[i].length; j++){
 						//archivePointList[i][j]=(int)Math.round(lastPointList[i][j]*multiplier);
 					//}
-					System.arraycopy(pointList[i], 0, archivePointList[i], 0, pointList[i].length);
+						System.arraycopy(pointList[i], 0, archivePointList[i], 0, pointList[i].length);
+					}
 				}
-			}
 			//segmentMDL(signals);
-			if (automaticMerge){segment(signals, false);}
-			checkMinimumLengths(signals);
-			measureAndAddElements(signals);
+				if (automaticMerge){segment(signals, false);}
+				checkMinimumLengths(signals);
+				measureAndAddElements(signals);
 			
-			mp.updateElementLists();
-			mp.cloneLists();
-			//mp.redo.setEnabled(true);
-			paintFound();
-			gp.draw();
+				mp.updateElementLists();
+				mp.cloneLists();
+				//mp.redo.setEnabled(true);
+				paintFound();
+				gp.draw();
+			}
+			else{
+				System.out.println("erasing...");
+				LinkedList<int[][]> signals=songMeas.eraseSignal(lastPointList, currentMinX);
+				System.out.println("elements to remeasure: "+signals.size());
+				checkMinimumLengths(signals);
+				measureAndAddElements(signals);
+			
+				mp.updateElementLists();
+				mp.cloneLists();
+				//mp.redo.setEnabled(true);
+				paintFound();
+				gp.draw();
+			}
 		}
 	}
 	
@@ -1434,7 +1455,7 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 		md=fm.getMaxDescent();
 		int h2=ma+md;
 		
-		int h3= (int)(1.5*h1+1.5*h2);
+		int h3= (int)(3*h1+3*h2);
 		
 		System.out.println("Font heights: "+h3+" "+w3+" "+yspace+" "+xspace);
 		
@@ -2548,6 +2569,9 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 	
 	public void paintComponent(Graphics g) {
 	
+		
+		//System.out.println("THIS IS WHAT I'M DRAWING: "+this.getHeight()+" "+imf.getHeight()+" "+nny+" "+yspace);
+		
         super.paintComponent(g);  //paint background
         
         
@@ -2675,10 +2699,21 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 		if(started){
 			oldx=newx;
 			oldy=newy;
-			newx = (int)(multiplier*e.getX())-xspace;
-			newy = (int)(multiplier*e.getY())-yspace;
-			   //if you drag the cursor off the spectrogram area, element is finshed
-			if ((newx>tnx)||(newy>tny)||(newx<0)||(newy<0)){
+		}
+		
+		newx = (int)(multiplier*e.getX())-xspace;
+		newy = (int)(multiplier*e.getY())-yspace;
+			   
+		//if you drag the cursor off the spectrogram area, element is finshed
+			
+		if ((newx>tnx)||(newy>tny)||(newx<0)||(newy<0)){
+			bounds=0;
+		}
+		else{
+			bounds=1;
+		}
+		if (started){
+			if (bounds==0){
 				started=false;
 				if (syllable){updateSyllable();}
 				else{updateElement();}
@@ -2688,10 +2723,10 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 			}
 		}
 		
-		newx = (int)(multiplier*e.getX())-xspace;
-		newy = (int)(multiplier*e.getY())-yspace;
-		if ((newx<tnx)&&(newy<tny)&&(newx>0)&&(newy>0)){bounds=1;}
-		else{bounds=0;}
+		//newx = (int)(multiplier*e.getX())-xspace;
+		//newy = (int)(multiplier*e.getY())-yspace;
+		//if ((newx<tnx)&&(newy<tny)&&(newx>0)&&(newy>0)){bounds=1;}
+		//else{bounds=0;}
 		//System.out.print("PAINTING");
 		repaint();
 		//System.out.println("goodbye");
@@ -2741,6 +2776,7 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 					
 					oldx=newx;
 					oldy=newy;
+					updatePointCalculations();
 					updatePoint();
 				}
 				repaint();
@@ -2780,7 +2816,12 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 	public void updatePList(int x, int miny, int maxy){
 		
 		Graphics2D g2=imf.createGraphics();
-		g2.setColor(Color.RED);
+		if (!erase){
+			g2.setColor(Color.RED);
+		}
+		else{
+			g2.setColor(Color.BLUE);
+		}
 		g2.setComposite(ac);
 		
 		
@@ -2819,44 +2860,47 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 		g2.dispose();
 	}
 	
+	public void updatePointCalculations(){
+		ny2=(int)Math.round(ny*multiplier);
+		bt=song.getBrushType();
+		if (bt==1){
+			int bs=song.getBrushSize();
+			maxyp=(multiplier*bs)/(stretchY);			//maxy and miny are the current positions of the cursor
+			if (maxyp>=ny2){maxyp=ny2-1;}
+			//minyp=(multiplier*bs)/(stretchY);
+			//if (minyp<=0){minyp=1;}
+		}
+		else if (bt==2) {
+			maxyp=ny2-1;
+			minyp=1;
+		}
+		else if (bt==3) {
+			double mf=ny2/(song.getMaxF()+0.0);
+			maxyp=(song.getMinBrush()*mf);
+			if (maxyp>=ny2){maxyp=ny2-1;}
+			minyp=(song.getMaxBrush()*mf);
+			//if (miny>=maxy){maxy=ny2-1;}
+			if (minyp<=0){minyp=1;}
+			maxyp=ny2-maxyp;
+			minyp=ny2-minyp;
+			//System.out.println(song.maxBrush+" "+song.minBrush+" "+song.maxf+" "+ny+" "+maxy+" "+miny);
+		}
+		
+		brushAdj=(int)Math.round(multiplier*song.getBrushSize()/(stretchY));
+		
+	}
+	
 	
 	public void updatePoint(){					//updates the list of points for the element the user is currently selecting
 		
 		//System.out.println(stretchX);
-		int ny2=(int)Math.round(ny*multiplier);
-		int bt=song.getBrushType();
 		if (pointList!=null){
-			int maxy=2;
-			int miny=1;
-			
-			if (bt==1){
-				int bs=song.getBrushSize();
-				maxy=(int)Math.round((newy+multiplier*bs)/(stretchY));			//maxy and miny are the current positions of the cursor
-				if (maxy>=ny2){maxy=ny2-1;}
-				miny=(int)Math.round((newy-multiplier*bs)/(stretchY));
-				if (miny<=0){miny=1;}
-			}
-			else if (bt==2) {
-				maxy=ny2-1;
-				miny=1;
-			}
-			else if (bt==3) {
-				double mf=ny2/(song.getMaxF()+0.0);
-				maxy=(int)Math.round(song.getMinBrush()*mf);
-				if (maxy>=ny2){maxy=ny2-1;}
-				miny=(int)Math.round(song.getMaxBrush()*mf);
-				//if (miny>=maxy){maxy=ny2-1;}
-				if (miny<=0){miny=1;}
-				maxy=ny2-maxy;
-				miny=ny2-miny;
-				//System.out.println(song.maxBrush+" "+song.minBrush+" "+song.maxf+" "+ny+" "+maxy+" "+miny);
-			}
 			int x=(int)Math.round(newx/(stretchX));
 			int ox=(int)Math.round(oldx/(stretchX));
+			int miny=(int)Math.round((newy/stretchY)-maxyp);
+			int maxy=(int)Math.round((newy/stretchY)+maxyp);
 			//this next section updates pointList at the point in time the cursor is at
-			
-			
-						
+				
 			if (pointList[x][0]==0){
 				pointList[x][0]=miny;		
 				pointList[x][1]=maxy;
@@ -2882,7 +2926,7 @@ public class SpectrPane extends DisplayPane implements MouseListener, MouseMotio
 				double distx=x-ox;
 				double disty=(newy-oldy)/(stretchY);
 				double oy=oldy/stretchY;
-				int brushAdj=(int)Math.round(multiplier*song.getBrushSize()/(stretchY));
+				
 				for (int i=ox+1; i<x; i++){
 					
 					if (bt==1){

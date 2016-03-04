@@ -6,6 +6,7 @@ import java.awt.GridLayout;
 import java.text.NumberFormat;
 
 import javax.swing.BorderFactory;
+import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JFormattedTextField;
 import javax.swing.JLabel;
@@ -23,10 +24,13 @@ public class MRPPOptions extends JPanel {
 	
 	String[] weightings={"n", "n-1", "n(n-1)"};
 	JComboBox weightingBox=new JComboBox(weightings);
+	
+	JCheckBox pairwiseBox=new JCheckBox("Calculate pairwise differences: ");
 
 	public int numRepeats=10000;
 	public int levelSel=1;
 	public int weightingSel=0;
+	public boolean pairwise=false;
 	
 	
 	public MRPPOptions(Defaults defaults){
@@ -35,6 +39,7 @@ public class MRPPOptions extends JPanel {
 		numRepeats=defaults.getIntProperty("mrppnumrep", 10000);
 		levelSel=defaults.getIntProperty("mrpplevel", 1);
 		weightingSel=defaults.getIntProperty("mrppweight", 0);
+		pairwise=defaults.getBooleanProperty("mrpppair", true);
 		
 		NumberFormat num=NumberFormat.getNumberInstance();
 		num.setMaximumFractionDigits(0);
@@ -61,6 +66,8 @@ public class MRPPOptions extends JPanel {
 		weightinglab.setLabelFor(weightingBox);
 		weightingPanel.add(weightinglab, BorderLayout.WEST);	
 		weightingPanel.add(weightingBox, BorderLayout.CENTER);
+		
+		pairwiseBox.setSelected(pairwise);
 	
 		this.setBorder(BorderFactory.createTitledBorder("Options"));
 		this.setLayout(new GridLayout(0,1));
@@ -69,6 +76,7 @@ public class MRPPOptions extends JPanel {
 		this.add(repeatsPanel);
 		this.add(levelPanel);
 		this.add(weightingPanel);
+		this.add(pairwiseBox);
 	}
 	
 	public void wrapUp(){
@@ -80,5 +88,6 @@ public class MRPPOptions extends JPanel {
 		defaults.setIntProperty("mrppnumrep", numRepeats);
 		defaults.setIntProperty("mrpplevel", levelSel);
 		defaults.setIntProperty("mrppweight", weightingSel);
+		defaults.setBooleanProperty("mrpppair", pairwise);
 	}
 }

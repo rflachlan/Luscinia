@@ -76,7 +76,7 @@ public class DTWSwingWorker extends SwingWorker{
 				pdtw.prepareToNormalizeStitch();
 				System.out.println("DTWPanel: syllable DTW running");
 				ag.setScores(6, pdtw.runDTW(this, true));
-			
+				//ag.setScores(6, pdtw.tuneDTW(this, true));
 				if (dtwp.stitch.getSelectedIndex()==1){
 					ag.compressSyllablesStitch();
 				}

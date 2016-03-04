@@ -23,7 +23,7 @@ import lusc.net.github.ui.SaveDocument;
 
 public class ElementOutput extends JPanel{
 
-	String [] parameters={"Peak frequency", "Mean frequency", "Median frequency", "Fundamental frequency", "Peak frequency change", "Mean frequency change", "Median frequency change", 
+	String [] parameters={"Time", "Peak frequency", "Mean frequency", "Median frequency", "Fundamental frequency", "Peak frequency change", "Mean frequency change", "Median frequency change", 
 	"Fundamental frequency change", "Wiener entropy", "Harmonicity", "Frequency bandwidth", "Amplitude", "Vibrato rate", "Vibrato amplitude",  "Vibrato asymmetry"};
 	//String [] parameters={"Peak frequency", "Mean frequency", "Median frequency", "Fundamental frequency", "Peak frequency change", "Mean frequency change", "Median frequency change", 
 	//		"Fundamental frequency change", "Wiener entropy", "Harmonicity", "Frequency bandwidth", "Amplitude", "Vibrato amplitude", "Vibrato rate", "Vibrato asymmetry", "Minimum Frequency", "Maximum frequency", "Signal location"};
@@ -131,7 +131,7 @@ public class ElementOutput extends JPanel{
 								sd.writeDouble(ele.getEchoComp());
 								sd.writeDouble(ele.getDy());
 							}
-							if (rb_set[1].isSelected()){sd.writeDouble(signal[k][0]*ele.getTimeStep());}
+							if (rb_set[1].isSelected()){sd.writeDouble((ele.getBeginTime()+signal[k][0])*ele.getTimeStep());}
 							for (int a=0; a<15; a++){
 								if (rb_set[(a+2)].isSelected()){
 									sd.writeDouble(measurements[kk][a]);
@@ -157,6 +157,8 @@ public class ElementOutput extends JPanel{
 	}
 	
 	public void calculateElements(){
+		
+		numPoints=(int)((Number)numPointsField.getValue()).intValue();
 		
 		SaveDocument sd=new SaveDocument(this, defaults);
 		boolean readyToWrite=sd.makeFile();
@@ -221,9 +223,17 @@ public class ElementOutput extends JPanel{
 							if (allPoints.isSelected()){
 								p=ele.getLength();
 							}
-							double[] meas=ele.getMeasurements(i, p);
-							for (int k=0; k<p; k++){
-								sd.writeDouble(meas[k]);
+							if (i==0){
+								double[] t=ele.getTimes(p);
+								for (int k=0; k<p; k++){
+									sd.writeDouble(t[k]);
+								}
+							}
+							else{
+								double[] meas=ele.getMeasurements(i-1, p);
+								for (int k=0; k<p; k++){
+									sd.writeDouble(meas[k]);
+								}
 							}
 							sd.writeLine();
 						}

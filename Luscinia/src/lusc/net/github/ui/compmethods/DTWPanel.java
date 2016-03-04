@@ -38,6 +38,7 @@ public class DTWPanel extends JPanel implements ActionListener, PropertyChangeLi
 	static String ALIGN_OPTIONS="alignoptions";
 	static String INTERPOLATE_OPT="interpolate";
 	static String WARP_TYPE_OPT="warp type";
+	static String SQUARED_DIST="squared dist";
 	
 	
 	int progress=0;
@@ -50,7 +51,9 @@ public class DTWPanel extends JPanel implements ActionListener, PropertyChangeLi
 	
 	JRadioButton normaliseWithSDsB=new JRadioButton("Weight features with SDs", true);
 	
-	JRadioButton interpolateB=new JRadioButton("Interpolate in DTW", true);
+	JRadioButton interpolateB=new JRadioButton("Interpolate in TW", true);
+	
+	JRadioButton squaredDist=new JRadioButton("Use squared distance in TW", false);
 	
 	JRadioButton warpTypeB=new JRadioButton("Dynamic warping", true);
 	
@@ -68,6 +71,7 @@ public class DTWPanel extends JPanel implements ActionListener, PropertyChangeLi
 	boolean normaliseWithSDs=false;
 	boolean interpolate=true;
 	boolean dynamicWarping=true;
+	boolean squared=false;
 	
 	int stitchSyllables=0;
 	double mainReductionFactor=0.25;
@@ -75,7 +79,8 @@ public class DTWPanel extends JPanel implements ActionListener, PropertyChangeLi
 	double minVar=0.2;
 	double stitchPunishment=150;
 	double maximumWarp=0.25;
-	double sdRatio=0.5;
+	double sdRatio=1;
+	double sdRatio2=0;
 	double offsetRemoval=0.0;
 	double alignmentCost=0.2;
 	int alignmentPoints=3;
@@ -88,7 +93,7 @@ public class DTWPanel extends JPanel implements ActionListener, PropertyChangeLi
 
 	JFormattedTextField[] parametersTF;
 	
-	JFormattedTextField compressionFactorTF, minPointsTF, sdRatioTF, offsetRemovalTF, stitchPunishmentTF, alignmentCostTF, addSyllRepsTF, maximumWarpTF;
+	JFormattedTextField compressionFactorTF, minPointsTF, sdRatioTF, sdRatioTF2, offsetRemovalTF, stitchPunishmentTF, alignmentCostTF, addSyllRepsTF, maximumWarpTF;
 		
 	boolean started=false;
 	boolean textOut=false;
@@ -159,6 +164,10 @@ public class DTWPanel extends JPanel implements ActionListener, PropertyChangeLi
 		return interpolate;
 	}
 	
+	public boolean getSquared(){
+		return squared;
+	}
+	
 	public int getStitchSyllables(){
 		return stitchSyllables;
 	}
@@ -189,6 +198,10 @@ public class DTWPanel extends JPanel implements ActionListener, PropertyChangeLi
 	
 	public double getSDRatio(){
 		return sdRatio;
+	}
+	
+	public double getSDRatio2(){
+		return sdRatio2;
 	}
 	
 	public double getStitchPunishment(){
@@ -224,6 +237,10 @@ public class DTWPanel extends JPanel implements ActionListener, PropertyChangeLi
 		interpolate=w;
 	}
 	
+	public void setSquared(boolean w){
+		squared=w;
+	}
+	
 	public void setStitchSyllables(int a){
 		stitchSyllables=a;
 	}
@@ -254,6 +271,10 @@ public class DTWPanel extends JPanel implements ActionListener, PropertyChangeLi
 	
 	public void setSDRatio(double a){
 		sdRatio=a;
+	}
+	
+	public void setSDRatio2(double a){
+		sdRatio2=a;
 	}
 	
 	public void setStitchPunishment(double a){
@@ -323,6 +344,14 @@ public class DTWPanel extends JPanel implements ActionListener, PropertyChangeLi
 		sdRatioTF.addPropertyChangeListener("value", this);
 		optionsPanel.add(sdRatioTF);
 		
+		JLabel ratioLabel2=new JLabel("Non-Time SD weighting: ");
+		optionsPanel.add(ratioLabel2);
+		sdRatioTF2=new JFormattedTextField();
+		sdRatioTF2.setValue(new Double(sdRatio2));
+		sdRatioTF2.setColumns(10);
+		sdRatioTF2.addPropertyChangeListener("value", this);
+		optionsPanel.add(sdRatioTF2);
+		
 		JLabel syllRepsLabel=new JLabel("Syllable repetition weighting: ");
 		optionsPanel.add(syllRepsLabel);
 		addSyllRepsTF=new JFormattedTextField();
@@ -383,12 +412,17 @@ public class DTWPanel extends JPanel implements ActionListener, PropertyChangeLi
 		interpolateB.setActionCommand(INTERPOLATE_OPT);
 		interpolateB.addActionListener(this);
 		optionsPanel.add(interpolateB);
+		squaredDist.setSelected(squared);;
+		squaredDist.setActionCommand(SQUARED_DIST);
+		squaredDist.addActionListener(this);
+		optionsPanel.add(squaredDist);
+		
 		warpTypeB.setSelected(dynamicWarping);
 		warpTypeB.setActionCommand(WARP_TYPE_OPT);
 		warpTypeB.addActionListener(this);
 		optionsPanel.add(warpTypeB);
-		JLabel blank=new JLabel(" ");
-		optionsPanel.add(blank);
+		//JLabel blank=new JLabel(" ");
+		//optionsPanel.add(blank);
 		
 		JPanel stitchPanel=new JPanel(new BorderLayout());
 		stitch.setSelectedIndex(stitchSyllables);
@@ -451,6 +485,7 @@ public class DTWPanel extends JPanel implements ActionListener, PropertyChangeLi
 		}
 		else if (LOG_FREQUENCIES.equals(command)){
 			logFrequencies=logFrequenciesB.isSelected();
+			System.out.println(logFrequencies);
 		}
 		else if (NORMALISE_SDS.equals(command)){
 			normaliseWithSDs=normaliseWithSDsB.isSelected();
@@ -466,6 +501,9 @@ public class DTWPanel extends JPanel implements ActionListener, PropertyChangeLi
 		}
 		else if (WARP_TYPE_OPT.equals(command)){
 			dynamicWarping=warpTypeB.isSelected();
+		}
+		else if (SQUARED_DIST.equals(command)){
+			squared=squaredDist.isSelected();
 		}
 			
 	}
@@ -621,6 +659,13 @@ public class DTWPanel extends JPanel implements ActionListener, PropertyChangeLi
 			if (s>1){s=1;}
 			sdRatio=s;
 			sdRatioTF.setValue(new Double(s));
+		}
+		if (source==sdRatioTF2){
+			double s=((Number)sdRatioTF2.getValue()).doubleValue();
+			if (s<0){s=0;}
+			if (s>1){s=1;}
+			sdRatio2=s;
+			sdRatioTF2.setValue(new Double(s));
 		}
 		if (source==offsetRemovalTF){
 			double s=((Number)offsetRemovalTF.getValue()).doubleValue();

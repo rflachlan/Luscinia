@@ -1,5 +1,7 @@
 package lusc.net.github;
 
+import java.util.LinkedList;
+
 import lusc.net.github.analysis.BasicStatistics;
 //
 //  Element.java
@@ -50,6 +52,9 @@ public class Element {
 	double maxFreq=0;
 	double minFreq=0;
 	double energyVariance=0;
+	
+	LinkedList<Syllable> syls=new LinkedList<Syllable>();
+	
 	
 	/**
 	 * An empty constructor
@@ -642,6 +647,7 @@ public class Element {
 	 */
 	
 	public float getTimeBefore(){
+		//System.out.println("Time before: "+timeBefore);
 		return timeBefore;
 	}
 	
@@ -652,6 +658,7 @@ public class Element {
 	 */
 	
 	public void setTimeBefore(float a){
+		//System.out.println("Time before: "+a);
 		timeBefore=a;
 	}
 	
@@ -1258,6 +1265,24 @@ public class Element {
 		calculateStatistics();
 		song.dy=archdy;
 	}
+	
+	public double[] getTimes(int npoints){
+		double[] results=new double[npoints];
+		
+		double m=npoints;
+		
+		double increment=length/(m-1.0);
+		
+		for (int i=0; i<npoints; i++){
+			
+			results[i]=(begintime+i*increment)*timeStep;
+			
+		}
+			
+		return results;
+	}
+	
+	
 	
 	public double[] getMeasurements(int id, int npoints){
 		double[] results=new double[npoints];

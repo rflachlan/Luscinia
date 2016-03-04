@@ -18,15 +18,19 @@ public class MRPP {
 	int n;
 	Random random=new Random(System.currentTimeMillis());
 	
-	
 	double[][] dat;
 	int[] marker;
 	
 	int weightingMethod=0;
 	int nresamp=10000;
 	
+	boolean pairwise=false;
+	
 	double expectedDelta, empiricalDelta, pvalue, avalue;
+	double[][] pairwisePValue, pairwiseAValue, pairwiseExpectedDelta, pairwiseEmpiricalDelta;
 	int dataType=0;
+	
+	String[] levelNames;
 	
 	public MRPP(ComparisonResults cr, MRPPOptions mo, int type){
 		this.dataType=type;
@@ -37,16 +41,27 @@ public class MRPP {
 		int s=mo.levelSel;
 		if (s==0){
 			partition=cr.getSpeciesListArray();
+			levelNames=cr.getSpeciesNames();
 		}
 		else if (s==1){
 			partition=cr.getPopulationListArray();
+			levelNames=cr.getPopulationNames();
 		}
 		else if (s==2){
 			partition=cr.getLookUpIndividuals();
+			levelNames=cr.getIndividualNames();
 		}
 		weightingMethod=mo.weightingSel;
 		nresamp=mo.numRepeats;
-		calculateMRPP(d, partition);
+		pairwise=mo.pairwise;
+		double[] results=calculateMRPP(d, partition);
+		pvalue=results[0];
+		avalue=results[1];
+		empiricalDelta=results[2];
+		expectedDelta=results[3];
+		if (pairwise){
+			calculateMRPPPairwise(d, partition);
+		}
 	}
 	
 	public MRPP(double[][] d, int[] partition){
@@ -72,11 +87,154 @@ public class MRPP {
 	public double getAValue(){
 		return avalue;
 	}
+	
+	public boolean getPairwise(){
+		return pairwise;
+	}
+	
+	public double[][] getPairwisePValue(){
+		return pairwisePValue;
+	}
+	
+	public double[][] getPairwiseAValue(){
+		return pairwiseAValue;
+	}
+	
+	public double[][] getPairwiseExpectedDelta(){
+		return pairwiseExpectedDelta;
+	}
+	
+	public double[][] getPairwiseEmpiricalDelta(){
+		return pairwiseEmpiricalDelta;
+	}
+	
+	public String[] getLevelNames(){
+		return levelNames;
+	}
+	
+	public void calculateMRPPPairwise(double[][]d, int[] partition){
+		int[] levels=calculateLevels(partition);
+		int n=levels.length;
+		pairwisePValue=new double[n][n];
+		pairwiseAValue=new double[n][n];
+		pairwiseEmpiricalDelta=new double[n][n];
+		pairwiseExpectedDelta=new double[n][n];
+		for (int i=0; i<n; i++){
+			for (int j=0; j<n; j++){	
+				int[] subpart=getSubsetPartition(partition, levels[i], levels[j]);
+				System.out.println("LEVELS: "+levels[i]+" "+levels[j]);
+				double[][] subscore=getSubsetScores(partition, d, levels[i], levels[j]);
+				double[] results=calculateMRPP(subscore, subpart);
+				pairwisePValue[i][j]=results[0];
+				pairwiseAValue[i][j]=results[1];
+				pairwiseEmpiricalDelta[i][j]=results[2];
+				pairwiseExpectedDelta[i][j]=results[3];
+			}
+		}	
+	}
+	
+	public int[] getSubsetPartition(int[] levels, int x, int y){
+		int n=levels.length;
+		int m=0;
+		for (int i=0; i<n; i++){
+			if (levels[i]==x){
+				m++;
+			}
+			else if (levels[i]==y){
+				m++;
+			}
+		}
 		
-	public void calculateMRPP(double[][] d, int[] partition){
+		int[] out=new int[m];
+		m=0;
+		for (int i=0; i<n; i++){
+			if (levels[i]==x){
+				out[m]=x;
+				m++;
+			}
+			else if (levels[i]==y){
+				out[m]=y;
+				m++;
+			}
+		}
+		
+		//for (int i=0; i<out.length; i++){
+			//System.out.print(out[i]+" ");
+		//}
+		//System.out.println();
+		for (int i=0; i<out.length; i++){
+			if (out[i]==x){
+				out[i]=0;
+			}
+			else{
+				out[i]=1;
+			}
+		}
+		return out;
+	}
+	
+	public double[][] getSubsetScores(int[] levels, double[][] scores, int x, int y){
+		int n=levels.length;
+		int m=0;
+		for (int i=0; i<n; i++){
+			if (levels[i]==x){
+				m++;
+			}
+			else if (levels[i]==y){
+				m++;
+			}
+		}
+		
+		double[][] out=new double[m][];		
+		m=0;
+		for (int i=0; i<n; i++){
+			if ((levels[i]==x)||(levels[i]==y)){
+				out[m]=new double[i+1];
+				int m2=0;
+				for (int j=0; j<i; j++){
+					if ((levels[j]==x)||(levels[j]==y)){
+						out[m][m2]=scores[i][j];
+						m2++;
+					}
+				}
+				m++;
+			}
+		}
+		return out;	
+	}
+		
+	
+	public int[] calculateLevels(int[] input){
+		int x=0;
+		int n=input.length;
+		int[] y=new int[n];
+		
+		for (int i=0; i<n; i++){
+			boolean found=false;
+			for (int j=0; j<x; j++){
+				if (input[i]==y[j]){
+					found=true;
+					j=x;
+				}
+			}
+			if (!found){
+				y[x]=input[i];
+				x++;
+			}
+		}
+		
+		int[] z=new int[x];
+		System.arraycopy(y, 0, z, 0, x);
+		
+		return z;
+	}
+	
+	
+	public double[] calculateMRPP(double[][] d, int[] partition){
 		n=d.length;
 		double numPart=0;
 		int maxPart=0;
+		double[] results=new double[4];
 		for (int i=0; i<n; i++){
 			//System.out.println(partition[i]);
 			if (partition[i]>maxPart){maxPart=partition[i];}
@@ -127,7 +285,7 @@ public class MRPP {
 			}
 			n=dat.length;
 		
-			empiricalDelta=calculateDelta(partb, countPart, t2, maxPart);
+			double ed=calculateDelta(partb, countPart, t2, maxPart);
 		
 			double[] resamples=new double[nresamp];
 		
@@ -136,16 +294,21 @@ public class MRPP {
 			for (int i=0; i<nresamp; i++){
 				int[] markr=shufflePartition(partb);
 				resamples[i]=calculateDelta(markr, countPart, t2, maxPart);
-				if (resamples[i]<=empiricalDelta){count++;}
+				if (resamples[i]<=ed){count++;}
 				av+=resamples[i];
 			}
-			expectedDelta=av/nresamp+0.0;
-			pvalue=(1.0+count)/(nresamp+0.0);
-			avalue=1-(empiricalDelta/expectedDelta);
-		
-			System.out.println("Empirical Delta: "+empiricalDelta+" Expected Delta: "+expectedDelta+" p: "+pvalue+" A: "+avalue);
+			//expectedDelta=av/nresamp+0.0;
+			//pvalue=(1.0+count)/(nresamp+0.0);
+			//avalue=1-(empiricalDelta/expectedDelta);
+			results[0]=(1.0+count)/(nresamp+0.0);
+			results[2]=ed;
+			results[3]=av/nresamp+0.0;
+			results[1]=1-(ed/results[3]);
+			//System.out.println("Empirical Delta: "+empiricalDelta+" Expected Delta: "+expectedDelta+" p: "+pvalue+" A: "+avalue);
 		}
+		return results;
 	}
+	
 	
 	public MRPP(double[][] d, int[] partition, int[] group){
 		n=d.length;
@@ -201,6 +364,7 @@ public class MRPP {
 			System.out.println("Empirical Delta: "+empiricalDelta+" Expected Delta: "+expectedDelta+" p: "+pvalue+" A: "+avalue);
 		}
 	}
+	
 	
 	public double calculateDelta(int[] partition, int[] countPart, double t, int maxPart){
 		

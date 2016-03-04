@@ -26,7 +26,7 @@ import lusc.net.github.ui.db.DatabaseView;
 import lusc.net.github.ui.SaveSound;
 import lusc.net.github.ui.SyllableInduction;
 
-public class MainPanel extends JPanel implements PropertyChangeListener, ChangeListener, ActionListener, WindowListener{
+public class MainPanel extends JPanel implements PropertyChangeListener, ChangeListener, ActionListener, WindowListener, KeyListener{
 	
 	/**
 	 * 
@@ -47,6 +47,7 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 	JButton undo=new JButton("Undo");
 	JButton automatic=new JButton("Select All");
 	JButton mode=new JButton("Mode: elements");
+	JCheckBox erase=new JCheckBox("Erase");
 	JButton update=new JButton("Update spectrograph");
 	JButton defaultSettings=new JButton("Default settings");
 	JButton saveDefault=new JButton("Set default");
@@ -83,6 +84,7 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 	private static String UNDO_COMMAND = "undo";
 	private static String AUTOMATIC_COMMAND = "automatic";
 	private static String MODE_COMMAND = "mode";
+	private static String ERASE_COMMAND = "erase";
 	private static String UPDATE_COMMAND = "update";
 	//private static String SELECT_COMMAND = "select";
 	private static String DELETE_COMMAND = "delete";
@@ -355,6 +357,8 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 	
 	public void startDrawing(){
 		this.setLayout(new BorderLayout());
+		this.setFocusable(true);
+		this.addKeyListener(this);
 		d.width=(int)(d.getWidth()-50);
 		num=NumberFormat.getNumberInstance();
 		num.setMaximumFractionDigits(10);
@@ -1219,6 +1223,11 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		mode.setActionCommand(MODE_COMMAND);
         mode.addActionListener(this);
 		
+        
+        erase.setFont(font2);
+        erase.setActionCommand(ERASE_COMMAND);
+        erase.addActionListener(this);
+        
 		jumpSuppressionL.setLabelFor(fundJumpSuppression);
 		fundJumpSuppression=new JFormattedTextField(num);
 		fundJumpSuppression.setFont(font2);
@@ -1346,6 +1355,7 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 
 		if (editMode){
 			measurePane.add(mode);
+			measurePane.add(erase);
 			measurePane.add(undo);
 			measurePane.add(redo);
 			measurePane.add(automatic);
@@ -1404,8 +1414,11 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 			slayout3.putConstraint(SpringLayout.WEST, mode, spring, SpringLayout.WEST, measurePane);
 			slayout3.putConstraint(SpringLayout.NORTH, mode, 2, SpringLayout.NORTH, measurePane);
 		
+			slayout3.putConstraint(SpringLayout.WEST, erase, 0, SpringLayout.WEST, mode);
+			slayout3.putConstraint(SpringLayout.NORTH, erase, spring, SpringLayout.SOUTH, mode);
+			
 			slayout3.putConstraint(SpringLayout.WEST, undo, 0, SpringLayout.WEST, mode);
-			slayout3.putConstraint(SpringLayout.NORTH, undo, spring, SpringLayout.SOUTH, mode);
+			slayout3.putConstraint(SpringLayout.NORTH, undo, spring, SpringLayout.SOUTH, erase);
 		
 			slayout3.putConstraint(SpringLayout.WEST, redo, 0, SpringLayout.WEST, mode);
 			slayout3.putConstraint(SpringLayout.NORTH, redo, spring, SpringLayout.SOUTH, undo);
@@ -1926,6 +1939,8 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		
 	public void actionPerformed(ActionEvent e) {
 		String command = e.getActionCommand();
+		//this.setRequestFocusEnabled(true);
+		this.requestFocusInWindow();
 		if (LISTEN_TO_DROP_DOWNS){
 			if (DELETE_COMMAND.equals(command)) {
 				JComboBox cb = (JComboBox)e.getSource();
@@ -2181,9 +2196,12 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 				brush.setEnabled(false);
 			}
 		}
+		if (ERASE_COMMAND.equals(command)){
+			s.erase=erase.isSelected();
+		}
 		if (SAVE_COMMAND.equals(command)) {
-			writeResults();
-			cleanUp();
+			boolean proceed = writeResults();
+			if (proceed){cleanUp();}
 			//f.dispose();
 		}
 		if (SAVE_SOUND_COMMAND.equals(command)) {
@@ -2487,6 +2505,7 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 
 	public void stateChanged(ChangeEvent e) {
 		
+		this.requestFocusInWindow();
 		
 		if (tabPane.getSelectedComponent()==appearancePane){
 			
@@ -2659,6 +2678,9 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 	
 	public void propertyChange(PropertyChangeEvent e) {
         Object source = e.getSource();
+        //this.setRequestFocusEnabled(true);
+        //this.requestFocus();
+        this.requestFocusInWindow();
 		if (started){
 			//System.out.println("TEXT BOX CALLED");
 			started=false;
@@ -3018,7 +3040,7 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		minGap.setValue(new Double(song.getMinGap()));
 	}
 		
-	public void writeResults(){
+	public boolean writeResults(){
 		Calendar timeCal=Calendar.getInstance();
 		timeCal.setTime(timeModel.getDate());
 		Calendar dateCal=Calendar.getInstance();
@@ -3032,8 +3054,11 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		song.setNotes(notesField.getText());
 		song.setRecordEquipment(equipmentField.getText());
 		song.setRecordist(recordistField.getText());
-		dbc.writeSongInfo(song);
+		
 		if (editMode){
+			boolean proceed=song.checkSong(this);
+			if (!proceed){return false;}
+			dbc.writeSongInfo(song);
 			song.sortSyllsEles();
 			song.calculateGaps();
 			dbc.writeSongMeasurements(song);	
@@ -3074,7 +3099,7 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		defaults.setIntProperty("GPMAXF", guidePanelMaxFrequency);
 		defaults.setDoubleProperty("stretchX", s.stretchX, 1000);
 		defaults.setDoubleProperty("stretchY", s.stretchY, 1000);
-		
+		return true;
 	}
 	
 	
@@ -3184,6 +3209,93 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 	
 	public void stopDrawingProgress(){
 		stopPlaying=true;
+	}
+
+	@Override
+	public void keyTyped(KeyEvent e) {
+		System.out.println("KEY TYPED :"+e.getKeyChar());
+		char c=e.getKeyChar();
+		if (c=='m'){
+			mode.doClick();
+		}
+		else if (c=='p'){
+			playAll.doClick();
+		}
+		else if (c=='P'){
+			playScreen.doClick();
+		}
+		else if (c=='o'){
+			stop.doClick();
+		}
+		else if (c=='s'){
+			save.doClick();
+		}
+		else if (c=='U'){
+			update.doClick();
+		}
+		else if (c=='z'){
+			zoomTimeAll.doClick();
+		}
+		else if (c=='Z'){
+			zoomTime100.doClick();
+		}
+		else if (c=='v'){
+			viewElements.doClick();
+		}
+		else if (c=='V'){
+			viewSyllables.doClick();
+		}
+		else if (c=='g'){
+			viewSignal.doClick();
+		}
+		else if (c=='u'){
+			undo.doClick();
+		}
+		else if (c=='q'){
+			redo.doClick();
+		}
+		else if (c=='a'){
+			automatic.doClick();
+		}
+		else if (c=='d'){
+			defaultSettings.doClick();
+		}
+		else if (c=='D'){
+			saveDefault.doClick();
+		}
+		else if (c=='f'){
+			forwardButton.doClick();
+		}
+		else if (c=='F'){
+			fForwardButton.doClick();
+		}
+		else if (c=='b'){
+			backButton.doClick();
+		}
+		else if (c=='B'){
+			fBackButton.doClick();
+		}
+		else if (c=='r'){
+			reestimate.doClick();
+		}
+		else if (c=='R'){
+			reestAll.doClick();
+		}
+		else if (c=='e'){
+			erase.doClick();
+		}
+	}
+
+	@Override
+	public void keyPressed(KeyEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void keyReleased(KeyEvent e) {
+		// TODO Auto-generated method stub
+		
 	}
 
 }

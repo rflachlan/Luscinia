@@ -37,7 +37,13 @@ public class KMedoids {
 	
 	public KMedoids(ComparisonResults cr, KMedoidsOptions ko){
 		this.type=cr.getType();
-		this.dMat=cr.getDiss();
+		if (ko.useRaw){
+			this.dMat=cr.getDiss();
+		}
+		else{
+			this.dMat=cr.getDissT();
+		}
+		System.out.println("KMEDOIDS METHOD: "+ko.useRaw);
 		makeMatrix2(dMat, 1);
 		this.minK=ko.minClusterK;
 		this.maxK=ko.maxClusterK;

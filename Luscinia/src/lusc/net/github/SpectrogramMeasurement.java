@@ -330,6 +330,116 @@ public class SpectrogramMeasurement {
 		return tList;	
 	}
 	
+	
+	/**
+	 * This method erases marked parts of elements....
+	 * @param pointList a highlighted region of the spectrogram. Lists min and max freqs
+	 * for a range of times
+	 * @param unx length of the spectrogram (shouldn't be necessary!)
+	 * @return a LinkedList of int[][] containing signal locations
+	 */
+	public LinkedList<int[][]> eraseSignal(int[][] pointList, int currentMinX){						
+		setUp();
+		
+		LinkedList<int[][]> alteredElements=new LinkedList<int[][]>();
+		LinkedList<Element> removeList=new LinkedList<Element>();
+		int minx=0;
+		while (pointList[minx][0]==0){minx++;}
+		int maxx=pointList.length-2;								//this bit identifies the start and end of the element
+		while (pointList[maxx][0]==0){maxx--;}
+		maxx++;
+	
+		int p1;
+		for (int i=minx; i<maxx; i++){
+			p1=ny-pointList[i][0]-1;
+			pointList[i][0]=ny-pointList[i][1]-1;
+			pointList[i][1]=p1;
+			if (pointList[i][1]==ny-1){pointList[i][1]--;}
+			if (pointList[i][0]==0){pointList[i][0]++;}
+		}
+		
+		for (Element ele : song.eleList){
+			int start=ele.getBeginTime()-currentMinX;
+			int end=ele.getLength()+start;
+			
+			System.out.println("CHECKING: "+start+" "+end+" "+minx+" "+maxx);
+			
+			if (((start<minx)&&(end>minx))||((start>=minx)&&(start<maxx))){
+				System.out.println("PROCESSING");
+				
+				removeList.add(ele);
+				
+				int[][] signal=ele.getSignal();
+				
+				LinkedList<boolean[]> cols=new LinkedList<boolean[]>();
+				
+				
+				for (int j=0; j<signal.length; j++){
+					int y=0;
+					boolean[] col=new boolean[ny];
+					for (int k=0; k<ny; k++){col[k]=false;}
+					
+					
+					System.out.println(signal[j].length);
+					for (int k=1; k<signal[j].length; k+=2){
+						System.out.println(j+" "+k+" "+signal[j][k]+" "+signal[j][k+1]);
+						for (int a=ny-signal[j][k]; a<ny-signal[j][k+1]; a++){
+							col[a]=true;
+							y++;
+						}	
+					}
+					System.out.println(y);
+					for (int i=minx; i<maxx; i++){
+						int x=i+currentMinX;				
+						if (signal[j][0]==x){
+							for (int k=pointList[i][0]; k<pointList[i][1]; k++){
+								if (col[k]){
+									y--;
+									col[k]=false;
+								}	
+							}
+						}
+					}
+					System.out.println(y);		
+					if (y>0){
+						cols.add(col);
+					}
+					if ((y==0)||(j==signal.length-1)){
+						int[][] sig=new int[cols.size()][];
+						
+						for (int i=0; i<cols.size(); i++){
+							boolean[] col2=cols.get(i);
+							
+							int xloc=signal[j][0]-cols.size()+i-currentMinX+1;
+							int segs=0;
+							for (int k=0; k<ny-1; k++){
+								if ((!col2[k])&&(col2[k+1])){
+									segs++;
+								}
+							}
+							
+							sig[i]=new int[1+2*segs];
+							System.out.println("NEW SIG: "+sig.length+" "+i+" "+sig[i].length);
+							sig[i][0]=xloc;
+							int a=1;
+							for (int k=0; k<ny-1; k++){
+								if (col2[k]!=col2[k+1]){
+									sig[i][a]=k;
+									a++;
+								}		
+							}								
+						}
+						cols.removeAll(cols);		
+						alteredElements.add(sig);
+					}
+				}		
+			}	
+		}
+		song.eleList.removeAll(removeList);
+		return alteredElements;
+	
+	}
+	
 	/**
 	 * This method attempts to merge two measured elements into one - based on a user decision
 	 * to do so. This is currently a bit buggy, and needs some investigation

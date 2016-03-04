@@ -7,11 +7,16 @@ package lusc.net.github.analysis.multivariate;
 //  Copyright 2006 Robert Lachlan. All rights reserved.
 //	This program is provided under the GPL 2.0 software licence. Please see accompanying material for details.
 
-import org.ejml.*;
-import org.ejml.data.*;
-import org.ejml.factory.*;
-import org.ejml.ops.*;
+import no.uib.cipr.matrix.DenseMatrix;
+import no.uib.cipr.matrix.DenseVector;
+import no.uib.cipr.matrix.EVD;
 
+//import org.ejml.*;
+//import org.ejml.data.*;
+//import org.ejml.factory.*;
+//import org.ejml.ops.*;
+
+import no.uib.cipr.matrix.SVD;
 import lusc.net.github.analysis.BasicStatistics;
 import lusc.net.github.ui.AnalysisSwingWorker;
 import mdsj.*;
@@ -73,15 +78,19 @@ public class MultiDimensionalScaling {
 		n=data.length;
 		npcs=anpcs;
 		if (npcs>n){npcs=n;}
-		
+		//System.out.println("Preparing matrix...");
 		double[][] d=getSquareDistanceMatrix(data);
 		double[][] d2=getQuasimetricMatrix(d, n);
+		//System.out.println("Starting mds");
 		double[][] init=mds(d2, npcs);
 		asw.progress();
+		//System.out.println("Starting nmds");
 		double[][] nmdsConfig=runNMDS(d, init, npcs);
 		asw.progress();
 		double[][] dt=getDissimilarityMatrix(nmdsConfig, n, npcs);
 		configuration=PCA(nmdsConfig);
+		//configuration=init;
+		//System.out.println("Tidying up");
 		asw.progress();
 		d=getSquareDistanceMatrix(data);
 		percentExplained=calculateCorrelation(configuration, d);
@@ -167,11 +176,11 @@ public class MultiDimensionalScaling {
 		for (int i=0; i<n; i++){			//now turn row column totals into means
 			d_col[i]/=n+0.0;
 			d_row[i]/=n+0.0;
-			d_col[i]*=d_col[i];
-			d_row[i]*=d_row[i];
+			//d_col[i]*=d_col[i];
+			//d_row[i]*=d_row[i];
 		}
 		d_tot/=n*n+0.0;
-		d_tot*=d_tot;
+		//d_tot*=d_tot;
 		for (int i=0; i<n; i++){
 			for (int j=0; j<n; j++){
 				d[i][j]=d[i][j]-d_col[i]-d_row[j]+d_tot;
@@ -179,99 +188,159 @@ public class MultiDimensionalScaling {
 		}
 		long st=System.currentTimeMillis();
 		
-		DenseMatrix64F D = new DenseMatrix64F(d);
-		EigenDecomposition<DenseMatrix64F> ed=DecompositionFactory.eig(n, true, true);
+		DenseMatrix dm=new DenseMatrix(d);
+		try{
+			System.out.println("factorizing");
+			EVD evd=EVD.factorize(dm);
+			System.out.println("done factorizing");
+		
+		
+		
+		//DenseMatrix64F D = new DenseMatrix64F(d);
+		//EigenDecomposition<DenseMatrix64F> ed=DecompositionFactory.eig(n, true, true);
 
-		if( !ed.decompose(D)){
-			   throw new RuntimeException("Cholesky failed!");}
+		//if( !ed.decompose(D)){
+			//   throw new RuntimeException("Cholesky failed!");}
 		
 		//System.out.println("Eigenvalues");
+			long st2=System.currentTimeMillis();
+			double[] eig=evd.getRealEigenvalues();
 		
-		double[] eig=new double[n];
-		for (int i=0; i<n; i++){
-			eig[i]=ed.getEigenvalue(i).real;
+		//double[] eig=new double[n];
+		//for (int i=0; i<n; i++){
+			//eig[i]=ed.getEigenvalue(i).real;
 			//System.out.println(eig[i]);
-		}
+		//}
 		
-		double[] e2=eig.clone();
-		Arrays.sort(e2);
-		eigenValues=new double[ndim];
-		for (int i=0; i<ndim; i++){
-			eigenValues[i]=e2[n-i-1];
-			//System.out.println(eigenValues[i]+" "+eig[i]);
-		}
+			double[] e2=eig.clone();
+			Arrays.sort(e2);
+			eigenValues=new double[ndim];
+			for (int i=0; i<ndim; i++){
+				eigenValues[i]=e2[n-i-1];
+				//System.out.println(eigenValues[i]+" "+eig[i]);
+			}
 		
-		double[][] d2=new double[ndim][];
+			double[][] d2=new double[ndim][];
 		
-		for (int i=0; i<ndim; i++){
-			for (int j=0; j<n; j++){
-				if (eigenValues[i]==eig[j]){
-					d2[i]=ed.getEigenVector(j).getData();
-					j=n;
+			DenseMatrix dm2=evd.getRightEigenvectors();
+			long st3=System.currentTimeMillis();
+			double[] dt=dm2.getData();
+			for (int i=0; i<ndim; i++){
+				for (int j=0; j<n; j++){
+					if (eigenValues[i]==eig[j]){
+					
+						d2[i]=Arrays.copyOfRange(dt, j*n, (j+1)*n);
+					
+					//d2[i]=ed.getEigenVector(j).getData();
+						j=n;
+					}	
+				}
+			}
+			long st4=System.currentTimeMillis();
+			System.out.println("TIMES: "+st+" "+st2+" "+st3+" "+st4);
+			System.out.println(d2.length+" "+d2[0].length);
+			double[][] d3=scaleEigenvectors(d2, eigenValues);
+		
+			for (int i=0; i<n; i++){
+				for (int j=0; j<ndim; j++){
+					config[i][j]=d3[j][i];
 				}
 			}
 		}
-
-		System.out.println(d2.length+" "+d2[0].length);
-		double[][] d3=scaleEigenvectors(d2, eigenValues);
-		
-		for (int i=0; i<n; i++){
-			for (int j=0; j<ndim; j++){
-				config[i][j]=d3[j][i];
-			}
-		}
+		catch(Exception e){}
 
 		System.out.println("Configuration sent");
 		return config;
 	}
 	
 	public double[][] PCA(double[][] input) {
-		
+		System.out.println("HERE!");
 		int n=input.length;
 		int m=input[0].length;
 		
+		double[][] d2=new double[n][m];
+		DenseMatrix A=new DenseMatrix(input);
 		
-		DenseMatrix64F A = new DenseMatrix64F(input);
+		
+		//DenseMatrix64F A = new DenseMatrix64F(input);
 		double[] mean=new double[m];
-		for( int i = 0; i < A.getNumRows(); i++ ) {
+		for( int i = 0; i < A.numColumns(); i++ ) {
             for( int j = 0; j < mean.length; j++ ) {
                 mean[j] += A.get(i,j);
             }
         }
         for( int j = 0; j < mean.length; j++ ) {
-            mean[j] /= A.getNumRows();
+            mean[j] /= A.numRows();
         }
-        for( int i = 0; i < A.getNumRows(); i++ ) {
+        for( int i = 0; i < A.numRows(); i++ ) {
             for( int j = 0; j < mean.length; j++ ) {
-                A.set(i,j,A.get(i,j)-mean[j]);
+                //A.set(i,j,A.get(i,j)-mean[j]);
+                A.add(i,j, -mean[j]);
             }
         }
-        SingularValueDecomposition<DenseMatrix64F> svd =
-                DecompositionFactory.svd(A.numRows, A.numCols, false, true, false);
-        if( !svd.decompose(A) )
-            throw new RuntimeException("SVD failed");
+        try{
+        SVD svd=SVD.factorize(A);
+        
+       // SingularValueDecomposition<DenseMatrix64F> svd =
+         //       DecompositionFactory.svd(A.numRows, A.numCols, false, true, false);
+       // if( !svd.decompose(A) )
+         //   throw new RuntimeException("SVD failed");
 		
-        DenseMatrix64F V_t = svd.getV(null,true);
-        DenseMatrix64F W = svd.getW(null);
+        
+        DenseMatrix V_t=svd.getVt();
+        DenseMatrix W=svd.getU();
+        
+        //DenseMatrix64F V_t = svd.getV(null,true);
+        //DenseMatrix64F W = svd.getW(null);
 
         // Singular values are in an arbitrary order initially
-        SingularOps.descendingOrder(null,false,W,V_t,true);
+        //SingularOps.descendingOrder(null,false,W,V_t,true);
         
-        eigenValues=svd.getSingularValues();
+        //eigenValues=svd.getSingularValues();
+        
+        eigenValues=svd.getS();
         
         for (int i=0; i<eigenValues.length; i++){
         	eigenValues[i]*=eigenValues[i];
         	//System.out.println(eigenValues[i]);
         }
         
-        double[][] d2=new double[n][m];
-        DenseMatrix64F mean2 = DenseMatrix64F.wrap(m,1,mean);
+        
+        
+        DenseVector mv=new DenseVector(mean);
+        
+        
+        //DenseMatrix64F mean2 = DenseMatrix64F.wrap(m,1,mean);
+       
         for (int i=0; i<n; i++){
-        	DenseMatrix64F s = new DenseMatrix64F(m,1,true,input[i]);
-        	DenseMatrix64F r = new DenseMatrix64F(m,1);
-        	CommonOps.sub(s,mean2,s);
-        	CommonOps.mult(V_t,s,r);
-        	d2[i]=r.data;
+        	
+        	DenseVector s=new DenseVector(input[i]);
+        	//DenseVector r=new DenseVector(new double[m]);
+        	
+        	
+        	//DenseMatrix64F s = new DenseMatrix64F(m,1,true,input[i]);
+        	//DenseMatrix64F r = new DenseMatrix64F(m,1);
+        	
+        	s.add(-1, mv);
+        	
+        	//CommonOps.sub(s,mean2,s);
+        	
+        	DenseMatrix sm=new DenseMatrix(s);
+        	DenseMatrix r=new DenseMatrix(m,1);
+        	
+        	V_t.mult(sm, r);
+        	
+        	//r=V_t.transposeMult()
+        	
+        	
+        	//CommonOps.mult(V_t,s,r);
+        	
+        	
+        	d2[i]=r.getData();
+        }
+        }
+        catch(Exception e){
+        	e.printStackTrace();
         }
         
         return d2;
@@ -344,10 +413,14 @@ public class MultiDimensionalScaling {
 			
 			//double r=Math.sqrt(q/Math.abs(eig[i]));
 			
-			double r=Math.sqrt(Math.abs(eig[i]));
-			
+			double r=Math.abs(eig[i]);
+			double s=0;
 			for (int j=0; j<n; j++){
-				f[i][j]=d[i][j]*r;
+				s+=d[i][j]*d[i][j];
+			}
+			double t=Math.sqrt(r/s);
+			for (int j=0; j<n; j++){
+				f[i][j]=d[i][j]*t;
 			}
 		}
 		return f;
@@ -444,29 +517,62 @@ public class MultiDimensionalScaling {
 	
 	double[][] getQuasimetricMatrix(double[][] d, int n){
 		
-		double[][] d2=new double[n][n];
-		for (int i=0; i<n; i++){
-			for (int j=0; j<n; j++){
-				d2[i][j]=d[i][j];
+		double[] d2=new double[n*n];
+		int i, j, k, h, f, e;
+		k=0;
+		for (i=0; i<n; i++){
+			for (j=0; j<n; j++){
+				d2[k]=d[i][j];
+				k++;
 			}
 		}
 		boolean correcting=true;
+
+		double m, t, p;
+		int count=0;
 		while (correcting){						//...this uses a quasimetric approach to correct for violations of the triangle inequality (see Dzhafarov 2010).
+			count++;
+			System.out.println(count);
 			correcting=false;
-			for (int i=0; i<n; i++){
-				for (int j=0; j<n; j++){
-					double m=d2[i][j]+1;
-					for (int k=0; k<n; k++){
-						m=Math.min(m, d2[i][k]+d2[k][j]);
+			h=0;
+			for (i=0; i<n; i++){
+				for (j=0; j<i; j++){
+					f=i*n;
+					e=j*n;
+					h=f+j;
+					m=d2[h];
+					
+					
+					for (k=0; k<n; k++){
+						if ((k!=i)&&(k!=j)){
+							p=d2[k+f];
+							if (p<m){
+								t=p+d2[k+e];
+								if (t<m-Double.MIN_VALUE){
+									m=t;
+									correcting=true;
+								}
+							}
+						}
+						//m=Math.min(m, );
 					}
-					if (m<d2[i][j]){
-						correcting=true;
-						d2[i][j]=m;
+					if (correcting){	
+						d2[h]=m;
+						d2[e+i]=m;
 					}
 				}
 			}
 		}
-		return d2;
+		
+		double[][]d3=new double[n][n];
+		k=0;
+		for (i=0; i<n; i++){
+			for (j=0; j<n; j++){
+				d3[i][j]=d2[k];
+				k++;
+			}
+		}
+		return d3;
 	}
 	
 	double[][] getDissimilarityMatrix(double[][] input, int n, int ndi){

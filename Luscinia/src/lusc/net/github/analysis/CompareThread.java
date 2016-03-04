@@ -13,20 +13,21 @@ public class CompareThread extends Thread{
 	boolean normaliseWithSDs=true;
 	boolean interpolateWarp=true;
 	boolean dynamicWarp=true;
+	boolean squared=true;
 	double maximumWarp=0.25;
 	int numTempPars=0;
 	boolean stitch;
-	double[] scores;
-	double[] validParameters, sds, seg2, point2, vec1sq;
+	double[] scores, d2;
+	double[] validParameters, sds, seg1t;
 	double sdsT, validTempPars;
-	double[][] p, q, r, s, t, seg1a, seg1b, vec1;
-	int[][] proute;
+	double[][] p, q, r, s, seg1;
 	double[][] dataFocal, dataFocalE, dataComp, dataCompE;
 	double[] dataFocalT, dataCompT;
 	int[][] elPos;
 	int[] pos;
 	int[] locsX={-1,-1,0};
 	int[] locsY={0,-1,-1};
+	double timediff=0;
 	
 	int l1, l2;
 	
@@ -37,6 +38,7 @@ public class CompareThread extends Thread{
 	long time1, time2=0;
 	
 	double sdRatio=0.5;
+	double sdRatioNT=0.5;
 	double lowerCutOff=0.02;
 	int alignPoints=3;
 	
@@ -143,14 +145,20 @@ public class CompareThread extends Thread{
 		}
 		//System.out.println("2");
 		sdRatio=pdtw.getSDRatio();
+		sdRatioNT=pdtw.getSDRatioNT();
 		validParameters=pdtw.getValidParameters();
 		weightByAmp=pdtw.getWeightByAmp();
+		squared=pdtw.getSquared();
 		//System.out.println("3");
 		normaliseWithSDs=pdtw.getNormaliseWithSds();
 		alignPoints=pdtw.getAlignmentPoints();
 		interpolateWarp=pdtw.getInterpolateWarp();
 		dynamicWarp=pdtw.getDynamicWarp();
 		maximumWarp=pdtw.getMaximumWarp()*0.01;
+		
+		
+		//System.out.println(alignPoints+" "+maximumWarp+" "+squared+" "+weightByAmp+" "+interpolateWarp+" "+dynamicWarp+" "+sdRatio+" "+numTempPars);
+		
 		//System.out.println("4");
 		this.maxlength=maxlength;
 		this.scores=scores;		
@@ -191,8 +199,9 @@ public class CompareThread extends Thread{
 		q=new double[maxlength][maxlength];
 		r=new double[maxlength][maxlength];
 		s=new double[maxlength][maxlength];
-		t=new double[maxlength][maxlength];
-		proute=new int[maxlength][maxlength];
+		d2=new double[maxlength];
+		seg1=new double[dims][maxlength];
+		seg1t=new double[maxlength];
 		bestMatrix=new double[maxlength][maxlength];
 		trajectory=new int[2*maxlength][2];
 		bestTrajectory=new int[2*maxlength][2];
@@ -221,12 +230,13 @@ public class CompareThread extends Thread{
 	 * Method called from Thread's run method.
 	 * This carries out three DTW algorithms, one with the shorter array centre-aligned, one with
 	 * it left-aligned, and one with it right-aligned
-	 * @return a double dissimarity score.
+	 * @return a double dissimilarity score.
 	 */
 			
 	public double derTimeWarpingAsym (){
 		double scoreb=10000000;
 		if ((alignPoints==0)||(alignPoints>2)||(numTempPars==0)){
+			timediff=0;
 			double score1=runComp();
 			if (score1<scoreb){
 				scoreb=score1;
@@ -237,11 +247,14 @@ public class CompareThread extends Thread{
 		}
 		
 		if (numTempPars>0){
+			
+			double diff=dataFocalT[l1-1]-dataCompT[l2-1];
+			
 			if ((alignPoints==1)||(alignPoints>2)){
-				double diff=dataFocalT[dataFocalT.length-1]-dataCompT[dataComp[0].length-1];
-				for (int i=0; i<dataFocalT.length; i++){
-					dataFocalT[i]-=diff;
-				}
+				//for (int i=0; i<dataFocalT.length; i++){
+					//dataFocalT[i]=dataFocalTX[i]+diff;
+				//}
+				timediff=diff;
 				double score3=runComp();
 				if (score3<scoreb){
 					scoreb=score3;
@@ -252,11 +265,11 @@ public class CompareThread extends Thread{
 			}
 		
 			if (alignPoints>1){
-				double diff=dataFocalT[dataFocalT.length-1]-dataCompT[dataComp[0].length-1];
-				diff=diff*0.5;
-				for (int i=0; i<dataFocalT.length; i++){
-					dataFocalT[i]+=diff;
-				}
+				//double diff2=diff*0.5;
+				//for (int i=0; i<dataFocalT.length; i++){
+					//dataFocalT[i]=dataFocalTX[i]+diff2;
+				//}
+				timediff=diff*0.5;
 				double score5=runComp();
 				if (score5<scoreb){
 					scoreb=score5;
@@ -267,11 +280,12 @@ public class CompareThread extends Thread{
 			}
 		
 			if (alignPoints>3){
-				double diff=dataFocalT[dataFocalT.length-1]-dataCompT[dataComp[0].length-1];
-				double diff2=diff*0.25;
-				for (int i=0; i<dataFocalT.length; i++){
-					dataFocalT[i]+=diff2;
-				}
+				
+				//double diff2=diff*0.25;
+				//for (int i=0; i<dataFocalT.length; i++){
+					//dataFocalT[i]=dataFocalTX[i]+diff2;
+				//}
+				timediff=diff*0.25;
 				double score5=runComp();
 				if (score5<scoreb){
 					if (saveMatrix){
@@ -279,10 +293,11 @@ public class CompareThread extends Thread{
 					}
 					scoreb=score5;
 				}
-				double diff3=diff*0.75;
-				for (int i=0; i<dataFocalT.length; i++){
-					dataFocalT[i]+=diff3;
-				}
+				//double diff3=diff*0.75;
+				//for (int i=0; i<dataFocalT.length; i++){
+					//dataFocalT[i]=dataFocalTX[i]+diff3;
+				//}
+				timediff=diff*0.75;
 				double score6=runComp();
 				if (score6<scoreb){
 					scoreb=score6;
@@ -314,6 +329,76 @@ public class CompareThread extends Thread{
 		
 		
 	}
+	
+	public double getJointSD(double[] data1, double[] data2, double[] weights1, double[] weights2, boolean weight){
+		
+		double a;
+		
+		double avs1=0;
+		double sum1=0;
+		double sd1=0;
+		
+		double avs2=0;
+		double sum2=0;
+		double sd2=0;
+
+		for (int j=0; j<data1.length; j++){
+			if (weight){
+				avs1+=data1[j]*weights1[j];
+				sum1+=data1[j];
+			}
+			else{
+				avs1+=data1[j];
+				sum1++;
+			}
+		}
+		for (int j=0; j<data2.length; j++){
+			if (weight){
+				avs2+=data2[j]*weights2[j];
+				sum2+=weights2[j];
+			}
+			else{
+				avs2+=data2[j];
+				sum2++;
+			}
+		}
+		if (sum1<=0){sum1=1;}
+		if (sum2<=0){sum2=1;}
+		
+		avs1/=sum1;
+		avs2/=sum2;
+		
+		for (int j=0; j<data1.length; j++){
+				//if (i==1){System.out.println(data1[i][j]);}
+			a=data1[j]-avs1;
+			if (weight){
+				sd1+=a*a*weights1[j];
+			}
+			else{
+				sd1+=a*a;
+			}
+		}
+		for (int j=0; j<data2.length; j++){
+			a=data2[j]-avs2;
+			if (weight){
+				sd2+=a*a*weights2[j];
+			}
+			else{
+				sd2+=a*a;
+				
+			}
+		}	
+
+		
+		//sd1=0.5*(Math.sqrt(sd1/(sum1))+Math.sqrt(sd2/(sum2)));
+		sd1=0.5*(Math.sqrt((sd1+sd2)/(sum1+sum2)));
+			//sd1[i]=Math.max(Math.sqrt(sd1[i]/(sum1[i])),Math.sqrt(sd2[i]/(sum2[i])));
+			//sd1[i]=Math.sqrt((sd1[i]+sd2[i])/(sum1[i]+sum2[i]-1.0));
+			//System.out.println((i+1)+" "+sd1[i]+" "+avs[i]);
+		//sd1[0]=0.5*(data1[0][data1[0].length-1]+data2[0][data2[0].length-1]);
+		//if (sd1+sd2<=0){System.out.println(sd1+" "+sd2);}
+		return (sd1);
+	}
 
 	
 	/**
@@ -327,8 +412,8 @@ public class CompareThread extends Thread{
 		double[] sd=new double[sds.length];
 		
 		//double sdT=0.5*(dataFocal[0][dataFocal[0].length-1]+dataComp[0][dataComp[0].length-1]);
-		
-		
+		//double[] sdtest={0.3003265323335812, 0.14223617119007287, 0.8977044023342039, 0.7196754540708244};
+		//System.out.println(sdRatio+" "+sdRatioNT);
 		double totweight=0;	
 		for (int i=0; i<dims; i++){
 			totweight+=validParameters[i];
@@ -340,15 +425,21 @@ public class CompareThread extends Thread{
 			sdT=Math.max(dataFocalT[l1-1]-dataFocalT[0],dataCompT[l2-1]-dataCompT[0]);
 			sdT=sdT*sdRatio+(1-sdRatio)*sdsT;
 			sdT=validTempPars/(totweight*sdT);
-		}
-		
-		
+		}	
 		
 		for (int i=0; i<dims; i++){
 			sd[i]=sds[i];
+			if (sdRatioNT>0){
+				double sdp=getJointSD(dataFocal[i], dataComp[i], dataFocalE[1], dataCompE[1], weightByAmp);
+				
+				sd[i]=(1-sdRatioNT)*(sds[i])+sdRatioNT*sdp;
+				//System.out.println(sds[i]+" "+sdp+" "+sd[i]);
+			}
+			//sd[i]=1/sdtest[i];
 			if ((Double.isNaN(sd[i]))||(sd[i]==0)){
-				sd[i]=sds[i];
-				System.out.println("Extreme sd ratio problem!");
+				//sd[i]=sds[i];
+				//sd[i]=sdtest[i];
+				System.out.println("Extreme sd ratio problem! "+" "+sd[i]+" "+sds[i]);
 			}
 			if (normaliseWithSDs){
 				sd[i]=validParameters[i]/(totweight*sd[i]);
@@ -357,6 +448,10 @@ public class CompareThread extends Thread{
 				sd[i]=validParameters[i]/(totweight);
 			}
 		}
+		//for (int i=0; i<dims; i++){
+			//System.out.print(sd[i]+ " ");
+		//}
+		//System.out.println(sdT+" "+totweight);
 		double score1=0;
 		if (interpolateWarp){
 			score1=derTimeWarpingPointInterpol(sdT, sd);
@@ -383,43 +478,44 @@ public class CompareThread extends Thread{
 		
 		int length1=l1;
 		int length2=l2;
-		double sc, d1, a1, b1, c1, xx1, xx2, x1, x2;
-		int id, i, j;
+		double sc, d1, a1, b1, c1, xx1, xx2, x1, x2, st;
+		int id, i, j, k;
 		double smallnum=0.000000001;
 		x1=0;
 		x2=0;
 		
 		
-		j=0;
-		for (i=0; i<length2; i++){
-			if (dataCompE[0][i]==0){
-				j++;
-			}
-		}
+		//j=0;
+		//for (i=0; i<length2; i++){
+			//if (dataCompE[0][i]==0){
+				//j++;
+			//}
+		//}
 		
-		int length3=j;	
+		//int length3=j;	
 				
-		int[] w=new int[length3];
-		j=0;
-		for (i=0; i<length2; i++){
-			if (dataCompE[0][i]==0){
-				w[j]=i;
-				j++;
-			}
-		}
+		//int[] w=new int[length3];
+		//j=0;
+		//for (i=0; i<length2; i++){
+			//if (dataCompE[0][i]==0){
+				//w[j]=i;
+				//j++;
+			//}
+		//}
+		int length3=length2-1;
 		
-		
-		double[][] seg1=new double[length3][dims];
-		double[][] seg2=new double[length3][dims];
-		double[] seg1T=null, seg2T=null;
-		if (numTempPars>0){
-			seg1T=new double[length3];
-			seg2T=new double[length3];
-		}
-		double[] d2=new double[length3];
-		double[] d3=new double[length3];
+		//double[][] seg1=new double[length3][dims];
+		//double[][] seg2=new double[length3][dims];
+		//double[] seg1T=null, seg2T=null;
+		//if (numTempPars>0){
+			//seg1T=new double[length3];
+			//seg2T=new double[length3];
+		//}
+		//double[] d2=new double[length3];
+		//double[] d3=new double[length3];
 		
 		//the following section measures the distances between point-point segments in dataComp
+		/*
 		j=0;
 		for (i=0; i<length2; i++){
 			if (dataCompE[0][i]==0){
@@ -439,70 +535,130 @@ public class CompareThread extends Thread{
 					c1=b1-a1;
 					d2[j]+=c1*c1;
 				}
-				
 				d3[j]=Math.sqrt(d2[j]);
+
 				j++;
 			}
 		}
+		*/
+		
+		for (i=0; i<length2; i++){
+			for (id=0; id<dims; id++){
+				seg1[id][i]=dataComp[id][i]*sdf[id];
+			}
+			if (numTempPars>0){
+				seg1t[i]=dataCompT[i]*sdt;
+			}
+		}
+		for (i=0; i<length3; i++){
+			j=i+1;
+			d2[i]=0;
+			for (id=0; id<dims; id++){
+				a1=seg1[id][i];
+				b1=seg1[id][j];
+				c1=b1-a1;
+				d2[i]+=c1*c1;
+			}
+			if (numTempPars>0){
+				a1=seg1t[i];
+				b1=seg1t[j];
+				c1=b1-a1;
+				d2[i]+=c1*c1;
+			}
+			//d3[i]=Math.sqrt(d2[i]);
+		}
+		
+		
+		/*
+		for (i=0; i<length3; i++){
+			for (id=0; id<dims; id++){
+				a1=dataComp[id][i]*sdf[id];
+				b1=dataComp[id][i+1]*sdf[id];
+				seg1[i][id]=a1;
+				seg2[i][id]=b1;
+				c1=b1-a1;
+				d2[i]+=c1*c1;
+			}
+			if (numTempPars>0){
+				a1=dataCompT[i]*sdt;
+				b1=dataCompT[i+1]*sdt;
+				seg1T[i]=a1;
+				seg2T[i]=b1;
+				c1=b1-a1;
+				d2[i]+=c1*c1;
+			}
+			d3[i]=Math.sqrt(d2[i]);
+		}
+		*/
 		
 		//the following section finds the distances between points in dataFocal to point-point segments in dataComp using trig.
 		//it also generates the length1 x length3 distance matrix between dataFocal and the dataComp segments, s.
 		
 		for (i=0; i<length1; i++){
 			for (j=0; j<length3; j++){
+				k=j+1;
 				s[i][j]=0;
 				xx1=0;
 				xx2=0;
 				for (id=0; id<dims; id++){
 					d1=dataFocal[id][i]*sdf[id];
-					xx1+=(d1-seg1[j][id])*(d1-seg1[j][id]);
-					xx2+=(d1-seg2[j][id])*(d1-seg2[j][id]);
+					xx1+=(d1-seg1[id][j])*(d1-seg1[id][j]);
+					xx2+=(d1-seg1[id][k])*(d1-seg1[id][k]);
 				}
 				if (numTempPars>0){
-					d1=dataFocalT[i]*sdt;
-					xx1+=(d1-seg1T[j])*(d1-seg1T[j]);
-					xx2+=(d1-seg2T[j])*(d1-seg2T[j]);
+					d1=(dataFocalT[i]+timediff)*sdt;
+					xx1+=(d1-seg1t[j])*(d1-seg1t[j]);
+					xx2+=(d1-seg1t[k])*(d1-seg1t[k]);
 				}
 				
 				//IF syllables are stitched, don't interpolate BETWEEN notes
-				
-				if((stitch)&&(pos[j]!=pos[j+1])){
-					s[i][j]=Math.sqrt(Math.min(xx1, xx2));	
-					
+				st=0;
+				if((stitch)&&(pos[j]!=pos[k])){
+					//s[i][j]=Math.sqrt(Math.min(xx1, xx2));	
+					st=Math.min(xx1, xx2);
 				}
 				
 				//IF params are equal for the two points in dataComp, don't try to interpolate between them
 				else if (d2[j]<smallnum){
-					s[i][j]=Math.sqrt(Math.min(xx1, xx2));
+					st=Math.min(xx1, xx2);
+					//s[i][j]=Math.sqrt(Math.min(xx1, xx2));
 				}
 				else{
 					
 					//is first angle obtuse? Law of cosines
 					if ((xx2-d2[j]-xx1)>0){
-						x1=Math.sqrt(xx1);
-						s[i][j]=x1;
+						//x1=Math.sqrt(xx1);
+						//s[i][j]=x1;
+						st=xx1;
 					}
 					//is second angle obtuse?
 					else if ((xx1-d2[j]-xx2)>0){
-						x2=Math.sqrt(xx2);
-						s[i][j]=x2;
+						//x2=Math.sqrt(xx2);
+						//s[i][j]=x2;
+						st=xx2;
 					}
 					else{
 						sc=xx2+d2[j]-xx1;
 						sc=xx2-(sc*sc/(4*d2[j]));
 						if (sc<smallnum){
 							sc=0;
-							s[i][j]=0;
+							st=0;
+							//s[i][j]=0;
 						}
 						else{
-							s[i][j]=Math.sqrt(sc);
-							if (Double.isNaN(s[i][j])){
-								System.out.println("ISNANX: "+sc+" "+d2[j]+" "+xx1+" "+xx2);
-							
-							}	
-						}
-						
+							st=sc;
+							//s[i][j]=Math.sqrt(sc);
+							//if (Double.isNaN(s[i][j])){
+								//System.out.println("ISNANX: "+sc+" "+d2[j]+" "+xx1+" "+xx2);
+						//	}	
+						}	
 					}	
+				}
+				if (squared){
+					s[i][j]=st;
+				}
+				else{
+					s[i][j]=Math.sqrt(st);
 				}
 			}
 		}
@@ -546,12 +702,17 @@ public class CompareThread extends Thread{
 					x1+=d1*d1;
 				}
 				if (numTempPars>0){
-					d1=dataFocalT[i]*sdt;
+					d1=(dataFocalT[i]+timediff)*sdt;
 					d2=dataCompT[j]*sdt;
 					d1=d1-d2;
 					x1+=d1*d1;
 				}
-				s[i][j]=Math.sqrt(x1);
+				if (squared){
+					s[i][j]=Math.sqrt(x1);
+				}
+				else{
+					s[i][j]=x1;
+				}
 			}
 		}
 		
@@ -579,7 +740,7 @@ public class CompareThread extends Thread{
 		
 		int x, y, i, j, k, locx, locy;
 		double min, sc, s2, f;
-		double thresh=length1*maximumWarp;
+		double thresh=Math.max(length1, length2)*maximumWarp;
 		double nthresh=-1*thresh;
 		double sl=1/Math.sqrt(length2*length2+length1*length1);
 		
@@ -662,21 +823,21 @@ public class CompareThread extends Thread{
 				trajectory[co][1]=a2;
 				co++;
 			}
-		}
-				
+		}	
 				
 		//float result=(float)(r[length1-1][length3-1]/Math.max(length1, length3));
 		double result=(q[length1-1][length2-1]/p[length1-1][length2-1]);
 		//float result=(float)(r[ba][bb]/den);
 		//float result=(float)Math.exp(r[ba][bb]/den);
 		//float result=(float)Math.sqrt(r[ba][bb]/den);
+		if (squared){result=Math.sqrt(result);}
 		return result;	
 	}
 	
 	
 	public double linearComp(int length1, int length2){
 		double score=0;
-		double thresh=length1*maximumWarp;
+		double thresh=Math.max(length1, length2)*maximumWarp;
 		double nthresh=-1*thresh;
 		double sl=1/Math.sqrt(length2*length2+length1*length1);
 		//double th2=Math.abs(thresh*length1*Math.sqrt(length2*length2+length1*length1)/(length2*length2-length1*length1));
@@ -731,6 +892,28 @@ public class CompareThread extends Thread{
 		}
 		score=(tot/(length1+0.0));
 		
+		
+		if (saveMatrix){
+			al1=length1;
+			al2=length2;
+			for (int i=0; i<length1; i++){
+				int y=(int)Math.round(a+b*i);
+				if (y<0){y=0;}
+				double ye=i*(length2/(length1+0.0));
+				int p=(int)Math.round(ye-th2);
+				if (y<p){y=p;}
+				if (y>=length2){y=length2;}
+				p=(int)Math.round(ye+th2);
+				if (y>p){y=p;}
+				
+				trajectory[i][0]=i;
+				trajectory[i][1]=y;
+			}
+		}
+		
+		
+		
+		if (squared){score=Math.sqrt(score);}
 		return score;
 	}
 	

@@ -6,6 +6,7 @@ import lusc.net.github.*;
 import lusc.net.github.analysis.AnalysisGroup;
 import lusc.net.github.analysis.multivariate.MultiDimensionalScaling;
 import lusc.net.github.db.DataBaseController;
+import lusc.net.github.ui.compmethods.ABXdiscrimination;
 import lusc.net.github.ui.compmethods.DTWPanel;
 import lusc.net.github.ui.compmethods.DTWSwingWorker;
 import lusc.net.github.ui.compmethods.ParameterPanel;
@@ -62,6 +63,7 @@ public class AnalysisChoose extends JPanel implements ActionListener, ChangeList
 	JRadioButton dtwAnalysis=new JRadioButton("Computer comparison by time warping");
 	JRadioButton parAnalysis=new JRadioButton("Comparison by parameter");
 	JRadioButton visAnalysis=new JRadioButton("Comparison by inspection");
+	JRadioButton discAnalysis=new JRadioButton("Auditory discrimination analysis");
 	JRadioButton dParAnalysis=new JRadioButton("Export parameter statistics to spreadsheet");
 	
 	int analysisMode=0;
@@ -100,6 +102,7 @@ public class AnalysisChoose extends JPanel implements ActionListener, ChangeList
 	ParameterPanel pp;
 	VisualAnalysisPane vap;
 	VisualComparison visComp;
+	ABXdiscrimination abx;
 	SimpleVisualComparison simpVisComp;
 	MeasurementSave measSave;
 	StatOptionPanel sop;
@@ -228,6 +231,7 @@ public class AnalysisChoose extends JPanel implements ActionListener, ChangeList
 		bg.add(dtwAnalysis);
 		bg.add(parAnalysis);
 		bg.add(visAnalysis);
+		bg.add(discAnalysis);
 		bg.add(dParAnalysis);
 		
 		if (analysisMode==0){
@@ -239,6 +243,9 @@ public class AnalysisChoose extends JPanel implements ActionListener, ChangeList
 		else if (analysisMode==2){
 			visAnalysis.setSelected(true);
 		}
+		else if (analysisMode==3){
+			discAnalysis.setSelected(true);
+		}
 		else{
 			dParAnalysis.setSelected(true);
 		}
@@ -248,6 +255,7 @@ public class AnalysisChoose extends JPanel implements ActionListener, ChangeList
 		rbgPanel.add(dtwAnalysis);
 		rbgPanel.add(parAnalysis);
 		rbgPanel.add(visAnalysis);
+		rbgPanel.add(discAnalysis);
 		rbgPanel.add(dParAnalysis);
 		
 		comparisonType.add(rbgPanel, BorderLayout.WEST);
@@ -574,6 +582,13 @@ public class AnalysisChoose extends JPanel implements ActionListener, ChangeList
 					vap=new VisualAnalysisPane(this, isSimple);
 					mainPanel.addTab("Visual analysis settings", vap);
 					analysisMode=2;
+				}
+				
+				else if (discAnalysis.isSelected()){
+					
+					abx=new ABXdiscrimination(ag, defaults);
+					
+					mainPanel.addTab("ABX experiment", abx);
 				}
 				
 				else if (dParAnalysis.isSelected()){

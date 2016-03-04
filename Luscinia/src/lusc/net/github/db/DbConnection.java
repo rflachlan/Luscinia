@@ -19,6 +19,7 @@ import java.nio.*;
 
 import lusc.net.github.Element;
 import lusc.net.github.Song;
+import lusc.net.github.ui.compmethods.ABXdiscrimination;
 
 import org.h2.tools.*;
 
@@ -228,7 +229,27 @@ public class DbConnection {
 		//}
 		if ((!version[0].equals(lversionD))||(!version[1].equals(dversionD))){
 			writeToDataBase("INSERT INTO dbdetails (version, luscvers) VALUES ('"+version[0]+"' , '"+version[1]+"')");
+			int p1=version[0].indexOf(".");
+			int p2=version[0].indexOf(".", p1+1);
+			int p3=version[0].indexOf(".", p2+1);
+			int p4=version[0].indexOf(".", p3+1);
+			int da= Integer.valueOf(version[0].substring(p1+1, p2));
+			int mo= Integer.valueOf(version[0].substring(p2+1, p3));
+			int ye= Integer.valueOf(version[0].substring(p3+1, p4));
+			
+			System.out.println("VERSION PARSE: "+p1+" "+p2+" "+p3+" "+p4+" "+da+" "+mo+" "+ye);
+			
+			int moye=12*mo+ye;
+			
+			if ((moye<=12*15+11)&&(da<19)){
+				System.out.println("here");
+				updateDB4();
+			}
+			
 		}
+		
+		
+		
 	}
 
 	public void disconnect(){
@@ -825,6 +846,36 @@ public class DbConnection {
 			} 
 		}		
 	}
+	
+	public void updateDB4(){
+		//resetCompTable();
+		Statement stmt = null; 
+		ResultSet rs = null; 
+		
+		System.out.println("Here");
+		try {
+			String queryb="CREATE TABLE ";
+			String comp6="comparetriplet (user CHAR(50), songA INT, songB INT, songX INT, choice INT, trial INT, exptype INT)";
+			stmt = con.createStatement(); 
+			stmt.executeUpdate(queryb+comp6);
+			
+		} 
+		catch (Exception e){
+			e.printStackTrace();
+		}
+		finally { 
+			if (rs != null) { 
+				try {rs.close();} catch (SQLException sqlEx) {} 
+				rs = null; 
+			}
+			if (stmt != null) { 
+				try { stmt.close();} catch (SQLException sqlEx) {} 
+				stmt = null; 
+			} 
+		}		
+	}
+	
+	
 
 
 	public LinkedList<int[]> loadSyllablesFromDatabase(int id){
@@ -1000,7 +1051,7 @@ public class DbConnection {
 					otable.put(p, song);
 				}
 				else{
-					System.out.println("Missing song: "+p);
+					//System.out.println("Missing song: "+p);
 				}
 			}
 		}
@@ -1026,7 +1077,7 @@ public class DbConnection {
 					otable.put(p, song);
 				}
 				else{
-					System.out.println("Missing song: "+p);
+					//System.out.println("Missing song: "+p);
 				}
 			}
 		}
@@ -1035,6 +1086,7 @@ public class DbConnection {
 		}
 		System.out.println("Done");
 		LinkedList<Song> olist=new LinkedList<Song>(otable.values());
+		System.out.println(olist.size());
 		return olist;
 	}
 	
@@ -1216,7 +1268,7 @@ public class DbConnection {
 	
 	public void writeSongIntoDatabase(String name, int p, File f){
 		String insertStmt = "INSERT INTO wavs (songid, filename, wav, samplerate, framesize, stereo, bigend, ssizeinbits, time, signed) values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-		//System.out.println("trying to read song");
+		System.out.println("trying to read song");
 		PreparedStatement stmt = null; 
 		ResultSet rs = null; 
 		try {
@@ -1224,6 +1276,20 @@ public class DbConnection {
 			AudioInputStream AFStreamA = AudioSystem.getAudioInputStream(f);
 			
 			AudioFormat afFormat = AFStreamA.getFormat();
+			
+			
+			DataLine.Info dataLineInfo =
+				    new DataLine.Info(
+						      TargetDataLine.class,
+						      afFormat);
+			Line.Info lines[] = AudioSystem.getTargetLineInfo(dataLineInfo);
+			if (lines.length==0){
+				JOptionPane.showMessageDialog(null, "This Sound Format is not supported by Java. Sorry");
+			}
+			//for (int n = 0; n < lines.length; n++) {
+			  //  System.out.println("Target " + lines[n].toString() + " " + lines[n].getLineClass());
+			//}
+			
 			
 			if(afFormat.isBigEndian()){
 			
@@ -1233,6 +1299,9 @@ public class DbConnection {
 			
 			
 			afFormat=targetFormat;
+			
+			
+			
 			
 			}
 			if (afFormat.getEncoding().toString().startsWith("MPEG")){
@@ -2029,6 +2098,56 @@ public class DbConnection {
 			} 
 		}
 		return outd;
+	}
+	
+	public void getDataFromABXExpt(ABXdiscrimination abx){
+		
+		 //String s="INSERT into comparetriplet (user, songA, songB, songX, choice, trial, exptype) VALUES ('"+t+"' , "+songs[u[0]].getSongID()+" , "+songs[u[1]].getSongID()+" , "+songs[u[2]].getSongID()+" , "+responses[i]+" , "+(i+1)+" , "+experimentType+")";
+
+		
+		LinkedList<String> userData=new LinkedList<String>();
+		LinkedList<int[]> otherData=new LinkedList<int[]>();
+		
+		String query1="SELECT user, songA, songB, songX, choice, trial, exptype FROM comparetriplet";
+		PreparedStatement stmt = null; 
+		ResultSet rs = null; 
+		try {
+			stmt = con.prepareStatement(query1);
+			rs = stmt.executeQuery( );
+			while( rs.next( ) ) {
+				String user=rs.getString("user");
+				userData.add(user);
+				
+				int[] data=new int[6];
+				data[0]=rs.getInt("songA");
+				data[1]=rs.getInt("songB");
+				data[2]=rs.getInt("songX");
+				data[3]=rs.getInt("choice");
+				data[4]=rs.getInt("trial");
+				data[5]=rs.getInt("exptype");
+				otherData.add(data);
+			}
+			abx.userData=new String[userData.size()];
+			for (int i=0; i<userData.size(); i++){
+				abx.userData[i]=userData.get(i);
+			}
+			abx.otherData=new int[otherData.size()][];
+			for (int i=0; i<otherData.size(); i++){
+				abx.otherData[i]=otherData.get(i);
+			}
+		}
+		catch (Exception e){}
+		finally { 
+			if (rs != null) { 
+				try {rs.close();} catch (SQLException sqlEx) {} 
+				rs = null; 
+			}
+			if (stmt != null) { 
+				try { stmt.close();} catch (SQLException sqlEx) {} 
+				stmt = null; 
+			} 
+		}	
+		
 	}
 
 	

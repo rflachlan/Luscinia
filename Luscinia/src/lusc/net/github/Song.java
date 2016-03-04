@@ -17,9 +17,11 @@ package lusc.net.github;
 //import java.sql.SQLException;
 import java.util.LinkedList;
 import java.util.Arrays;
+import java.awt.Component;
 import java.io.*;
 
 import javax.sound.sampled.*;
+//import javax.sound.sampled.Mixer.Info;
 import javax.swing.JOptionPane;
 
 
@@ -154,6 +156,9 @@ public class Song {
 					afFormat=targetFormat;
 			}
 			
+			System.out.println("ORIGINAL: "+AFStreamA.getFrameLength()+" "+afFormat.getEncoding()+" "+afFormat.getFrameRate());
+			
+			
 			AudioInputStream AFStream=AudioSystem.getAudioInputStream(afFormat, AFStreamA);
 			
 			sampleRate=AFStream.getFormat().getSampleRate();
@@ -175,7 +180,12 @@ public class Song {
 			}
 			
 			frameSize=AFStream.getFormat().getFrameSize();
-			int length=(int)(AFStream.getFrameLength()*frameSize);
+			
+			
+			
+			
+			long length=(long)(AFStream.getFrameLength()*frameSize);
+			System.out.println(length+" "+Integer.MAX_VALUE+" "+frameSize+" "+AFStream.getFrameLength());
 			bigEnd=AFStream.getFormat().isBigEndian();
 			AudioFormat.Encoding afe=AFStream.getFormat().getEncoding();
 			signed=false;
@@ -193,22 +203,42 @@ public class Song {
 			
 			
 			tDate-=xl;
-			rawData=new byte[length];
-			AFStream.read(rawData);
+			
+			if (length>0){
+				rawData=new byte[(int)length];
+				AFStream.read(rawData);
+			}
+			else{
+				LinkedList<byte[]> bl=new LinkedList<byte[]>();
+				byte[] temp=new byte[frameSize];
+				while (AFStream.read(temp)>0){
+					System.out.println(bl.size());
+					bl.add(temp);
+				}
+				length=bl.size()*frameSize;
+				rawData=new byte[(int)length];
+				int x=0;
+				for (byte[] t : bl){
+					System.arraycopy(t, 0, rawData, x, frameSize);
+					x+=frameSize;
+				}
+			}
 			syllList=new LinkedList<int[]>();
 			eleList=new LinkedList<Element>();
 			individualID=indid;
 			name=f.getName();
 			
 			if (process>0){
-				if (process<2){
+				if (process<=2){
 					parseSingle(process);
+					stereo=1;
+					frameSize=frameSize/2;
 				}
-				else{
-					parseMerge();
-				}
-				stereo=1;
-				frameSize=frameSize/2;
+				//else{
+					//parseMerge();
+				//}
+				//stereo=1;
+				//frameSize=frameSize/2;
 			}
 			
 		} 
@@ -1750,6 +1780,13 @@ public class Song {
 					out2[i]+=data[i*stereo+j];
 				}
 				out2[i]/=stereo;
+				/*
+				out2[i]=(data[i*2])/(data[i*2]+data[i*2+1]);
+				if (out2[i]<0){out2[i]=0;}
+				if (out2[i]>1){out2[i]=0;}
+				if (data[i*2]+data[i*2+1]<=0){out2[i]=0;}
+				*/
+				//out2[i]=(data[i*2])/(Math.abs(data[i*2])+Math.abs(data[i*2+1]));
 			}
 			data=new float[out2.length];
 			System.arraycopy(out2, 0, data, 0, out2.length);
@@ -1812,6 +1849,27 @@ public class Song {
 	 * @param endTime time to finish
 	 */
 	public void makeMyFFT(int startTime, int endTime){
+		/*
+		DataLine.Info dataLineInfo =
+			    new DataLine.Info(
+					      TargetDataLine.class,
+					      af);
+		Line.Info lines[] = AudioSystem.getTargetLineInfo(dataLineInfo);
+		for (int n = 0; n < lines.length; n++) {
+		    System.out.println("Target " + lines[n].toString() + " " + lines[n].getLineClass());
+		}
+		
+		for (Mixer.Info mi : AudioSystem.getMixerInfo()) {
+			Mixer m = AudioSystem.getMixer(mi);
+			System.out.println(mi.getDescription());
+			//Line.Info[] infos2 = AudioSystem.getTargetLineInfo(mi);
+			//for (int i = 0; i < infos2.length; i++)
+		//	{
+			//	System.out.println(infos[i].toString());
+			//}
+		}
+			*/
+		
 		if (updateFFT){
 			this.startTime=startTime;
 			this.endTime=endTime;
@@ -1995,6 +2053,9 @@ public class Song {
 	 * of the spectrogram and calculates various look up tables etc.
 	 */
 	public void setFFTParameters(){
+		
+		//DataLine.Info dataLineInfo = (DataLine.Info) lineInfo;
+		
 		//if (frameSize==1){frameSize=2;}
 		sampRate=sampleRate;
 		//step=(int)Math.round(timeStep*sampRate*0.001);	//step is the time-step of the spectrogram expressed in samples
@@ -2103,6 +2164,9 @@ public class Song {
 			for (int j=0; j<q; j++){
 				
 				rd[ii]=rawData[k];
+				//if (i<1000){
+					//System.out.println("PARSING: "+i+" "+j+" "+ii+" "+k+" "+rawData[k]);
+				//}
 				ii++;
 				k++;
 			}
@@ -2332,6 +2396,35 @@ public class Song {
 		double[] c={a/rawData.length, b/rawData.length};
 		return c;
 	}
+	
+	/**
+	 * This method organizes playback of the song. It creates a PlaySound instance to actually
+	 * carry out the playback.
+	 * @param a
+	 * @param b
+	 */
+	public void playSound (int a, int b, double pan){
+		try{
+			//af=new AudioFormat((float)sampleRate, ssizeInBits, stereo, signed, bigEnd);
+			//DataLine.Info   info = new DataLine.Info(SourceDataLine.class, af);
+			//line = null;
+			//line = (SourceDataLine) AudioSystem.getLine(info);
+			//line.open(af);
+			//line.start();
+			
+			if ((line==null)||(!line.isOpen())){setUpPlayback();}
+			
+			line.start();
+			
+			Thread play=new Thread(new PlaySound(a, b));
+			play.setPriority(Thread.MIN_PRIORITY);
+			play.start();
+		} 
+		catch (Exception e) {
+			System.out.println(e);
+			System.exit(0);
+		}//
+	}
 		
 	
 		
@@ -2522,11 +2615,68 @@ public class Song {
 		return filt;
 	}
 	
+	
 	/**
 	 * This is the FFT method
 	 * @param L indicates where in the signal to start from
 	 */
 	private void calculateFFT(int L){
+		int L2=data.length;
+		double[] datr=new double[framePad];
+		double[] dati=new double[framePad];
+		maxAmp=0;
+		int istart=0;
+		double start=0;
+		int i=0;
+		int py=ny;
+		if (py>framePad){py=framePad;}				//py is calculated in case the user picks a max freq that is above the resolving power of the other spectrogram
+		float tempr, tempi;							//settings. If that happens, the spectrogram only plots up to the max. resolving power.
+		int a,b,c,d;
+		
+		FFTbase fft=new FFTbase();
+		
+		while(istart<L){
+			//System.out.println(L+" "+start+" "+frame+" "+place);
+			for (i=0; i<frame; i++){
+				d=i+istart;
+				if (d<L2){
+					datr[i]=window[i]*data[d];				//This is where the window is applied
+				}
+				else{
+					datr[i]=0;
+				}
+				dati[i]=0;
+			}
+			
+			//System.out.println(datr.length+" "+dati.length+" "+frame+" "+framePad);
+			
+			
+			double[] dat=fft.fft(datr, dati, true);
+			
+			
+			for (i=0; i<py; i++){
+				a=2*i;
+				b=2*i+1;
+				if (place<out1[i].length){
+					out1[i][place]=(float)(dat[a]*dat[a]+dat[b]*dat[b]);						//This is the production of the power spectrum
+					if (out1[i][place]>maxAmp){maxAmp=out1[i][place];}
+					out[i][place]=out1[i][place];
+				}
+				
+			}
+			start+=step;
+			istart=(int)Math.round(start);
+			place++;
+		}	
+		datr=null;
+	}
+	
+	
+	/**
+	 * This is the FFT method
+	 * @param L indicates where in the signal to start from
+	 */
+	private void calculateFFTb(int L){
 		int L2=data.length;
 		float[] dat=new float[2*framePad];
 		maxAmp=0;
@@ -2757,6 +2907,14 @@ public class Song {
 		
 	}
 	
+	public double calcG(double sigma, double x, double N){
+		double N2=0.5*(N-1);
+		double p=(x-N2)/(2*sigma);
+		double G=Math.exp(-1*p*p);
+		
+		return G;
+	}
+	
 
 	/**
 	 * This method creates windowFunctions for the FFT
@@ -2764,15 +2922,59 @@ public class Song {
 	 */
 	private void makeWindow(int N){			//produces various windowing functions
 		window=new float[N];
-		if (windowMethod==3){
-			for (int i=0; i<N; i++){window[i]=(float)(1-(0.5+0.5*Math.cos((2*Math.PI*i)/(N-1.0))));}
-		}
 		if (windowMethod==2){
-			for (int i=0; i<N; i++){window[i]=(float)(1-(0.54+0.46*Math.cos((2*Math.PI*(i+1))/(N+1.0))));}
+			System.out.println("Hamming window "+N);
+			for (int i=0; i<N; i++){
+				window[i]=(float)(1-(0.5+0.5*Math.cos((2*Math.PI*i)/(N-1.0))));
+				//System.out.println(window[i]);
+			}
+		}
+		if (windowMethod==3){
+			System.out.println("Hanning window "+N);
+			for (int i=0; i<N; i++){
+				window[i]=(float)(1-(0.54+0.46*Math.cos((2*Math.PI*(i+1))/(N+1.0))));
+				//System.out.println(window[i]);
+			}
 		}
 		if (windowMethod==1){
-			int mid=frame/2;
-			for (int i=0; i<N; i++){window[i]=(float)(Math.exp((-1*(Math.PI*(i-mid))*(Math.PI*(i-mid)))/(N*N+0.0)));}
+			//int mid=frame/2;
+			double sigma=0.4;
+			double N12=0.5*(N-1);
+			
+			System.out.println("Gaussian window "+N);
+			float max=0;
+			float min=1;
+			for (int i=0; i<N; i++){
+				double mq=(i-N12)/(sigma*N12);
+				window[i]=(float)(Math.exp(-0.5*mq*mq));
+				if (window[i]>max){max=window[i];}
+				if (window[i]<min){min=window[i];}
+			}
+			for (int i=0; i<N; i++){
+				window[i]=(window[i]-min)/(max-min);
+				//System.out.println(window[i]);
+			}
+				//window[i]=(float)(Math.exp((-1*(Math.PI*(i-mid))*(Math.PI*(i-mid)))/(N*N+0.0)));}
+		}
+		if (windowMethod==4){
+			
+			double sigma=0.14*N;
+			System.out.println("confined Gaussian window");
+			for (int i=0; i<N; i++){
+				
+				double Gn=calcG(sigma, i, N);
+				double Gh=calcG(sigma, -0.5, N);
+				double GnN=calcG(sigma, i+N, N);
+				double GnmN=calcG(sigma, i-N, N);
+				double Gnmh=calcG(sigma, N-0.5, N);
+				double Gnmh2=calcG(sigma, -0.5-N, N);
+				
+				window[i]=(float)(Gn-((Gh*(GnN+GnmN))/(Gnmh+Gnmh2)));
+				//System.out.println(window[i]);
+			}
+			
+			
+			
 		}
 		//for (int i=0; i<N; i++){
 		//	System.out.println(i+" "+window[i]);
@@ -3260,10 +3462,20 @@ public class Song {
 	public void updateElements(){
 		for (int i=0; i<eleList.size(); i++){
 			Element ele=(Element)eleList.get(i);
-			ele.begintime+=7;
+			ele.begintime-=14;
 			for (int j=0; j<ele.signal.length; j++){
-				ele.signal[j][0]+=7;
+				ele.signal[j][0]-=14;
 			}
+		}	
+	}
+	
+	
+	public void setEleGaps(){
+		
+		for (int i=0; i<eleList.size()-1; i++){
+			Element ele1=eleList.get(i);
+			Element ele2=eleList.get(i+1);
+			ele2.setTimeBefore(ele1.getTimeAfter());	
 		}	
 	}
 	
@@ -3323,6 +3535,163 @@ public class Song {
 		}
 		return pout;
 	}
+	
+	public boolean checkSong(Component parentComponent){
+		
+		LinkedList<Syllable> syls=new LinkedList<Syllable>();
+		
+		for (int i=0; i< syllList.size(); i++){
+			int [] syl=syllList.get(i);
+			Syllable sy=new Syllable(syl, i);
+			sy.addFamily(syls, eleList);
+			sy.checkMaxLevel();
+			syls.add(sy);
+		}		
+		
+		for (Syllable sy : syls){
+			System.out.println("SYLLABLE: "+sy.id+" "+sy.maxLevel+" "+sy.eles.size()+" "+sy.parents.size()+" "+sy.children.size());
+			
+			
+		}
+		
+		LinkedList<Integer> oe=checkOrphanElements();
+		
+		if (oe.size()>0){
+			StringBuffer sb=new StringBuffer();
+		
+			for (Integer a: oe){
+				sb.append(a+", ");
+			}	
+			
+			String s="The following elements are orphans (belong to no syllable): " + sb.toString() +" do you want to add syllables for them?";
+			
+			int c=JOptionPane.showConfirmDialog(parentComponent, s, "Warning", JOptionPane.YES_NO_CANCEL_OPTION);
+			
+			if (c==JOptionPane.YES_OPTION){
+				adoptOrphanedElements(oe, syls);
+			}
+			else if (c==JOptionPane.CANCEL_OPTION){
+				return false;	
+			}	
+		}
+		
+		LinkedList<Syllable> os=checkChildlessSyllables(syls);
+		
+		if (os.size()>0){
+			StringBuffer sb=new StringBuffer();
+		
+			for (Syllable a: os){
+				sb.append((a.id+1)+", ");
+			}	
+			
+			String s="The following syllables are childless (have no elements): " + sb.toString() +" do you want to delete them?";
+			
+			int c=JOptionPane.showConfirmDialog(parentComponent, s, "Warning", JOptionPane.YES_NO_CANCEL_OPTION);
+			
+			if (c==JOptionPane.YES_OPTION){
+				deleteSyllables(os, syls);
+			}
+			else if (c==JOptionPane.CANCEL_OPTION){
+				return false;	
+			}	
+		}
+		
+		LinkedList<Syllable> ls=checkSyllableLevels(syls);
+		
+		if (ls.size()>0){
+			StringBuffer sb=new StringBuffer();
+		
+			for (Syllable a: ls){
+				sb.append((a.id+1)+", ");
+			}	
+			
+			String s="The following syllables have a hierarcical level > 2: " + sb.toString() +" do you want to delete them?";
+			
+			int c=JOptionPane.showConfirmDialog(parentComponent, s, "Warning", JOptionPane.YES_NO_CANCEL_OPTION);
+			
+			if (c==JOptionPane.YES_OPTION){
+				deleteSyllables(ls, syls);
+			}
+			else if (c==JOptionPane.CANCEL_OPTION){
+				return false;	
+			}	
+		}
+		
+		
+		return true;
+	}
+	
+	public LinkedList<Syllable> checkSyllableLevels(LinkedList<Syllable> syls){
+		LinkedList<Syllable> levels=new LinkedList<Syllable>();
+		
+		for (Syllable sy: syls){
+			if (sy.maxLevel>2){
+				levels.add(sy);				
+			}	
+		}
+		
+		return levels;
+	}
+	
+	public LinkedList<Syllable> checkChildlessSyllables(LinkedList<Syllable> syls){
+		
+		LinkedList<Syllable> childless=new LinkedList<Syllable>();
+		
+		for (Syllable sy: syls){
+			if (sy.eles.size()==0){
+				childless.add(sy);				
+			}	
+		}
+
+		return childless;
+	}
+	
+	public void deleteSyllables(LinkedList<Syllable> oe, LinkedList<Syllable> syls){
+		
+		LinkedList<int[]> rlist=new LinkedList<int[]>();
+		for (Syllable sy : oe){
+			rlist.add(syllList.get(sy.id));
+			sy.remove();
+		}
+		
+		syls.removeAll(oe);
+		syllList.removeAll(rlist);
+
+	}
+	
+	public LinkedList<Integer> checkOrphanElements(){
+		
+		LinkedList<Integer> orphans=new LinkedList<Integer>();
+		
+		for (int i=0; i<eleList.size(); i++){
+			Element ele=eleList.get(i);
+			
+			if (ele.syls.size()==0){
+				orphans.add(new Integer(i+1));
+			}	
+		}
+		return orphans;
+	}
+	
+	public void adoptOrphanedElements(LinkedList<Integer> oe, LinkedList<Syllable> syls){
+		
+		for (Integer a: oe){
+			
+			int b=a.intValue()-1;
+			
+			Element ele=eleList.get(b);
+			int start=ele.getBeginTime();
+			int end=ele.getLength()+start;
+			int[] syl={start-1, end+1};
+			Syllable sy=new Syllable(syl, syllList.size());
+			syllList.add(syl);
+			sy.addFamily(syls, eleList);
+			sy.checkMaxLevel();
+			syls.add(sy);	
+		}
+	
+	}
+	
 	
 	/**
 	 * This internal class calculates the 'pitch' representation of sounds. By making

@@ -1,7 +1,13 @@
 package lusc.net.github.analysis;
 
+import java.io.File;
+import java.util.LinkedList;
+import java.util.Random;
+import java.util.Scanner;
+
 import lusc.net.github.Element;
 import lusc.net.github.Song;
+import lusc.net.github.ui.compmethods.ABXdiscrimination;
 import lusc.net.github.ui.compmethods.DTWSwingWorker;
 import lusc.net.github.ui.compmethods.DTWPanel;
 
@@ -25,6 +31,7 @@ public class PrepareDTW {
 	
 	boolean dynamicWarp=true;
 	boolean interpolateWarp=true;
+	boolean squaredDist=false;
 	
 	boolean weightByAmp=false;
 	boolean logFrequencies=false;
@@ -35,7 +42,8 @@ public class PrepareDTW {
 	double maximumWarp=0.25;
 	int minPoints=5;
 	double minVar=0.2;
-	double sdRatio=0.5;
+	double sdRatio=1;
+	double sdRatioNT=0;
 	double offsetRemoval=0.0;
 	public double[] parameterValues={1,0,0,0,0,1,0,0,0,1,0,0,0,0,1,0,0, 0, 0,0,0,0,0};
 	
@@ -52,11 +60,13 @@ public class PrepareDTW {
 		mainReductionFactor=dtw.getMainReductionFactor();
 		offsetRemoval=dtw.getOffsetRemoval();
 		sdRatio=dtw.getSDRatio();
+		sdRatioNT=dtw.getSDRatio2();
 		minPoints=dtw.getMinPoints();
 		alignmentPoints=dtw.getAlignmentPoints();
 		interpolateWarp=dtw.getInterpolate();
 		dynamicWarp=dtw.getDynamicWarping();
 		maximumWarp=dtw.getMaximumWarp();
+		squaredDist=dtw.getSquared();
 	}
 	
 	
@@ -88,6 +98,10 @@ public class PrepareDTW {
 		return interpolateWarp;
 	}
 	
+	public boolean getSquared(){
+		return squaredDist;
+	}
+	
 	public boolean getDynamicWarp(){
 		return dynamicWarp;
 	}
@@ -102,6 +116,10 @@ public class PrepareDTW {
 	
 	public double getSDRatio(){
 		return sdRatio;
+	}
+	
+	public double getSDRatioNT(){
+		return sdRatioNT;
 	}
 	
 	public double getMaximumWarp(){
@@ -182,8 +200,8 @@ public class PrepareDTW {
 		offsetRemoval=a;
 	}
 	
-	public void setSDRatio(double a){
-		sdRatio=a;
+	public void setSDRatioNT(double a){
+		sdRatioNT=a;
 	}
 	
 	public void setMinPoints(int a){
@@ -312,9 +330,16 @@ public class PrepareDTW {
 							else{
 								data[p][q][c]+=50;
 							}
+							//System.out.println("Time gap: "+ele.getTimeAfter());
 						}
 						else if ((paramType[q]>16)&&(paramType[q]<21)){
-							data[p][q][c]+=measu[ab][paramType[q]-17]-measu[4][paramType[q]-17];
+							if (logFrequencies){
+								data[p][q][c]+=Math.log(measu[ab][paramType[q]-17])-Math.log(measu[4][paramType[q]-17]);
+							}
+							else{
+								data[p][q][c]+=measu[ab][paramType[q]-17]-measu[4][paramType[q]-17];
+							}
+							
 						}
 					
 						else{
@@ -381,6 +406,10 @@ public class PrepareDTW {
 						}
 					}
 					
+					double[] dst=new double[sylLength];
+					double[][] ds=new double[numParams][sylLength];
+					double[][] dse=new double[numExtraParams][sylLength];
+					
 					if(numTempParams>0){
 						dataSylsTemp[countSyls]=new double[sylLength];
 					}
@@ -394,6 +423,7 @@ public class PrepareDTW {
 					elementPos[countSyls]=new int[sylLength];
 					sylLength=0;
 					
+					//System.out.println(songs[i].getName()+" "+j+" "+k);
 					int q=0;
 					while (p[k][q]<0){q++;}
 					
@@ -407,13 +437,16 @@ public class PrepareDTW {
 							double adjust=(ele2.getTimeStep()*ele2.getBeginTime())-startPos;
 							for (int b=0; b<data[countEls][0].length; b++){
 								if(numTempParams>0){
-									dataSylsTemp[countSyls][sylLength]=dataTemp[countEls][b]+adjust;
+									//dataSylsTemp[countSyls][sylLength]=dataTemp[countEls][b]+adjust;
+									dst[sylLength]=dataTemp[countEls][b]+adjust;
 								}
 								for (int a=0; a<numParams; a++){
-									dataSyls[countSyls][a][sylLength]=data[countEls][a][b];
+									//dataSyls[countSyls][a][sylLength]=data[countEls][a][b];
+									ds[a][sylLength]=data[countEls][a][b];
 								}
 								for (int a=0; a<numExtraParams; a++){
-									dataSylsExtra[countSyls][a][sylLength]=dataExtra[countEls][a][b];
+									//dataSylsExtra[countSyls][a][sylLength]=dataExtra[countEls][a][b];
+									dse[a][sylLength]=dataExtra[countEls][a][b];
 								}
 								elementPos[countSyls][sylLength]=g;
 								sylLength++;
@@ -421,6 +454,29 @@ public class PrepareDTW {
 							countEls++;
 						}
 					}
+					
+					for (int g=0; g<sylLength; g++){
+						double min=1000000000;
+						int minloc=-1;
+						for (int h=0; h<sylLength; h++){		
+							if (dst[h]<min){
+								min=dst[h];
+								minloc=h;
+							}
+						}
+						
+						dataSylsTemp[countSyls][g]=dst[minloc];
+						for (int a=0; a<numParams; a++){
+							dataSyls[countSyls][a][g]=ds[a][minloc];
+						}
+						for (int a=0; a<numExtraParams; a++){
+							dataSylsExtra[countSyls][a][g]=dse[a][minloc];
+						}
+						dst[minloc]=1000000000;
+					}
+					
+					
+					
 					countSyls++;
 				}
 			}
@@ -512,6 +568,638 @@ public class PrepareDTW {
 		return(out);
 	}
 	
+	public double[][] tuneDTWInd(DTWSwingWorker dtws, boolean stitch){
+		
+		LinkedList<String[]> data=new LinkedList<String[]>();
+		try{
+			//Scanner scanner = new Scanner(new File("/Users/Rob/Desktop/ResultsDay5ImacCopy.csv"));
+			//Scanner scanner = new Scanner(new File("/Users/Rob/Desktop/ResultsDay4Laptop.csv"));
+			Scanner scanner = new Scanner(new File("/Users/Rob/Desktop/ResultsPercepFinal.csv"));
+			while(scanner.hasNext()){
+				
+				String line=scanner.nextLine();
+				String[] fields = line.split(",");
+				
+				if (fields.length==10){
+					data.add(fields);
+				}
+				else{
+					System.out.println("OOPS: "+line);
+				}
+
+			}
+			scanner.close();
+		}
+		catch(Exception e){e.printStackTrace();}
+		
+		
+		
+		//ABXdiscrimination abx=new ABXdiscrimination(ag, ag.getDefaults(), true);
+		//abx.getResultsFromDB();
+		
+		//int[][] c=abx.otherData;
+		
+		
+		
+		Song[] songs=ag.getSongs();
+		
+		
+		LinkedList<LinkedList<String[]>> perind=new LinkedList<LinkedList<String[]>>();
+		
+		for (int i=1; i<data.size(); i++){
+			String[] sa=data.get(i);
+			boolean found=false;
+			for (int j=0; j<perind.size(); j++){
+				LinkedList<String[]> sc=perind.get(j);
+				String[] sd=sc.get(0);
+				if (sd[0].equals(sa[0])){
+					sc.add(sa);
+					found=true;
+					j=perind.size();
+				}
+			}
+			if (!found){
+				LinkedList<String[]> sc = new LinkedList<String[]>();
+				sc.add(sa);
+				perind.add(sc);
+			}	
+		}
+		
+		
+		Random random=new Random(System.currentTimeMillis());
+		
+		for (LinkedList<String[]> data2 : perind){
+			
+			String[] t=data2.get(0);
+			String name=t[0];
+			//if ((name.startsWith("HOS"))||(name.startsWith("YUV"))||(name.startsWith("leo"))){
+			//if ((name.startsWith("leo"))){
+
+			int nr=data2.size();
+			int[] choices=new int[nr];
+			int[][] combos=new int[nr][3];	
+			System.out.println(name+" "+data2.size());
+			for (int i=0; i<data2.size(); i++){
+				String[] s=data2.get(i);
+			
+				if (s[7].equals("-1")){choices[i]=-1;}
+				else if (s[7].equals("1")){choices[i]=1;}
+				for (int j=0; j<3; j++){
+				
+					int jj=j*2+2;
+				
+					for (int k=0; k<songs.length; k++){
+						if (songs[k].getName().equals(s[jj])){
+							combos[i][j]=k;
+							k=songs.length;
+						}
+					}	
+				}			
+			}
+		
+		
+		
+		//index 0: songA, 1: songB, 2: songX
+		//index: 3: choice (L vs R): L: -1, R: 1, No Choice: 0
+		//we used BXA design. Left was B (I THINK!). -1 means X was closer to B; 1 means X was closer to A
+		
+		
+			double bestScore=0;
+			double prevScore=Double.NEGATIVE_INFINITY;
+			double[][] bestResults=null;
+			int nsamps=10000;
+			double[][] results=new double[nsamps][validParameters.length+1];
+		
+			for (int repi=0; repi<nsamps; repi++){
+			
+			//validParameters=new double[validParameters.length];
+				double[] oldvp=new double[validParameters.length];
+				for (int repj=0; repj<validParameters.length; repj++){
+					oldvp[repj]=validParameters[repj];
+					validParameters[repj]=Math.exp(Math.log(validParameters[repj])+random.nextGaussian()*0.2) ;
+					if (validParameters[repj]<=0.01){validParameters[repj]=0.01;}
+				}
+				double[][] scores=runDTW(dtws, stitch);
+			
+			
+				for (int i=0; i<validParameters.length; i++){
+					results[repi][i]=validParameters[i];
+				}
+				double[] sc=evaluateScore(scores, combos, choices);
+				double score=sc[0];
+				results[repi][validParameters.length]=score;
+				if (score<prevScore){
+				
+					double alph=Math.exp(score-prevScore);
+					if (random.nextDouble()>alph){
+					//REJECT
+						for (int i=0; i<validParameters.length; i++){
+							validParameters[i]=oldvp[i];
+						}
+					}
+					else{
+					//ACCEPT
+						prevScore=score;
+					}
+				}
+				else{
+				//ACCEPT
+					prevScore=score;
+					bestScore=score;
+					bestResults=scores;
+				}
+			}
+		
+			//System.out.println("ANALYSIS FINISHED! "+bestScore);
+			//for (int i=0; i<validParameters.length; i++){
+				//System.out.println(validParameters[i]);
+			//}
+			
+			double[] scores=new double[results[0].length];
+			
+			for (int i=0; i<results.length; i++){
+			//System.out.print(i+1+", ");
+				for (int j=0; j<results[i].length; j++){
+				//System.out.print(results[i][j]+", ");
+					scores[j]+=results[i][j];
+				}
+			//System.out.println();
+			}
+			System.out.print(name+" ");
+			for (int i=0; i<scores.length; i++){
+				System.out.print((scores[i]/(nsamps+0.00))+" ");
+			}
+			System.out.println();
+		}
+		//}
+		return null;
+	}
+	
+public double[][] tuneDTWAll(DTWSwingWorker dtws, boolean stitch){
+		
+		LinkedList<String[]> data=new LinkedList<String[]>();
+		try{
+			//Scanner scanner = new Scanner(new File("/Users/Rob/Desktop/ResultsDay5ImacCopy.csv"));
+			//Scanner scanner = new Scanner(new File("/Users/Rob/Desktop/ResultsDay4Laptop.csv"));
+			Scanner scanner = new Scanner(new File("/Users/Rob/Desktop/ResultsPercepFinal.csv"));
+			while(scanner.hasNext()){
+				
+				String line=scanner.nextLine();
+				String[] fields = line.split(",");
+				
+				if (fields.length==10){
+					data.add(fields);
+				}
+				else{
+					System.out.println("OOPS: "+line);
+				}
+
+			}
+			scanner.close();
+		}
+		catch(Exception e){e.printStackTrace();}
+		
+		
+		
+		//ABXdiscrimination abx=new ABXdiscrimination(ag, ag.getDefaults(), true);
+		//abx.getResultsFromDB();
+		
+		//int[][] c=abx.otherData;
+		
+		int nr=data.size()-1;
+		
+		int[] choices=new int[nr];
+
+		int[][] combos=new int[nr][3];
+		
+		Song[] songs=ag.getSongs();
+		
+		for (int i=1; i<data.size(); i++){
+			String[] s=data.get(i);
+			
+			//-1 means LEFT, 1 means RIGHT B IS ON LEFT (BXA)
+			
+			
+			if (s[7].equals("-1")){choices[i-1]=-1;}
+			else if (s[7].equals("1")){choices[i-1]=1;}
+			System.out.println(choices[i-1]);
+			//System.out.println(nr+" "+s[2]+" "+s[4]+" "+s[6]);
+			for (int j=0; j<3; j++){
+				
+				int jj=j*2+2;
+				
+				for (int k=0; k<songs.length; k++){
+					if (songs[k].getName().equals(s[jj])){
+						combos[i-1][j]=k;
+						k=songs.length;
+					}
+				}	
+			}
+			
+			//System.out.println(i+" "+combos[i-1][0]+" "+combos[i-1][1]+" "+combos[i-1][2]);
+			
+		}
+		
+		
+		
+		//index 0: songA, 1: songB, 2: songX
+		//index: 3: choice (L vs R): L: -1, R: 1, No Choice: 0
+		//we used BXA design. Left was B (I THINK!). -1 means X was closer to B; 1 means X was closer to A
+		
+		Random random=new Random(System.currentTimeMillis());
+		double bestScore=0;
+		double prevScore=Double.NEGATIVE_INFINITY;
+		double[][] bestResults=null;
+		int nsamps=10000;
+		double[][] results=new double[nsamps][validParameters.length+1];
+		
+		for (int repi=0; repi<nsamps; repi++){
+			
+			//validParameters=new double[validParameters.length];
+			double[] oldvp=new double[validParameters.length];
+			for (int repj=0; repj<validParameters.length; repj++){
+				oldvp[repj]=validParameters[repj];
+				validParameters[repj]=Math.exp(Math.log(validParameters[repj])+random.nextGaussian()*0.2) ;
+				if (validParameters[repj]<=0.01){validParameters[repj]=0.01;}
+			}
+			double[][] scores=runDTW(dtws, stitch);
+			
+			
+			for (int i=0; i<validParameters.length; i++){
+				results[repi][i]=validParameters[i];
+			}
+			double[] sc=evaluateScore(scores, combos, choices);
+			double score=sc[0];
+			results[repi][validParameters.length]=score;
+			if (score<prevScore){
+				
+				double alph=Math.exp(score-prevScore);
+				if (random.nextDouble()>alph){
+					//REJECT
+					for (int i=0; i<validParameters.length; i++){
+						validParameters[i]=oldvp[i];
+					}
+				}
+				else{
+					//ACCEPT
+					prevScore=score;
+				}
+			}
+			else{
+				//ACCEPT
+				prevScore=score;
+				bestScore=score;
+				bestResults=scores;
+			}
+			//else{
+				//bestScore=score;
+				//bestResults=scores;
+			//}
+			
+			
+			
+			
+			//for (int i=0; i<validParameters.length; i++){
+				//System.out.print(validParameters[i]+" ");
+			//}
+			//System.out.println();
+			
+		}
+		
+		System.out.println("ANALYSIS FINISHED! "+bestScore);
+		for (int i=0; i<validParameters.length; i++){
+			System.out.println(validParameters[i]);
+		}
+		
+		for (int i=0; i<results.length; i++){
+			System.out.print(i+1+", ");
+			for (int j=0; j<results[i].length; j++){
+				System.out.print(results[i][j]+", ");
+			}
+			System.out.println();
+		}
+		
+		return bestResults;
+	}
+	
+	public double[][] tuneDTW(DTWSwingWorker dtws, boolean stitch){
+		
+		LinkedList<String[]> data=new LinkedList<String[]>();
+		try{
+			//Scanner scanner = new Scanner(new File("/Users/Rob/Desktop/ResultsDay5ImacCopy.csv"));
+			//Scanner scanner = new Scanner(new File("/Users/Rob/Desktop/ResultsDay4Laptop.csv"));
+			Scanner scanner = new Scanner(new File("/Users/Rob/Desktop/ResultsPercepFinal.csv"));
+			while(scanner.hasNext()){
+				
+				String line=scanner.nextLine();
+				String[] fields = line.split(",");
+				
+				if (fields.length==10){
+					data.add(fields);
+				}
+				else{
+					System.out.println("OOPS: "+line);
+				}
+
+			}
+			scanner.close();
+		}
+		catch(Exception e){e.printStackTrace();}
+		
+		
+		
+		//ABXdiscrimination abx=new ABXdiscrimination(ag, ag.getDefaults(), true);
+		//abx.getResultsFromDB();
+		
+		//int[][] c=abx.otherData;
+		
+		int nr=data.size()-1;
+		
+		int[] choices=new int[nr];
+
+		int[][] combos=new int[nr][3];
+		
+		Song[] songs=ag.getSongs();
+		
+		for (int i=1; i<data.size(); i++){
+			String[] s=data.get(i);
+			
+			//-1 means LEFT, 1 means RIGHT B IS ON LEFT (BXA)
+			
+			
+			if (s[7].equals("-1")){choices[i-1]=-1;}
+			else if (s[7].equals("1")){choices[i-1]=1;}
+			System.out.println(choices[i-1]);
+			//System.out.println(nr+" "+s[2]+" "+s[4]+" "+s[6]);
+			for (int j=0; j<3; j++){
+				
+				int jj=j*2+2;
+				
+				for (int k=0; k<songs.length; k++){
+					if (songs[k].getName().equals(s[jj])){
+						combos[i-1][j]=k;
+						k=songs.length;
+					}
+				}	
+			}
+			
+			//System.out.println(i+" "+combos[i-1][0]+" "+combos[i-1][1]+" "+combos[i-1][2]);
+			
+		}
+		
+		
+		
+		//index 0: songA, 1: songB, 2: songX
+		//index: 3: choice (L vs R): L: -1, R: 1, No Choice: 0
+		//we used BXA design. Left was B (I THINK!). -1 means X was closer to B; 1 means X was closer to A
+		
+		Random random=new Random(System.currentTimeMillis());
+		double bestScore=0;
+		double prevScore=Double.NEGATIVE_INFINITY;
+		double[][] bestResults=null;
+		int nsamps=1000;
+		double[][] results=new double[nsamps][validParameters.length+1];
+		
+		for (int repi=0; repi<nsamps; repi++){
+			
+			//validParameters=new double[validParameters.length];
+			//double[] oldvp=new double[validParameters.length];
+			//for (int repj=0; repj<validParameters.length; repj++){
+				//oldvp[repj]=validParameters[repj];
+				//validParameters[repj]=Math.exp(Math.log(validParameters[repj])+random.nextGaussian()*0.2) ;
+				//if (validParameters[repj]<=0.01){validParameters[repj]=0.01;}
+			//}
+			double[][] scores=runDTW(dtws, stitch);
+			
+			
+			for (int i=0; i<validParameters.length; i++){
+				results[repi][i]=validParameters[i];
+			}
+			double[] sc=evaluateScore(scores, combos, choices, random);
+			double score=sc[0];
+			System.out.println("SCORES: "+sc[0]+" "+sc[1]+" "+sc[2]);
+			results[repi][validParameters.length]=score;
+			if (score<prevScore){
+				
+				double alph=Math.exp(score-prevScore);
+				if (random.nextDouble()>alph){
+					//REJECT
+					for (int i=0; i<validParameters.length; i++){
+						//validParameters[i]=oldvp[i];
+					}
+				}
+				else{
+					//ACCEPT
+					prevScore=score;
+				}
+			}
+			else{
+				//ACCEPT
+				prevScore=score;
+				bestScore=score;
+				bestResults=scores;
+			}
+			//else{
+				//bestScore=score;
+				//bestResults=scores;
+			//}
+			
+			
+			
+			
+			//for (int i=0; i<validParameters.length; i++){
+				//System.out.print(validParameters[i]+" ");
+			//}
+			//System.out.println();
+			
+		}
+		
+		System.out.println("ANALYSIS FINISHED! "+bestScore);
+		for (int i=0; i<validParameters.length; i++){
+			System.out.println(validParameters[i]);
+		}
+		
+		for (int i=0; i<results.length; i++){
+			System.out.print(i+1+", ");
+			for (int j=0; j<results[i].length; j++){
+				System.out.print(results[i][j]+", ");
+			}
+			System.out.println();
+		}
+		
+		return bestResults;
+	}
+	
+	public double evaluateScoreOld(double[][] scores, int[][] combos, int[] choices){
+		double s=0;
+		
+		//choices==-1 means that B is closer to X than A.
+		
+		for (int i=0; i<combos.length; i++){
+			
+			int x=combos[i][2];
+			int a=combos[i][0];
+			int b=combos[i][1];
+			
+			double score1=0;
+			double score2=0;
+			
+			if (x>a){
+				score1=scores[x][a];
+			}
+			else{
+				score1=scores[a][x];
+			}
+			if (x>b){
+				score2=scores[x][b];
+			}
+			else{
+				score2=scores[b][x];
+			}
+			
+			if ((score1<score2)&&(choices[i]==1)){s++;}
+			if ((score1>score2)&&(choices[i]==-1)){s++;}
+			
+			
+			
+		}
+		
+		return s;
+		
+	}
+	
+	public double[] evaluateScore(double[][] scores, int[][] combos, int[] choices){
+		double s=0;
+		double t=0;
+		double u=0;
+		//choices==-1 means that B is closer to X than A.
+		
+		for (int i=0; i<combos.length; i++){
+			
+			int x=combos[i][2];
+			int a=combos[i][0];
+			int b=combos[i][1];
+			
+			double score1=0;
+			double score2=0;
+			
+			if (x>a){
+				score1=scores[x][a];
+			}
+			else{
+				score1=scores[a][x];
+			}
+			if (x>b){
+				score2=scores[x][b];
+			}
+			else{
+				score2=scores[b][x];
+			}
+			
+			double xp=(score1-score2)/(score1+score2);
+			
+			//score1>score2... dtw thinks should have chosen score2
+			//xp... positive number
+			//xq... <0.5
+			//score1<score2...  x closer to a than to b... xq>0.5
+			
+			double xq=1/(1+Math.exp(4*xp));
+			
+			if (choices[i]==1){
+				s+=Math.log(xq);
+			}
+			else{
+				s+=Math.log(1-xq);
+			}
+			
+			if (xq>0.5){
+				t+=Math.log(xq);
+			}
+			else{
+				t+=Math.log(1-xq);
+			}
+			
+			//if ((score1<score2)&&(choices[i]==1)){s++;}
+			//if ((score1>score2)&&(choices[i]==-1)){s++;}
+			
+		}
+		
+		return new double[]{s,t};
+		
+	}
+	
+	public double[] evaluateScore(double[][] scores, int[][] combos, int[] choices, Random random){
+		double s=0;
+		double t=0;
+		double u=0;
+		//choices==-1 means that B is closer to X than A.
+		
+		for (int i=0; i<combos.length; i++){
+			
+			int x=combos[i][2];
+			int a=combos[i][0];
+			int b=combos[i][1];
+			
+			double score1=0;
+			double score2=0;
+			
+			if (x>a){
+				score1=scores[x][a];
+			}
+			else{
+				score1=scores[a][x];
+			}
+			if (x>b){
+				score2=scores[x][b];
+			}
+			else{
+				score2=scores[b][x];
+			}
+			
+			double xp=(score1-score2)/(score1+score2);
+			
+			//score1>score2... dtw thinks should have chosen score2
+			//xp... positive number
+			//xq... <0.5
+			//score1<score2...  x closer to a than to b... xq>0.5
+			
+			double xq=1/(1+Math.exp(4*xp));
+			
+			double xr=random.nextDouble();
+			
+			int xs=0;
+			if (xr<xq){xs=1;}
+			
+			if (choices[i]==1){
+				s+=Math.log(xq);
+			}
+			else{
+				s+=Math.log(1-xq);
+			}
+			
+			if (xq>0.5){
+				t+=Math.log(xq);
+			}
+			else{
+				t+=Math.log(1-xq);
+			}
+			
+			if (xs==1){
+				u+=Math.log(xq);
+			}
+			else{
+				u+=Math.log(1-xq);
+			}
+			
+			//if ((score1<score2)&&(choices[i]==1)){s++;}
+			//if ((score1>score2)&&(choices[i]==-1)){s++;}
+			
+		}
+		
+		return new double[]{s,t, u};
+		
+	}
+	
 	
 	public synchronized CompareThread runDTWpair(DTWSwingWorker dtws, boolean stitch, int id1, int id2){
 		
@@ -573,6 +1261,33 @@ public class PrepareDTW {
 	
 
 	public synchronized double[][] runDTW(DTWSwingWorker dtws, boolean stitch){
+		double[][] scoresH=null;
+		/*
+		double[] xx={0.352500916,
+				0.409692556,
+				0.301101297,
+				0.416253537,
+				0.328384697,
+				0.258212,
+				0.340097964,
+				0.355734408,
+				0.333006769,
+				0.383324146};
+		
+		double rbest=1000000;
+		
+		Random random=new Random();
+		for (int repi=0; repi<10000; repi++){
+		
+			validParameters=new double[validParameters.length];
+			double[] oldvp=new double[4];
+			for (int repj=0; repj<4; repj++){
+				oldvp[repj]=validParameters[repj];
+				validParameters[repj]+=random.nextDouble()*2 -1 ;
+				if (validParameters[repj]<=0.01){validParameters[repj]=0.01;}
+			}
+			
+			*/
 		
 		int ncores=Runtime.getRuntime().availableProcessors();
 		
@@ -591,14 +1306,14 @@ public class PrepareDTW {
 			//data1=dataSyls;
 			//data2=dataSylsTemp;
 			//data3=dataSylsExtra;
-			System.out.println("STITCHING ENABLED");
+			//System.out.println("STITCHING ENABLED");
 		}
 		
 		double[][] scores=new double[eleSize][eleSize];
 		
-		for (int i=0; i<sdReal.length; i++){
-			System.out.println(i+" "+sdReal[i]);
-		}
+		//for (int i=0; i<sdReal.length; i++){
+			//System.out.println(i+" "+sdReal[i]);
+		//}
 		double[] sdOver=new double[15];
 
 		double[][] scoresX=new double[ncores][eleSize];
@@ -625,7 +1340,7 @@ public class PrepareDTW {
 		for (int i=0; i<ncores; i++){
 			starts[i]=i*(e/ncores);
 			stops[i]=(i+1)*(e/ncores);
-			System.out.println(starts[i]+" "+stops[i]+" "+eleSize);
+			//System.out.println(starts[i]+" "+stops[i]+" "+eleSize);
 		}
 		stops[ncores-1]=e;
 		
@@ -657,7 +1372,7 @@ public class PrepareDTW {
 			}
 		}
 		
-		double[][] scoresH=new double[e][];
+		scoresH=new double[e][];
 		for (int i=0; i<e; i++){
 			scoresH[i]=new double[i+1];
 			for (int j=0; j<i; j++){
@@ -708,12 +1423,43 @@ public class PrepareDTW {
 			normReal[i]=validParameters[i]/(totweight*sdR[i]);
 		}
 		
-		System.out.println("ACTUAL COMPARATORS "+sdT);
-		for (int i=0; i<sdReal.length; i++){
-			System.out.println(normReal[i]);
+		//System.out.println("ACTUAL COMPARATORS "+sdT);
+		//for (int i=0; i<sdReal.length; i++){
+			//System.out.println(normReal[i]);
+		//}
+		
+		/*
+		int r3=0;
+		double r4[]=new double[xx.length];
+		double r4m=0;
+		for (int r1=0; r1<scoresH.length; r1++){
+			for (int r2=0; r2<r1; r2++){
+				r4[r3]=scoresH[r1][r2]/xx[r3];
+				r4m+=r4[r3];
+				r3++;
+			}
 		}
 		
+		r4m/=r3+0.0;
+		double r5=0;
+		for (int r1=0; r1<xx.length; r1++){
+			r5+=(r4[r1]-r4m)*(r4[r1]-r4m);
+		}
+		if (r5<rbest){
+			rbest=r5;
+			for (int r1=0; r1<4; r1++){
+				System.out.print(validParameters[r1]+" ");
+			}
+			System.out.println(r4m+" "+r5+" "+validTempParameters);
+		}
+		else{
+			for (int r1=0; r1<4; r1++){
+				validParameters[r1]=oldvp[r1];
+			}
+		}
 		
+		}
+		*/
 		return scoresH;	
 	}
 	

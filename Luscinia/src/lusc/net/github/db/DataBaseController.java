@@ -11,6 +11,7 @@ import java.util.*;
 import java.io.*;
 
 import lusc.net.github.Song;
+import lusc.net.github.ui.compmethods.ABXdiscrimination;
 
 public class DataBaseController {
 	String dbName;
@@ -126,6 +127,12 @@ public class DataBaseController {
 		return store;
 	}
 	
+	public void getDataABXExpt(ABXdiscrimination abx){
+		
+		db.getDataFromABXExpt(abx);
+	
+	}
+	
 	public int readIndividualNameFromDB(String name){
 		int re=db.readIndividualNameFromDB(name);
 		return re;
@@ -164,14 +171,18 @@ public class DataBaseController {
 		//db.doConnect();
 		if (db.connected){
 			Song song=db.loadSongFromDatabase(ID, info);
+			
 			//System.out.println("I: "+song.individualID);
 			song.setEleList(db.loadElementsFromDatabase(ID, song));
+			
+			song.setEleGaps();
+			
 			//System.out.println("I: "+song.individualID);
 			song.setSyllList(db.loadSyllablesFromDatabase(ID));
 			if (db.oldloader){
 				song.updateSyllableList();
 			}
-
+			//song.updateElements();
 			song.sortSyllsEles();
 			song.interpretSyllables();
 						

@@ -500,6 +500,7 @@ public class Defaults {
 		setBooleanProperty("dtwdyn", sg.getDynamicWarping());
 		setIntProperty("dtwSTISYL", sg.getStitchSyllables());
 		setIntProperty("dtwALIGN", sg.getAlignmentPoints());
+		setBooleanProperty("dtwSQUARE", sg.getSquared());
 		
 		setDoubleProperty("dtwmrf", sg.getMainReductionFactor(), 1000);
 		setDoubleProperty("dtwsdr", sg.getSDRatio(), 1000);
@@ -556,6 +557,7 @@ public class Defaults {
 		sg.setDynamicWarping(getBooleanProperty("dtwdyn", true));
 		sg.setStitchSyllables(getIntProperty("dtwSTISYL", 1));
 		sg.setAlignmentPoints(getIntProperty("dtwALIGN", 1));
+		sg.setSquared(getBooleanProperty("dtwSQUARE", false));
 				
 		sg.setMainReductionFactor(getDoubleProperty("dtwmrf", 1000, 1));
 		sg.setMinPoints(getIntProperty("dtwmpo", 10));

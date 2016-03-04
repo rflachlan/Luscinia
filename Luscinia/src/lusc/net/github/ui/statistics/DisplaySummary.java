@@ -322,6 +322,42 @@ public class DisplaySummary  extends DisplayPane {
 		texter.append("p-value: "+mrpp.getPValue()+" a-value: "+mrpp.getAValue());
 		texter.append(returner);
 		
+		if (mrpp.getPairwise()){
+			String[] levelNames=mrpp.getLevelNames();
+			
+			double[][] pv=mrpp.getPairwisePValue();
+			texter.append("Pairwise p-values: ");
+			texter.append(returner);
+			
+			texter.append("        ");
+			for (int i=0; i<levelNames.length; i++){
+				texter.append(levelNames[i]+" ");
+			}
+			texter.append(returner);
+			for (int i=0; i<levelNames.length; i++){
+				texter.append(levelNames[i]+" ");	
+				for (int j=0; j<levelNames.length; j++){
+					texter.append(pv[i][j]+" ");
+				}
+				texter.append(returner);
+			}
+			double[][] av=mrpp.getPairwiseAValue();
+			texter.append("Pairwise a-values: ");
+			texter.append(returner);
+			
+			texter.append("        ");
+			for (int i=0; i<levelNames.length; i++){
+				texter.append(levelNames[i]+" ");
+			}
+			texter.append(returner);
+			for (int i=0; i<levelNames.length; i++){
+				texter.append(levelNames[i]+" ");	
+				for (int j=0; j<levelNames.length; j++){
+					texter.append(av[i][j]+" ");
+				}
+				texter.append(returner);
+			}	
+		}		
 	}
 	
 	
@@ -631,7 +667,85 @@ public class DisplaySummary  extends DisplayPane {
 					sd.writeLine();
 					sd.writeString("a-value: ");
 					sd.writeDouble(mrpp.getAValue());
-					sd.writeLine();	
+					sd.writeLine();
+					
+					if (mrpp.getPairwise()){
+						sd.writeLine();
+						String[] levelNames=mrpp.getLevelNames();
+						
+						double[][] pv=mrpp.getPairwisePValue();
+						sd.writeString("Pairwise p-values: ");
+						sd.writeLine();
+						
+						sd.writeString(" ");
+						for (int ii=0; ii<levelNames.length; ii++){
+							sd.writeString(levelNames[ii]+" ");
+						}
+						sd.writeLine();
+						for (int ii=0; ii<levelNames.length; ii++){
+							sd.writeString(levelNames[ii]);	
+							for (int j=0; j<levelNames.length; j++){
+								sd.writeDouble(pv[ii][j]);
+							}
+							sd.writeLine();
+						}
+						sd.writeLine();
+						
+						double[][] av=mrpp.getPairwiseAValue();
+						sd.writeString("Pairwise a-values: ");
+						sd.writeLine();
+						
+						sd.writeString(" ");
+						for (int ii=0; ii<levelNames.length; ii++){
+							sd.writeString(levelNames[ii]);
+						}
+						sd.writeLine();
+						for (int ii=0; ii<levelNames.length; ii++){
+							sd.writeString(levelNames[ii]);	
+							for (int j=0; j<levelNames.length; j++){
+								sd.writeDouble(av[ii][j]);
+							}
+							sd.writeLine();
+						}	
+						sd.writeLine();
+						
+						double[][] expec=mrpp.getPairwiseExpectedDelta();
+						sd.writeString("Pairwise expected delta: ");
+						sd.writeLine();
+						
+						sd.writeString(" ");
+						for (int ii=0; ii<levelNames.length; ii++){
+							sd.writeString(levelNames[ii]);
+						}
+						sd.writeLine();
+						for (int ii=0; ii<levelNames.length; ii++){
+							sd.writeString(levelNames[ii]);	
+							for (int j=0; j<levelNames.length; j++){
+								sd.writeDouble(expec[ii][j]);
+							}
+							sd.writeLine();
+						}	
+						sd.writeLine();
+						
+						double[][] empir=mrpp.getPairwiseEmpiricalDelta();
+						sd.writeString("Pairwise empirical delta: ");
+						sd.writeLine();
+						
+						sd.writeString(" ");
+						for (int ii=0; ii<levelNames.length; ii++){
+							sd.writeString(levelNames[ii]);
+						}
+						sd.writeLine();
+						for (int ii=0; ii<levelNames.length; ii++){
+							sd.writeString(levelNames[ii]);	
+							for (int j=0; j<levelNames.length; j++){
+								sd.writeDouble(empir[ii][j]);
+							}
+							sd.writeLine();
+						}	
+						sd.writeLine();
+					}	
+					
 				}
 			}
 		}

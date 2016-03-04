@@ -547,6 +547,7 @@ public class DbConnection2 {
 
 			stmt = con.createStatement(); 
 			stmt.executeUpdate(queryb+comp);
+			
 			String comp2="comparesong (user CHAR(50), song1 INT, song2 INT, score FLOAT, max_score FLOAT, scheme_id INT)";
 			stmt = con.createStatement(); 
 			stmt.executeUpdate(queryb+comp2);
@@ -562,6 +563,10 @@ public class DbConnection2 {
 			String comp5="comparesongcomp (song1 INT, song2 INT, score LONGVARBINARY)";
 			stmt = con.createStatement(); 
 			stmt.executeUpdate(queryb+comp5);
+			
+			String comp6="comparetriplet (user CHAR(50), songA INT, songB INT, songX INT, choice INT, trial INT, exptype INT)";
+			stmt = con.createStatement(); 
+			stmt.executeUpdate(queryb+comp6);
 			
 			String eleindex="CREATE INDEX index1 ON comparesong (song1)";
 			stmt = con.createStatement(); 

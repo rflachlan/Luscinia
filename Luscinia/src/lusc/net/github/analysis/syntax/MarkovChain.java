@@ -55,6 +55,8 @@ public class MarkovChain {
 		entropy=results[1];
 		zeroOrder=results[2];
 		
+		System.out.println(redundancy[3]+" "+entropy[3]+" "+zeroOrder[3]);
+		
 		System.out.println("Starting pos bootstrap: "+kv);
 		resultArrayP=bootstrapEntropyA();
 	}
