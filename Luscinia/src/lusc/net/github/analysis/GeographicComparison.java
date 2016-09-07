@@ -10,12 +10,14 @@ package lusc.net.github.analysis;
 import java.util.*;
 
 import lusc.net.github.analysis.dendrograms.UPGMA;
+import lusc.net.github.ui.GeographicAnalysisPreferences;
 import lusc.net.github.ui.statistics.DisplayUPGMA;
 
 public class GeographicComparison {
 	
 	
 	double[] meanScore;
+	double[][] meanScoreByGroup;
 	double[][] confidenceIntervals;
 	
 	double[][] geographicalDistances;
@@ -45,6 +47,12 @@ public class GeographicComparison {
 	AnalysisGroup sg;
 	ComparisonResults cr;
 	
+	int[] groupids;
+	String[] levelNames;
+	
+	GeographicAnalysisPreferences gap;
+	
+	
 	//public GeographicComparison(SongGroup sg, int dataType, doublse thresholdProp){
 	public GeographicComparison(AnalysisGroup sg, int dataType, double thresholdProp){
 		this.sg=sg;
@@ -66,17 +74,21 @@ public class GeographicComparison {
 		//repertoireComparison=calculateRepertoireSimilarity(songData, lookUps);
 		repertoireComparison=calculateJaccardIndex(songData, lookUps, threshold);
 		geographicalDistances=calculateGeographicalDistances();
-		
-		
+
 		doComparison(numCategories);
+		
+		
+		
+		
 	}
 	
 	//public GeographicComparison(SongGroup sg, int dataType, DisplayUPGMA dup){
-	public GeographicComparison(AnalysisGroup sg, int dataType, DisplayUPGMA dup){
+	public GeographicComparison(AnalysisGroup sg, int dataType, DisplayUPGMA dup, GeographicAnalysisPreferences gap){
 		
 		this.sg=sg;
 		this.dataType=dataType;
 		this.upgma=dup.getUPGMA();
+		this.gap=gap;
 		cr=sg.getScores(dataType);
 		
 		if ((cr.individuals==null)||(cr.individualNumber==0)){
@@ -101,6 +113,44 @@ public class GeographicComparison {
 		}
 		silind=dup.getSize1()-silind;
 		numTypes=silind+1;
+		
+		
+		
+		int[] partition=null;
+		int s=gap.levelSel;
+		levelNames=null;
+		if (s==0){
+			partition=cr.getLookUpTypes();
+			levelNames=cr.getTypeNames();
+		}
+		if (s==1){
+			partition=cr.getSpeciesListArray();
+			levelNames=cr.getSpeciesNames();
+		}
+		else if (s==2){
+			partition=cr.getPopulationListArray();
+			levelNames=cr.getPopulationNames();
+		}
+		else if (s==3){
+			partition=cr.getLookUpIndividuals();
+			levelNames=cr.getIndividualNames();
+		}		
+		
+		if (levelNames.length>1){
+			
+			int[] ind=cr.getLookUpIndividuals();
+			
+			int ni=cr.getIndividualNames().length;
+			
+			groupids=new int[ni];
+			
+			for (int i=0; i<ind.length; i++){
+				groupids[ind[i]]=partition[i];
+			}
+			
+		}
+		
+		//System.out.println(levelNames.length);
 		geographicalDistances=calculateGeographicalDistances();
 		doComparison(numCategories, numTypes);
 	}
@@ -131,6 +181,10 @@ public class GeographicComparison {
 	
 	public double[] getMeanScore(){
 		return meanScore;
+	}
+	
+	public double[][] getMeanScoreByGroup(){
+		return meanScoreByGroup;
 	}
 	
 	public double[][] getCoordinates(){
@@ -202,8 +256,13 @@ public class GeographicComparison {
 		maxDist=distanceCategories[distanceCategories.length-1][1];
 
 		meanScore=calculateMeanScore();
-		for (int i=0; i<meanScore.length; i++){System.out.println(meanScore[i]);}
+		//for (int i=0; i<meanScore.length; i++){System.out.println(meanScore[i]);}
 		confidenceIntervals=deleteNJackknife(prop, resamples);
+		
+		if (groupids!=null){
+			meanScoreByGroup=calculateMeanScoreByGroup(groupids, levelNames.length);
+		}
+		
 	}
 	
 	public double[] calculateMeanScore(){
@@ -228,6 +287,40 @@ public class GeographicComparison {
 		for (int i=0; i<numCategories; i++){
 			if (counts[i]>0){
 				results[i]/=counts[i];
+			}
+		}
+		
+		return results;
+	}
+	
+	public double[][] calculateMeanScoreByGroup(int[] groups, int ngroups){
+		
+		//System.out.println("calculating mean score by group "+ngroups);
+		double[][] results=new double[ngroups][numCategories];
+		double[][] counts=new double[ngroups][numCategories];
+		
+		for (int i=0; i<repertoireComparison.length; i++){
+			//System.out.println(groups[i]);
+			for (int j=0; j<i; j++){
+				if (groups[i]==groups[j]){
+					double p=0;
+					for (int k=0; k<numCategories; k++){
+						if ((geographicalDistances[i][j]>p)&&(geographicalDistances[i][j]<=distanceCategories[0][k])){
+							results[groups[i]][k]+=repertoireComparison[i][j];
+							counts[groups[i]][k]++;
+						}
+						p=distanceCategories[0][k];
+					}
+				}
+			}
+		}
+		
+		for (int i=0; i<ngroups; i++){
+			for (int j=0; j<numCategories; j++){
+				if (counts[i][j]>0){
+					results[i][j]/=counts[i][j];		
+				}
+				//System.out.println(i+" "+j+" "+results[i][j]);
 			}
 		}
 		
@@ -320,7 +413,7 @@ public class GeographicComparison {
 			}
 		}
 		
-		System.out.println(n+" "+deleteNumber+" "+resamples);
+		//System.out.println(n+" "+deleteNumber+" "+resamples);
 		for (int i=0; i<numCategories; i++){
 			double p=sumsquares[i]*(n-deleteNumber)/(deleteNumber*rc[i]+0.0);
 			p=Math.sqrt(p);
@@ -417,10 +510,10 @@ public class GeographicComparison {
 		for (int i=0; i<ind; i++){
 			Arrays.sort(reps[i]);
 			for (int j=0; j<reps[i].length; j++){
-				System.out.print(reps[i][j]+" ");
+				//System.out.print(reps[i][j]+" ");
 				if (reps[i][j]==-1){System.out.println("ALERT");}
 			}
-			System.out.println(reps[i].length);
+			//System.out.println(reps[i].length);
 		}
 		
 		double[][] results=new double[ind][];
@@ -502,7 +595,7 @@ public class GeographicComparison {
 		
 		int n=lookUps.length;
 		
-		System.out.println("THRESHOLD: "+uberthresh);
+		//System.out.println("THRESHOLD: "+uberthresh);
 		
 		boolean[] leaveOut=new boolean[n];
 
@@ -578,7 +671,7 @@ public class GeographicComparison {
 		
 		//double threshold1=calculateThreshold(songData, thresholdProportion1);
 		//double threshold2=calculateThreshold(songData, thresholdProportion2);
-		System.out.println("THRESHOLD: "+uberthresh);
+		//System.out.println("THRESHOLD: "+uberthresh);
 		//double threshold1=uberthresh;
 		//double threshold2=uberthresh+0.0001;
 		/*
@@ -724,10 +817,10 @@ public class GeographicComparison {
 		for (int i=0; i<ind; i++){
 			Arrays.sort(reps[i]);
 			for (int j=0; j<reps[i].length; j++){
-				System.out.print(reps[i][j]+" ");
+				//System.out.print(reps[i][j]+" ");
 				if (reps[i][j]==-1){System.out.println("ALERT");}
 			}
-			System.out.println(reps[i].length);
+			//System.out.println(reps[i].length);
 		}
 		repertoires=reps;
 	}
@@ -797,12 +890,12 @@ public class GeographicComparison {
 	public double[][] calculateGeographicalDistances(){
 		int i,j, k;
 		coordinates=new double [cr.individualNumber][2];
-		
+		String[] indname=cr.getIndividualNames();
 		for (i=0; i<cr.individuals.length; i++){
 			j=cr.lookUps[cr.individuals[i][0]][0];
 			String sx1=cr.songs[j].getLocationX();
 			String sy1=cr.songs[j].getLocationY();
-			System.out.println(i+" "+sx1+" "+sy1);
+			//System.out.println(i+" "+sx1+" "+sy1);
 			if (sx1!=null){
 				try{
 					//Integer xx1=Integer.parseInt(sx1.trim());
@@ -821,7 +914,7 @@ public class GeographicComparison {
 				}
 				catch(Exception e){}
 			}
-			//System.out.println(i+" "+coordinates[i][0]+" "+coordinates[i][1]);
+			System.out.println(i+" "+groupids[i]+" "+indname[i]+" "+coordinates[i][0]+" "+coordinates[i][1]);
 		}
 		double[][] geographicalDistances=new double[cr.individualNumber][cr.individualNumber];
 		for (i=0; i<cr.individualNumber; i++){
@@ -875,6 +968,7 @@ public class GeographicComparison {
 				if ((distanceSort[j]<=t2)&&(distanceSort[j]>t1)){
 					p[pi]=distanceSort[j];
 					pi++;
+					if (pi>=p.length){pi--;}
 				}
 			}
 			Arrays.sort(p);
