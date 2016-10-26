@@ -19,6 +19,7 @@ import java.nio.*;
 
 import lusc.net.github.Element;
 import lusc.net.github.Song;
+import lusc.net.github.SpectrogramMeasurement;
 import lusc.net.github.ui.compmethods.ABXdiscrimination;
 
 import org.h2.tools.*;
@@ -227,6 +228,13 @@ public class DbConnection {
 		//if (!dversionD.equals(version[1])){
 			//updateDB3();
 		//}
+		
+		//updateDB6();
+		
+		//updateDB7();
+		
+		//updateDB7();
+		
 		if ((!version[0].equals(lversionD))||(!version[1].equals(dversionD))){
 			writeToDataBase("INSERT INTO dbdetails (version, luscvers) VALUES ('"+version[0]+"' , '"+version[1]+"')");
 			int p1=version[0].indexOf(".");
@@ -239,16 +247,30 @@ public class DbConnection {
 			
 			System.out.println("VERSION PARSE: "+p1+" "+p2+" "+p3+" "+p4+" "+da+" "+mo+" "+ye);
 			
-			int moye=12*mo+ye;
+			int moye=12*ye+mo;
 			
 			if ((moye<=12*15+11)&&(da<19)){
 				System.out.println("here");
 				updateDB4();
+				updateDB5();
+				updateDB6();
+			}
+			if ((moye<12*16+4)){
+				System.out.println("Attempting to add time column");
+				updateDB5();
+				updateDB6();
+			}
+			if ((moye<12*16+6)){
+				System.out.println("Attempting to add extra metadata columns");
+				updateDB6();
+			}
+			if ((moye<12*16+8)){
+				System.out.println("Attempting to fix freq slopes");
+				updateDB7();
+				//updateDB8();
 			}
 			
 		}
-		
-		
 		
 	}
 
@@ -428,7 +450,7 @@ public class DbConnection {
 	
 	public LinkedList<String> populateContentPane(int ID){
 		LinkedList<String> Results=new LinkedList<String>();
-		String query="SELECT name, SpecID, PopID, locdesc, gridtype, gridx, gridy FROM individual WHERE id = "+ID;
+		String query="SELECT name, SpecID, PopID, locdesc, gridtype, gridx, gridy, sex, rank, age FROM individual WHERE id = "+ID;
 		PreparedStatement stmt = null; 
 		ResultSet rs = null; 
 		try {
@@ -442,6 +464,9 @@ public class DbConnection {
 				Results.add(rs.getString("gridy"));
 				Results.add(rs.getString("SpecID"));
 				Results.add(rs.getString("PopID"));
+				Results.add(Integer.toString(rs.getInt("sex")));
+				Results.add(rs.getString("rank"));
+				Results.add(rs.getString("age"));
 			}
 		}
 		catch (Exception e){}
@@ -581,7 +606,7 @@ public class DbConnection {
 		return eleList;
 	}
 	
-	public LinkedList<Element> loadElementsFromDatabase(int id, Song song){
+	public LinkedList<Element> loadElementsFromDatabase(int id){
 		LinkedList<Element> eleList=new LinkedList<Element>();
 		oldloader=false;
 		//int output[][];
@@ -727,7 +752,7 @@ public class DbConnection {
 		}
 		catch (Exception e){
 			e.printStackTrace();
-			eleList=loadElementsFromDatabaseOld(id, song);
+			//eleList=loadElementsFromDatabaseOld(id, song);
 		}
 		finally { 
 			if (rs != null) { 
@@ -854,11 +879,12 @@ public class DbConnection {
 		
 		System.out.println("Here");
 		try {
-			String queryb="CREATE TABLE ";
+			
+			String querya="CREATE TABLE ";
 			String comp6="comparetriplet (user CHAR(50), songA INT, songB INT, songX INT, choice INT, trial INT, exptype INT)";
 			stmt = con.createStatement(); 
-			stmt.executeUpdate(queryb+comp6);
-			
+			stmt.executeUpdate(querya+comp6);
+
 		} 
 		catch (Exception e){
 			e.printStackTrace();
@@ -876,6 +902,211 @@ public class DbConnection {
 	}
 	
 	
+	
+	public void updateDB5(){
+		Statement stmt = null; 
+		ResultSet rs = null; 
+		
+		PreparedStatement stmt2 = null; 
+		PreparedStatement stmt3 = null; 
+		//ResultSet rs = null; 
+		
+		System.out.println("Here");
+		try {
+			String query1="ALTER TABLE songdata ADD COLUMN (time BIGINT)";	
+			stmt = con.createStatement(); 
+			stmt.executeUpdate(query1);
+			
+			System.out.println("Checking times");
+			String queryb="SELECT time, songid FROM wavs";
+			
+			stmt2 = null; 
+			rs = null; 
+			try {
+				stmt2 = con.prepareStatement(queryb);
+				rs = stmt2.executeQuery( );
+				while( rs.next( ) ) {
+					int p=rs.getInt("songid");	
+					long q=rs.getLong("time");
+					
+					//String queryc="INSERT INTO songdata (time) values(?) WHERE songID = "+p;
+					String queryc="UPDATE songdata SET time = "+q+" WHERE id = "+p;
+					stmt3=null;
+					stmt3 = con.prepareStatement(queryc);
+					//stmt3.setLong(1, q);
+					stmt3.executeUpdate();	
+							
+				}
+			}
+			catch (Exception e){
+				e.printStackTrace();
+			}
+			
+		} 
+		catch (Exception e){
+			e.printStackTrace();
+		}
+		finally { 
+			if (rs != null) { 
+				try {rs.close();} catch (SQLException sqlEx) {} 
+				rs = null; 
+			}
+			if (stmt != null) { 
+				try { stmt.close();} catch (SQLException sqlEx) {} 
+				stmt = null; 
+			} 
+		}	
+	}
+	
+	public void updateDB6(){
+		resetCompTable();
+		Statement stmt = null; 
+		ResultSet rs = null; 
+		try {
+			String query1="ALTER TABLE songdata ADD COLUMN (Quality VARCHAR)";
+			String query2="ALTER TABLE songdata ADD COLUMN (Type VARCHAR)";
+			String query3="ALTER TABLE songdata ADD COLUMN (Custom0 VARCHAR)";
+			String query4="ALTER TABLE songdata ADD COLUMN (Custom1 VARCHAR)";
+			
+			if (DBMODE!=1){
+				query1="ALTER TABLE songdata ADD COLUMN Quality VARCHAR";
+				query2="ALTER TABLE songdata ADD COLUMN Type VARCHAR";
+				query3="ALTER TABLE songdata ADD COLUMN Custom0 VARCHAR";
+				query4="ALTER TABLE songdata ADD COLUMN Custom1 VARCHAR";
+			}
+			
+			//String queryc="ALTER TABLE songdata ADD COLUMN (echocomp float, echorange int, dyncomp float, dynrange float)";
+			stmt = con.createStatement(); 
+			stmt.executeUpdate(query1);
+			stmt = con.createStatement(); 
+			stmt.executeUpdate(query2);
+			stmt = con.createStatement(); 
+			stmt.executeUpdate(query3);
+			stmt = con.createStatement(); 
+			stmt.executeUpdate(query4);
+		} 
+		catch (Exception e){
+			e.printStackTrace();
+		}
+		finally { 
+			if (rs != null) { 
+				try {rs.close();} catch (SQLException sqlEx) {} 
+				rs = null; 
+			}
+			if (stmt != null) { 
+				try { stmt.close();} catch (SQLException sqlEx) {} 
+				stmt = null; 
+			} 
+		}		
+	}
+	
+	public void updateDB7(){
+		System.out.println("OK NOW HERE");
+		LinkedList<Song> songs=loadSongDetailsFromDatabase();
+		
+		for (Song song: songs){
+			System.out.println("HERE! "+song.getName());
+			int ID=song.getSongID();
+			Song song2=loadSongFromDatabase(ID, 0);
+			song2.setEleList(loadElementsFromDatabase(ID));
+			
+			double ts=song2.getTimeStep();
+			System.out.println(ts);
+			//if (ts>0){
+			
+			try{
+				
+				if (song2.getTimeStep()!=1){
+					song2.setTimeStep(1);
+					song2.setFrameLength(5);
+				}
+				if (song2.getMaxF()!=10400){
+					song2.setMaxF(10400);
+				}
+				
+				song2.setDynRange(50);
+				
+				song2.setFFTParameters();
+				song2.setFFTParameters2(song2.getNx());
+				song2.makeMyFFT(0, song2.getNx());
+				
+				SpectrogramMeasurement sm=new SpectrogramMeasurement(song2);
+				sm.setUp();
+				
+				
+				int n=song2.getNumElements();
+				if (n!=0){
+					sm.updateChangeMeasures();
+					writeElements(song2);
+					
+				}
+				
+				song2=null;
+				System.gc();
+			}
+			catch (Exception e) {
+				//System.out.println(e);
+				e.printStackTrace();
+			}
+			
+			//}
+			
+			/*
+			
+			
+			song2.setEleGaps();
+			
+			int n=song2.getNumElements();
+			System.out.println("Song "+song2.getName()+" loaded with "+n+" elements");
+			for (int i=0; i<n; i++){
+				Element ele=song2.getElement(i);	
+				ele.updateFreqChangeMeasures();			
+			}	
+			n=song2.getNumElements();
+			if (n!=0){
+				writeElements(song2);
+			}
+			*/
+		}
+	}
+	
+	/*
+	public void updateDB8(){
+		resetCompTable();
+		Statement stmt = null; 
+		ResultSet rs = null; 
+		try {
+			String query1="ALTER TABLE songdata ADD COLUMN (Type VARCHAR)";
+			
+			if (DBMODE!=1){
+				query1="ALTER TABLE songdata ADD COLUMN Type VARCHAR";
+			}
+			
+			//String queryc="ALTER TABLE songdata ADD COLUMN (echocomp float, echorange int, dyncomp float, dynrange float)";
+			stmt = con.createStatement(); 
+			stmt.executeUpdate(query1);
+			stmt = con.createStatement(); 
+			stmt.executeUpdate(query2);
+			stmt = con.createStatement(); 
+			stmt.executeUpdate(query3);
+			stmt = con.createStatement(); 
+			stmt.executeUpdate(query4);
+		} 
+		catch (Exception e){
+			e.printStackTrace();
+		}
+		finally { 
+			if (rs != null) { 
+				try {rs.close();} catch (SQLException sqlEx) {} 
+				rs = null; 
+			}
+			if (stmt != null) { 
+				try { stmt.close();} catch (SQLException sqlEx) {} 
+				stmt = null; 
+			} 
+		}		
+	}
+	*/
 
 
 	public LinkedList<int[]> loadSyllablesFromDatabase(int id){
@@ -1008,7 +1239,7 @@ public class DbConnection {
 	
 	public LinkedList<Song> loadSongDetailsFromDatabase (){
 		
-		String query="SELECT name, id, IndividualID FROM songdata";
+		String query="SELECT name, id, IndividualID, time FROM songdata";
 				
 		Hashtable<Integer, Song> otable=new Hashtable<Integer, Song>();
 		
@@ -1023,10 +1254,11 @@ public class DbConnection {
 				String s = rs.getString("name");
 				int id=rs.getInt("id");
 				int indID=rs.getInt("IndividualID");
+				long time=rs.getLong("time");
 				song.setName(s);
 				song.setSongID(id);
 				song.setIndividualID(indID);
-				
+				song.setTDate(time);
 				otable.put(id, song);
 			}
 		}
@@ -1034,7 +1266,7 @@ public class DbConnection {
 			e.printStackTrace();
 		}
 			
-		
+		/*
 		System.out.println("Checking times");
 		String queryb="SELECT time, songid FROM wavs";
 		
@@ -1058,7 +1290,7 @@ public class DbConnection {
 		catch (Exception e){
 			e.printStackTrace();
 		}
-		
+		*/
 		
 		System.out.println("Checking sylls");
 		String queryc="SELECT starttime, songID FROM syllable";
@@ -1100,6 +1332,10 @@ public class DbConnection {
 		String query4="SELECT call_context FROM songdata WHERE id = "+id;
 		String query5="SELECT RecordingEquipment FROM songdata WHERE id = "+id;
 		String query6="SELECT Recorder FROM songdata WHERE id = "+id;
+		String query7="SELECT Quality FROM songdata WHERE id = "+id;
+		String query8="SELECT Type FROM songdata WHERE id = "+id;
+		String query9="SELECT Custom0 FROM songdata WHERE id = "+id;
+		String query10="SELECT Custom1 FROM songdata WHERE id = "+id;
 		//String query7="SELECT Archived FROM songdata WHERE id = "+id;
 		
 		PreparedStatement stmt = null; 
@@ -1212,6 +1448,42 @@ public class DbConnection {
 				song.setRecordist(rs.getString("Recorder"));
 			}
 			
+			stmt = con.prepareStatement(query7);
+			rs = stmt.executeQuery( );
+			if( !rs.next( ) ) {
+				System.out.println("No such file stored. "+id);
+			}
+			else {
+				song.setQuality(rs.getString("Quality"));
+			}
+			
+			stmt = con.prepareStatement(query8);
+			rs = stmt.executeQuery( );
+			if( !rs.next( ) ) {
+				System.out.println("No such file stored. "+id);
+			}
+			else {
+				song.setType(rs.getString("Type"));
+			}
+			
+			stmt = con.prepareStatement(query9);
+			rs = stmt.executeQuery( );
+			if( !rs.next( ) ) {
+				System.out.println("No such file stored. "+id);
+			}
+			else {
+				song.setCustom(rs.getString("Custom0"), 0);
+			}
+			
+			stmt = con.prepareStatement(query10);
+			rs = stmt.executeQuery( );
+			if( !rs.next( ) ) {
+				System.out.println("No such file stored. "+id);
+			}
+			else {
+				song.setCustom(rs.getString("Custom1"), 1);
+			}
+			
 			//stmt = con.prepareStatement(query7);
 			//rs = stmt.executeQuery( );
 			//if( !rs.next( ) ) {
@@ -1290,7 +1562,7 @@ public class DbConnection {
 			  //  System.out.println("Target " + lines[n].toString() + " " + lines[n].getLineClass());
 			//}
 			
-			
+			System.out.println("NUMBER OF LINES: "+lines.length);
 			if(afFormat.isBigEndian()){
 			
 				
@@ -1314,24 +1586,28 @@ public class DbConnection {
 			AudioInputStream AFStream=AudioSystem.getAudioInputStream(afFormat, AFStreamA);
 			
 			
-			double samplerate=AFStream.getFormat().getSampleRate();
-			int stereo=AFStream.getFormat().getChannels();
-			int FrameSize=AFStream.getFormat().getFrameSize();
-			int length=(int)(FrameSize*AFStream.getFrameLength());
+			double samplerate=AFStreamA.getFormat().getSampleRate();
+			int stereo=AFStreamA.getFormat().getChannels();
+			int FrameSize=AFStreamA.getFormat().getFrameSize();
+			int length=(int)(FrameSize*AFStreamA.getFrameLength());
 			int bigend=0;
-			if(AFStream.getFormat().isBigEndian()){bigend=1;}
-			AudioFormat.Encoding afe=AFStream.getFormat().getEncoding();
+			if(AFStreamA.getFormat().isBigEndian()){bigend=1;}
+			AudioFormat.Encoding afe=AFStreamA.getFormat().getEncoding();
 			int signed=0;
 			if (afe.toString().startsWith("PCM_SIGNED")){signed=1;}
-			int ssizebits=AFStream.getFormat().getSampleSizeInBits();
+			int ssizebits=AFStreamA.getFormat().getSampleSizeInBits();
 			
-			//System.out.println(samplerate+" "+stereo+" "+FrameSize+" "+length+" "+afe.toString());
+			System.out.println("PROCESSED SOUND: "+samplerate+" "+stereo+" "+FrameSize+" "+length+" "+afe.toString());
 			
+			byte[] rawData=new byte[(int)length];
+			AFStreamA.read(rawData);
 			
 			stmt = con.prepareStatement(insertStmt);
 			stmt.setString(2, name);
 			stmt.setInt(1, p);
-			stmt.setBinaryStream(3, AFStream, length);
+			//stmt.setBinaryStream(3, AFStreamA, length);
+			
+			stmt.setBinaryStream(3, new ByteArrayInputStream(rawData),rawData.length);
 			stmt.setDouble(4, samplerate);
 			stmt.setInt(5, FrameSize);
 			stmt.setInt(6, stereo);
@@ -1340,6 +1616,9 @@ public class DbConnection {
 			stmt.setLong(9, modtime);
 			stmt.setInt(10, signed);
 			stmt.executeUpdate();
+			
+			System.out.println("ADDED TO DB");
+			
 		} 
 		catch (Exception e){
 			e.printStackTrace();
@@ -1405,16 +1684,27 @@ public class DbConnection {
 	}
 	
 	public void writeSongMeasurements(Song song){
+		
+		writeElements(song);
+		writeSyllables(song);
+	}
+	
+	public void writeElements(Song song){
+		
 		Statement stmt = null; 
 		ResultSet rs = null; 
 		try {
+			song.sortEles();
 			String u="DELETE FROM element WHERE songID="+song.getSongID();
 			stmt = con.createStatement(); 
 			stmt.executeUpdate(u); 	
 			String t="INSERT INTO element (signal, peakfreq, meanfreq, medianfreq, fundfreq, peakfreqchange, meanfreqchange, medianfreqchange, fundfreqchange, harmonicity, wiener, bandwidth, amplitude, reverberation, trillamp, trillrate, powerspectrum, songID, overallpeakfreq1, overallpeakfreq2, starttime, timelength, gapbefore, gapafter, timestep, framelength, dy, maxf, echocomp, echorange, dyncomp, dynrange) VALUES (";
 			String b=" , ";
-			song.sortSyllsEles();
+			
+			
 			int ne=song.getNumElements();
+			
+			System.out.println("Saving song " +song.getName()+" with "+ne +" elements");
 			for (int i=0; i<ne; i++){
 				Element ele=(Element)song.getElement(i);
 				StringBuffer bus=new StringBuffer();
@@ -1456,6 +1746,29 @@ public class DbConnection {
 				stmt = con.createStatement(); 
 				stmt.executeUpdate(v); 
 			}
+		} 
+		catch (Exception e){
+			e.printStackTrace();
+		}
+		finally { 
+			if (rs != null) { 
+				try {rs.close();} catch (SQLException sqlEx) {} 
+				rs = null; 
+			}
+			if (stmt != null) { 
+				try { stmt.close();} catch (SQLException sqlEx) {} 
+				stmt = null; 
+			} 
+		}
+	}
+	
+	public void writeSyllables(Song song){
+		
+		Statement stmt = null; 
+		ResultSet rs = null; 
+		try {
+			String b=" , ";
+			song.sortSylls();
 			String su="DELETE FROM syllable WHERE songID="+song.getSongID();
 			stmt = con.createStatement(); 
 			stmt.executeUpdate(su); 
@@ -1497,6 +1810,8 @@ public class DbConnection {
 		writeToDataBase(details);
 		String query="UPDATE wavs SET time='"+song.getTDate()+"' WHERE songid="+sid;
 		writeToDataBase(query);
+		query="UPDATE songdata SET time='"+song.getTDate()+"'"+ w;
+		writeToDataBase(query);
 		query="UPDATE songdata SET call_location='"+song.getLocation()+"'"+w;
 		writeToDataBase(query);
 		query="UPDATE songdata SET call_context='"+song.getNotes()+"'"+w;
@@ -1504,6 +1819,14 @@ public class DbConnection {
 		query="UPDATE songdata SET RecordingEquipment='"+song.getRecordEquipment()+"'" +w;
 		writeToDataBase(query);
 		query="UPDATE songdata SET Recorder='"+song.getRecordist()+"'" +w;
+		writeToDataBase(query);
+		query="UPDATE songdata SET Quality='"+song.getQuality()+"'" +w;
+		writeToDataBase(query);
+		query="UPDATE songdata SET Type='"+song.getType()+"'" +w;
+		writeToDataBase(query);
+		query="UPDATE songdata SET Custom0='"+song.getCustom(0)+"'" +w;
+		writeToDataBase(query);
+		query="UPDATE songdata SET Custom1='"+song.getCustom(1)+"'" +w;
 		writeToDataBase(query);
 		query="UPDATE songdata SET IndividualID='"+song.getIndividualID()+"'" +w;
 		writeToDataBase(query);
@@ -1711,6 +2034,48 @@ public class DbConnection {
 		return poss;
 	}
 	*/
+	
+	public long[][] getSongIds(int indID){
+		
+		
+		String query1="SELECT id, time FROM songdata WHERE IndividualID = "+indID;
+		PreparedStatement stmt = null; 
+		ResultSet rs = null; 
+		long[][] results=null;
+		LinkedList<long[]> r=new LinkedList<long[]>();
+		try{
+			String query=query1;
+			stmt = con.prepareStatement(query);
+			rs = stmt.executeQuery( );
+			while( rs.next( ) ) {
+				int e=rs.getInt(1);
+				long f=rs.getLong(2);
+				long[]g={e,f};
+				r.add(g);
+			}
+			
+			results=new long[r.size()][];
+			for (int i=0; i<r.size(); i++){
+				results[i]=r.get(i);
+			}			
+		}
+		catch (Exception e){
+			e.printStackTrace();
+		}
+		finally { 
+			if (rs != null) { 
+				try {rs.close();} catch (SQLException sqlEx) {} 
+				rs = null; 
+			}
+			if (stmt != null) { 
+				try { stmt.close();} catch (SQLException sqlEx) {} 
+				stmt = null; 
+			} 
+		}
+		return results;
+	}
+	
+	
 	public float[][][] getSongComp(int a, int b, int[] c){
 		
 		float[][][] results=new float[c.length][][];

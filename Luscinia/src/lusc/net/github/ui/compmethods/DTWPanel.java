@@ -83,6 +83,7 @@ public class DTWPanel extends JPanel implements ActionListener, PropertyChangeLi
 	double sdRatio2=0;
 	double offsetRemoval=0.0;
 	double alignmentCost=0.2;
+	double aTanTransform=0.01;
 	int alignmentPoints=3;
 	double syllableRepetitionWeighting=0;
 	public double[] parameterValues={1,0,0,0,0,1,0,0,0,1,0,0,0,0,1,0,0, 0, 0,0,0,0,0};
@@ -93,7 +94,7 @@ public class DTWPanel extends JPanel implements ActionListener, PropertyChangeLi
 
 	JFormattedTextField[] parametersTF;
 	
-	JFormattedTextField compressionFactorTF, minPointsTF, sdRatioTF, sdRatioTF2, offsetRemovalTF, stitchPunishmentTF, alignmentCostTF, addSyllRepsTF, maximumWarpTF;
+	JFormattedTextField compressionFactorTF, minPointsTF, sdRatioTF, sdRatioTF2, offsetRemovalTF, stitchPunishmentTF, alignmentCostTF, addSyllRepsTF, maximumWarpTF, aTanTransformTF;
 		
 	boolean started=false;
 	boolean textOut=false;
@@ -204,6 +205,10 @@ public class DTWPanel extends JPanel implements ActionListener, PropertyChangeLi
 		return sdRatio2;
 	}
 	
+	public double getATanTransform(){
+		return aTanTransform;
+	}
+	
 	public double getStitchPunishment(){
 		return stitchPunishment;
 	}
@@ -275,6 +280,10 @@ public class DTWPanel extends JPanel implements ActionListener, PropertyChangeLi
 	
 	public void setSDRatio2(double a){
 		sdRatio2=a;
+	}
+	
+	public void setATanTransform(double a){
+		aTanTransform=a;
 	}
 	
 	public void setStitchPunishment(double a){
@@ -351,6 +360,14 @@ public class DTWPanel extends JPanel implements ActionListener, PropertyChangeLi
 		sdRatioTF2.setColumns(10);
 		sdRatioTF2.addPropertyChangeListener("value", this);
 		optionsPanel.add(sdRatioTF2);
+		
+		JLabel aTanLabel=new JLabel("ArcTan transform weight for freq slope: ");
+		optionsPanel.add(aTanLabel);
+		aTanTransformTF=new JFormattedTextField();
+		aTanTransformTF.setValue(new Double(aTanTransform));
+		aTanTransformTF.setColumns(10);
+		aTanTransformTF.addPropertyChangeListener("value", this);
+		optionsPanel.add(aTanTransformTF);
 		
 		JLabel syllRepsLabel=new JLabel("Syllable repetition weighting: ");
 		optionsPanel.add(syllRepsLabel);
@@ -698,6 +715,13 @@ public class DTWPanel extends JPanel implements ActionListener, PropertyChangeLi
 			if (s>=100){s=100;}
 			maximumWarp=s;
 			maximumWarpTF.setValue(new Double(s));
+		}
+		if (source==aTanTransformTF){
+			double s=(double)((Number)aTanTransformTF.getValue()).doubleValue();
+			if (s<=0.00001){s=0.00001;}
+			if (s>=1000){s=1000;}
+			aTanTransform=s;
+			aTanTransformTF.setValue(new Double(s));
 		}
 	}
 	

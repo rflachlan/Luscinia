@@ -32,7 +32,7 @@ import java.awt.*;
 
 import lusc.net.github.Defaults;
 
-import org.apache.poi.hssf.usermodel.*;
+import org.apache.poi.xssf.usermodel.*;
 import org.apache.*;
 
 
@@ -44,9 +44,9 @@ public class SaveDocument {
 	String name=null;
 	JFileChooser fc;
 	int fileType=0;
-	HSSFWorkbook wb;
-	HSSFSheet sheet;
-	HSSFRow row;
+	XSSFWorkbook wb;
+	XSSFSheet sheet;
+	XSSFRow row;
 	PrintWriter Results;
 	File file;
 	short rownum=0;
@@ -81,7 +81,7 @@ public class SaveDocument {
 		int returnVal = JFileChooser.APPROVE_OPTION;
 		boolean readyToWrite=false;
 		if (!suppressChoice){
-			String[] formats={"xls", "csv", "txt"};
+			String[] formats={"xlsx", "csv", "txt"};
 			
 			try{
 				thpath=defaults.props.getProperty("path");
@@ -93,7 +93,7 @@ public class SaveDocument {
 			fc.setDialogType(JFileChooser.SAVE_DIALOG);
 			fc.setAcceptAllFileFilterUsed(false);
 			
-			SpectrogramFileFilter sffxls=new SpectrogramFileFilter("xls");
+			SpectrogramFileFilter sffxls=new SpectrogramFileFilter("xlsx");
 			sffxls.fileType=0;
 			fc.addChoosableFileFilter(sffxls);
 			SpectrogramFileFilter sffcsv=new SpectrogramFileFilter("csv");
@@ -148,7 +148,7 @@ public class SaveDocument {
 					if (!suppressChoice){host.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));}
 					
 					if (fileType==0){
-						wb = new HSSFWorkbook();
+						wb = new XSSFWorkbook();
 						sheet = wb.createSheet("Results");
 						row = sheet.createRow((short)0);
 					}

@@ -173,7 +173,7 @@ public class DataBaseController {
 			Song song=db.loadSongFromDatabase(ID, info);
 			
 			//System.out.println("I: "+song.individualID);
-			song.setEleList(db.loadElementsFromDatabase(ID, song));
+			song.setEleList(db.loadElementsFromDatabase(ID));
 			
 			song.setEleGaps();
 			
@@ -183,7 +183,8 @@ public class DataBaseController {
 				song.updateSyllableList();
 			}
 			//song.updateElements();
-			song.sortSyllsEles();
+			song.sortSylls();
+			song.sortEles();
 			song.interpretSyllables();
 						
 			LinkedList<?> store2=db.populateContentPane(song.getIndividualID());
@@ -194,6 +195,9 @@ public class DataBaseController {
 			song.setLocationY((String)store2.get(4));
 			song.setSpecies((String)store2.get(5));
 			song.setPopulation((String)store2.get(6));
+			song.setSex((String)store2.get(7));
+			song.setRank((String)store2.get(8));
+			song.setAge((String)store2.get(9));
 
 			return song;
 		}
@@ -326,6 +330,8 @@ public class DataBaseController {
 		
 	}
 	
-	
+	public long[][] getSongIds(int a){
+		return db.getSongIds(a);
+	}
 	
 }

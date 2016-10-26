@@ -41,6 +41,18 @@ public class MultivariateDispersionTest {
 			names=cr.getIndividualNames();
 			group=cr.getLookUpIndividuals();
 		}
+		else if (ao.levelSel==3){
+			names=cr.getSexNames();
+			group=cr.getSexListArray();
+		}
+		else if (ao.levelSel==4){
+			names=cr.getRankNames();
+			group=cr.getRankListArray();
+		}
+		else if (ao.levelSel==5){
+			names=cr.getAgeNames();
+			group=cr.getAgeListArray();
+		}
 		
 		int ngroup=0;
 		for (int i=0; i<group.length; i++){

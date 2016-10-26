@@ -91,15 +91,19 @@ public class SongLoaderSwingWorker extends SwingWorker<AnalysisGroup, Object> {
 				Integer q=(Integer)cs.sa.leftList.get(i);
 				for (int j=0; j<ac.archIds.length; j++){
 					if (q.intValue()==ac.archIds[j]){
-						Song song=ac.dbc.loadSongFromDatabase(ac.archIds[j], 1);
-						int ne=song.getNumElements();
-						if (ne>0){
-							LinkedList<String> list1=ac.dbc.populateContentPane(song.getIndividualID());
-							song.setSx((String)list1.get(3));
-							song.setSy((String)list1.get(4));
+						System.out.println(i+" "+ls+" "+j+" "+ac.archIds.length);
+						try{
+							Song song=ac.dbc.loadSongFromDatabase(ac.archIds[j], 1);
+							int ne=song.getNumElements();
+							if (ne>0){
+								LinkedList<String> list1=ac.dbc.populateContentPane(song.getIndividualID());
+								song.setSx((String)list1.get(3));
+								song.setSy((String)list1.get(4));
 							
-							songList.add(song);
-						}	
+								songList.add(song);
+							}	
+						}
+						catch(Exception e){e.printStackTrace();}
 					}
 				}
 				
@@ -110,7 +114,7 @@ public class SongLoaderSwingWorker extends SwingWorker<AnalysisGroup, Object> {
 			Song[] songs=new Song[songList.size()];
 			
 			songs=songList.toArray(songs);
-			
+			System.out.println("Songs loaded from db");
 			songList=null;
 			try{
 				sg=new AnalysisGroup(songs, cs.defaults, ac.dbc);

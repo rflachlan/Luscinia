@@ -506,7 +506,7 @@ public class CompressComparisons {
 		
 		// make sure n>m
 		
-		double exp=1;
+		double exp=2;
 		
 		if (n<m){
 			int x=a;
@@ -523,7 +523,7 @@ public class CompressComparisons {
 		
 		for (int i=0; i<m; i++){
 			double score=0;
-			
+			double worst=0;
 			int k=i;
 			for (int j=0; j<n; j++){
 				
@@ -532,10 +532,12 @@ public class CompressComparisons {
 				
 				if (x>y){
 					score+=Math.pow(eleScores[x][y], exp);
+					if (eleScores[x][y]>worst){worst=eleScores[x][y];}
 					//score+=eleScores[x][y];
 				}
 				else{
 					score+=Math.pow(eleScores[y][x], exp);
+					if (eleScores[y][x]>worst){worst=eleScores[y][x];}
 					//score+=eleScores[y][x];
 				}
 				
@@ -545,8 +547,14 @@ public class CompressComparisons {
 				}
 			}
 			
+			
+			
+			
 			score/=n+0.0;
 			score=Math.pow(score, 1/exp);
+			
+			//score=worst;
+			
 			if (n!=m){score+=syntaxPenalty;}
 			if (i!=0){score+=syntaxPenalty;}
 			if (score<bestScore){bestScore=score;}
@@ -671,8 +679,7 @@ public class CompressComparisons {
 				
 			}
 		}
-		
-		
+
 		count=null;
 		
 		return results;
@@ -1453,7 +1460,7 @@ public class CompressComparisons {
 		return results;
 	}
 
-	public double[][] compareSongsDigram(ComparisonResults cs, boolean useTrans, boolean cycle, double min, double max){
+	public double[][] compareSongsDigramOld(ComparisonResults cs, boolean useTrans, boolean cycle, double min, double max){
 
 		int[][] id=cs.calculateSongs();
 		
@@ -1481,12 +1488,14 @@ public class CompressComparisons {
 					p1l--;
 				}
 				
+				int p2l=p2.length;
+				if ((useTrans)&&(!cycle)){
+					p2l--;
+				}
+				
 				for (int g=0; g<p1l; g++){
 					double bestscore=100000000;
-					int p2l=p2.length;
-					if ((useTrans)&&(!cycle)){
-						p2l--;
-					}
+					
 					for (int h=0; h<p2l; h++){
 						if (p1[g]>=p2[h]){
 							score=scores[p1[g]][p2[h]];
@@ -1539,6 +1548,49 @@ public class CompressComparisons {
 
 				}
 				scoreSong[i][j]=(x/y);
+			}
+		}
+		
+		for (int i=0; i<songNumber; i++){
+			for (int j=0; j<i; j++){
+				results[i][j]=Math.max(scoreSong[i][j], scoreSong[j][i]);
+			}
+		}
+		
+		return results;
+	}
+	
+	public double[][] compareSongsDigram(ComparisonResults cs, boolean useTrans, boolean cycle, boolean lt, double min, double max){
+
+		System.out.println("Compressing songs digram: "+useTrans+" "+cycle+" "+lt);
+		int[][] id=cs.calculateSongs();
+		
+		double minposs=cs.calculateMin();
+		
+		int songNumber=id.length;
+		double[][] scores=cs.getDiss();
+		double[][] scoreSong=new double[songNumber][songNumber];
+		double[][] results=new double[songNumber][];
+		for (int i=0; i<songNumber; i++){
+			results[i]=new double[i+1];
+		}
+		
+		boolean missLast=false;
+		if ((useTrans)&&(!cycle)){
+			missLast=true;
+		}
+		
+		for (int i=0; i<songNumber; i++){
+			int[] p1=id[i];
+			for (int j=0; j<songNumber; j++){
+				int[]p2=id[j];			
+				
+				double[][] sm=getSubMatrix(scores, p1, p2, 0, useTrans, missLast, lt, min, max, minposs);
+				
+				double[] comp=getBestMatches(sm);
+				scoreSong[i][j]=getAverage(comp);
+				if (lt){scoreSong[i][j]=Math.exp(scoreSong[i][j])*minposs;}
+				
 			}
 		}
 		
@@ -1636,7 +1688,7 @@ public class CompressComparisons {
 		
 	}
 	
-	public  double[][] compareSongsDTW(ComparisonResults cr, boolean cycle, double min, double max){
+	public  double[][] compareSongsDTWOld(ComparisonResults cr, boolean cycle, double min, double max){
 		
 		int[][] id=cr.calculateSongs();	
 		int songNumber=id.length;
@@ -1735,6 +1787,64 @@ public class CompressComparisons {
 		return results;	
 	}
 	
+	public  double[][] compareSongsDTW(ComparisonResults cr, boolean cycle, boolean useTrans, boolean lt, boolean linearity, double min, double max){
+		
+		int[][] id=cr.calculateSongs();	
+		int songNumber=id.length;
+		double[][] scores=cr.getDiss();		
+		
+		
+		double minposs=cr.calculateMin();
+		
+		double penalty=cr.calculatePercentile(5);
+		
+		if (lt){penalty=Math.log(penalty/minposs);}
+		
+		double[][] results=new double[songNumber][];
+		for (int i=0; i<songNumber; i++){
+			results[i]=new double[i+1];
+		}
+		
+		boolean missLast=false;
+		if ((useTrans)&&(!cycle)){
+			missLast=true;
+		}
+		
+		int mode=0;
+		if (linearity){mode=2;}
+		
+		for (int i=0; i<songNumber; i++){
+			int[] r1=id[i];
+			int rx=r1.length;
+			if (!cycle){
+				rx=1;
+			}
+			
+			for (int j=0; j<i; j++){
+				int[]r2=id[j];
+				double bestScore=Double.MAX_VALUE;				
+				
+				for (int k=0; k<rx; k++){
+					
+					double[][] sm=getSubMatrix(scores, r1, r2, k, useTrans, missLast, lt, min, max, minposs);
+					
+					double[] s=getDTWalignment(sm, mode, penalty);					
+					double o=getSum(s);
+					if (o<bestScore){bestScore=o;}
+				}
+				
+				results[i][j]=(bestScore/(0.0+Math.max(r1.length,r2.length)));
+				if ((lt)&&(!linearity)){results[i][j]=Math.exp(results[i][j])*minposs;}
+			}
+				
+		}
+		
+		return results;	
+	}
+	
+	
+
+	
 	public double[][] compareIndividuals(double[][] songDiffs, int[][] indIds, boolean av){
 		
 		
@@ -1802,6 +1912,235 @@ public class CompressComparisons {
 		}
 		return out;
 	}
-	
 
+	
+	public double[] getDTWalignment(double[][] dtw, int mode, double penalty){
+		
+		int n=dtw.length; 
+		int m=dtw[0].length;
+
+		
+		
+		double[][] t=new double[n][m];
+		int[][] dir=new int[n][m];
+		
+		int[] x={-1,0,-1};
+		int[] y={0,-1,-1};
+		double[] z={penalty, penalty, 0};
+		//System.out.println(penalty);
+		for (int i=0; i<n; i++){
+			for (int j=0; j<m; j++){
+				t[i][j]=dtw[i][j];
+				double bestS=Double.MAX_VALUE;
+				int d=-1;
+				for (int a=0; a<3; a++){
+					int b=i+x[a];
+					int c=j+y[a];
+					if ((b>=0)&&(c>=0)){
+						
+						double q=t[b][c];
+						//System.out.print(a+" "+q+" "+bestS+" ");
+						if (q<bestS){
+							bestS=q;
+							d=a;
+						}
+						//if(a==2){
+							//System.out.println(i+" "+j+" "+b+" "+c+" "+q+" "+bestS);
+						//}
+					}			
+				}
+				if(d<0){
+					//System.out.println(d+" "+i+" "+j);
+				}
+				if(d>=0){
+					dir[i][j]=d;
+					t[i][j]+=bestS;
+					
+				}
+				//System.out.print((int)Math.round(1000*t[i][j])+" ");
+				//System.out.print((int)Math.round(1000*dtw[i][j])+" ");
+			}
+			//System.out.println();
+		}
+		
+		//for (int i=0; i<n; i++){
+		//	for (int j=0; j<m; j++){
+		//		System.out.print((int)Math.round(1000*dtw[i][j])+" ");
+		//	}
+		//	System.out.println();
+		//}
+		
+		int a=n-1;
+		int b=m-1;
+		
+		while ((a>0)||(b>0)){
+			int c=dir[a][b];
+			dir[a][b]+=10;
+			a+=x[c];
+			b+=y[c];
+			//System.out.println(a+" "+b+" "+dir[a][b]);
+		}
+		dir[0][0]=12;
+		double[] out=new double[n];
+		for (int i=0; i<n; i++){		
+			for (int j=0; j<m; j++){
+				if (dir[i][j]>=10){
+					if (mode==0){
+						out[i]+=dtw[i][j];
+					}
+					else if (mode==1){
+						if (dtw[i][j]>out[i]){
+							out[i]=dtw[i][j];
+						}
+					}	
+					else if (mode==2){
+						if (dir[i][j]==12){
+							out[i]=0;
+						}
+						else{
+							out[i]+=1;
+						}
+					}
+				}		
+			}	
+			//System.out.println("O: "+out[i]+" "+i+" "+n+" "+m);
+		}
+		
+		return out;
+	}
+	
+	public double[][] getSubMatrix(double[][] mat, int[] f1, int[] f2, int offset, boolean useTrans, boolean missLast, boolean lt, double min, double max, double minposs){
+		
+		//System.out.println("SubMat: "+offset+" "+useTrans+" "+missLast+" "+lt);
+		int n=f1.length; 
+		int m=f2.length;
+		
+		//for(int i=0; i<n; i++){System.out.print(f1[i]+" ");}
+		//System.out.println();
+		//for(int i=0; i<m; i++){System.out.print(f2[i]+" ");}
+		//System.out.println();
+		
+		
+		if ((useTrans)&&(missLast)){
+			n--;
+			m--;
+		}
+		double max2=max;
+		double min2=min;
+		if(max<=min){
+			max2=1;
+			if (!lt){min2=0;}
+		}
+		
+		double[][] out=new double[n][m];		
+		for (int i=0; i<n; i++){
+			int k=i+offset;
+			if (k>=n){
+				k-=n;
+			}
+			for (int j=0; j<m; j++){
+				double p=0;
+				if (f1[k]>f2[j]){
+					p=mat[f1[k]][f2[j]];
+				}
+				else{
+					p=mat[f2[j]][f1[k]];
+				}
+				if (p<min){p=min2;}
+				if (p>max){p=max2;}
+				if (lt){
+					p=Math.log(p/minposs);
+				}
+				out[i][j]=p;
+				if (useTrans){
+					int a=k+1;
+					if (a>=n){a-=n;}
+					int b=j+1;
+					if (b>=m){b-=m;}
+					if (f1[a]>f2[b]){
+						p=mat[f1[a]][f2[b]];
+					}
+					else{
+						p=mat[f2[b]][f1[a]];
+					}
+					if (p<min){p=min2;}
+					if (p>max){p=max2;}
+					if (lt){
+						p=Math.log(p/minposs);
+					}
+					out[i][j]+=p;
+					out[i][j]*=0.5;
+				}	
+			}
+		}	
+		return out;
+	}
+	
+	
+	public double[] getBestMatches(double[][] comp){
+		
+		int n=comp.length;
+		int m=comp[0].length;
+		
+		double[] out=new double[n];
+		for (int i=0; i<n; i++){
+			
+			double bestMatch=Double.MAX_VALUE;
+			
+			for (int j=0; j<m; j++){
+				double score=comp[i][j];
+				
+				if (score<bestMatch){
+					bestMatch=score;
+				}	
+				
+			}
+			out[i]=bestMatch;
+		}
+
+		return out;
+	}
+	
+	
+	public double getScore(double[][] comp, int a, int b){
+		if (a>b){
+			return comp[a][b];
+		}
+		else{
+			return comp[b][a];
+		}	
+	}
+	
+	public double getAverage(double[] d){
+		double n=d.length;
+		double s=0;
+		for (int i=0; i<n; i++){
+			s+=d[i];
+		}
+		s/=n;
+		
+		return s;
+	}
+	
+	public double getSum(double[] d){
+		double n=d.length;
+		double s=0;
+		for (int i=0; i<n; i++){
+			s+=d[i];
+		}
+		
+		return s;
+	}
+	
+	public double getEuclideanDistance(double[] d){
+		double n=d.length;
+		double s=0;
+		for (int i=0; i<n; i++){
+			s+=d[i]*d[i];
+		}
+		s/=n;
+		s=Math.sqrt(s);
+		
+		return s;
+	}
 }

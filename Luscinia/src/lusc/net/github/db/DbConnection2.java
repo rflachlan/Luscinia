@@ -659,7 +659,11 @@ public class DbConnection2 {
 			songdb.append(", call_context LONGVARCHAR");
 			songdb.append(", RecordingEquipment VARCHAR");
 			songdb.append(", Recorder VARCHAR");
-			songdb.append(", noise1 FLOAT, noise2 INT, noise3 INT");
+			songdb.append(", Quality VARCHAR");
+			songdb.append(", Type VARCHAR");
+			songdb.append(", Custom0 VARCHAR");
+			songdb.append(", Custom1 VARCHAR");
+			songdb.append(", noise1 FLOAT, noise2 INT, noise3 INT, time BIGINT");
 			songdb.append(")");
 			String songd=songdb.toString();
 			stmt = con.createStatement(); 

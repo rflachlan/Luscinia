@@ -60,7 +60,7 @@ public class SimplePaintingPanel extends JPanel{
 		y=-1;
 		numIms=2;
 		this.setPreferredSize(new Dimension(imf.getWidth()+imf2.getWidth(), imf.getHeight()));
-		System.out.println("IMAGE SIZE: "+imf.getWidth()+" "+imf.getHeight());
+		System.out.println("IMAGE SIZE: "+imf.getWidth()+" "+imf.getHeight()+" "+imf2.getWidth()+" "+imf2.getHeight());
 		repaint();
 		imagePanel.add(this);
 	}

@@ -18,7 +18,7 @@ public class AndersonOptions extends JPanel {
 	JFormattedTextField repeatsField;
 	Defaults defaults;
 	
-	String[] levels={"Species", "Populations", "Individuals"};
+	String[] levels={"Species", "Populations", "Individuals", "Sex", "Rank", "Age"};
 	JComboBox levelsBox=new JComboBox(levels);
 
 	public int numRepeats=10000;

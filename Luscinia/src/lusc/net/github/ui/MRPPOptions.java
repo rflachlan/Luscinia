@@ -19,7 +19,7 @@ public class MRPPOptions extends JPanel {
 	JFormattedTextField repeatsField;
 	Defaults defaults;
 	
-	String[] levels={"Species", "Population", "Individual"};
+	String[] levels={"Type", "Species", "Population", "Individual", "Sex", "Age", "Rank"};
 	JComboBox levelBox=new JComboBox(levels);
 	
 	String[] weightings={"n", "n-1", "n(n-1)"};

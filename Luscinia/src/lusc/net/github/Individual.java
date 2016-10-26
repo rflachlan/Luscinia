@@ -28,6 +28,10 @@ public class Individual {
 	String yco;
 	String species;
 	String population;
+	int sex;
+	String rank;
+	String age;
+	
 	int ID;
 	
 	/**
@@ -54,15 +58,74 @@ public class Individual {
 		yco=(String)list.get(4);
 		species=(String)list.get(5);
 		population=(String)list.get(6);
-		
-		//if (!xco.equals("")){
-			//fixLatLong(26, "N");
-		//}
-		
+		sex=Integer.parseInt((String)list.get(7));
+		rank=(String)list.get(8);
+		age=(String)list.get(9);
+		/*
+		if (!xco.equals("")){
+			if (population.equals("Adirondacks, NY")){
+				fixLatLong(18, "N");
+			}
+			else if (population.equals("Hudson Valley, NY")){
+				fixLatLong(18, "N");
+			}
+			else if (population.equals("Montezuma, NY")){
+				fixLatLong(18, "N");
+			}
+			else if (population.equals("Conneaut, PA")){
+				fixLatLong(17, "N");
+			}
+			else if (population.equals("Horicon, WI")){
+				fixLatLong(16, "N");
+			}
+			else if (population.equals("Waterloo, MI")){
+				fixLatLong(16, "N");
+			}
+			
+		}
+		*/
 		list=null;
 	}
 	
+	private class UTM2Deg
+	{
+	    double latitude;
+	    double longitude;
+	    private  UTM2Deg(double Easting, double Northing, int Zone)
+	    {
+	        
+	                   
+	        double north = Northing;
+	        latitude = (north/6366197.724/0.9996+(1+0.006739496742*Math.pow(Math.cos(north/6366197.724/0.9996),2)-0.006739496742*Math.sin(north/6366197.724/0.9996)*Math.cos(north/6366197.724/0.9996)*(Math.atan(Math.cos(Math.atan(( Math.exp((Easting - 500000) / (0.9996*6399593.625/Math.sqrt((1+0.006739496742*Math.pow(Math.cos(north/6366197.724/0.9996),2))))*(1-0.006739496742*Math.pow((Easting - 500000) / (0.9996*6399593.625/Math.sqrt((1+0.006739496742*Math.pow(Math.cos(north/6366197.724/0.9996),2)))),2)/2*Math.pow(Math.cos(north/6366197.724/0.9996),2)/3))-Math.exp(-(Easting-500000)/(0.9996*6399593.625/Math.sqrt((1+0.006739496742*Math.pow(Math.cos(north/6366197.724/0.9996),2))))*( 1 -  0.006739496742*Math.pow((Easting - 500000) / (0.9996*6399593.625/Math.sqrt((1+0.006739496742*Math.pow(Math.cos(north/6366197.724/0.9996),2)))),2)/2*Math.pow(Math.cos(north/6366197.724/0.9996),2)/3)))/2/Math.cos((north-0.9996*6399593.625*(north/6366197.724/0.9996-0.006739496742*3/4*(north/6366197.724/0.9996+Math.sin(2*north/6366197.724/0.9996)/2)+Math.pow(0.006739496742*3/4,2)*5/3*(3*(north/6366197.724/0.9996+Math.sin(2*north/6366197.724/0.9996 )/2)+Math.sin(2*north/6366197.724/0.9996)*Math.pow(Math.cos(north/6366197.724/0.9996),2))/4-Math.pow(0.006739496742*3/4,3)*35/27*(5*(3*(north/6366197.724/0.9996+Math.sin(2*north/6366197.724/0.9996)/2)+Math.sin(2*north/6366197.724/0.9996)*Math.pow(Math.cos(north/6366197.724/0.9996),2))/4+Math.sin(2*north/6366197.724/0.9996)*Math.pow(Math.cos(north/6366197.724/0.9996),2)*Math.pow(Math.cos(north/6366197.724/0.9996),2))/3))/(0.9996*6399593.625/Math.sqrt((1+0.006739496742*Math.pow(Math.cos(north/6366197.724/0.9996),2))))*(1-0.006739496742*Math.pow((Easting-500000)/(0.9996*6399593.625/Math.sqrt((1+0.006739496742*Math.pow(Math.cos(north/6366197.724/0.9996),2)))),2)/2*Math.pow(Math.cos(north/6366197.724/0.9996),2))+north/6366197.724/0.9996)))*Math.tan((north-0.9996*6399593.625*(north/6366197.724/0.9996 - 0.006739496742*3/4*(north/6366197.724/0.9996+Math.sin(2*north/6366197.724/0.9996)/2)+Math.pow(0.006739496742*3/4,2)*5/3*(3*(north/6366197.724/0.9996+Math.sin(2*north/6366197.724/0.9996)/2)+Math.sin(2*north/6366197.724/0.9996 )*Math.pow(Math.cos(north/6366197.724/0.9996),2))/4-Math.pow(0.006739496742*3/4,3)*35/27*(5*(3*(north/6366197.724/0.9996+Math.sin(2*north/6366197.724/0.9996)/2)+Math.sin(2*north/6366197.724/0.9996)*Math.pow(Math.cos(north/6366197.724/0.9996),2))/4+Math.sin(2*north/6366197.724/0.9996)*Math.pow(Math.cos(north/6366197.724/0.9996),2)*Math.pow(Math.cos(north/6366197.724/0.9996),2))/3))/(0.9996*6399593.625/Math.sqrt((1+0.006739496742*Math.pow(Math.cos(north/6366197.724/0.9996),2))))*(1-0.006739496742*Math.pow((Easting-500000)/(0.9996*6399593.625/Math.sqrt((1+0.006739496742*Math.pow(Math.cos(north/6366197.724/0.9996),2)))),2)/2*Math.pow(Math.cos(north/6366197.724/0.9996),2))+north/6366197.724/0.9996))-north/6366197.724/0.9996)*3/2)*(Math.atan(Math.cos(Math.atan((Math.exp((Easting-500000)/(0.9996*6399593.625/Math.sqrt((1+0.006739496742*Math.pow(Math.cos(north/6366197.724/0.9996),2))))*(1-0.006739496742*Math.pow((Easting-500000)/(0.9996*6399593.625/Math.sqrt((1+0.006739496742*Math.pow(Math.cos(north/6366197.724/0.9996),2)))),2)/2*Math.pow(Math.cos(north/6366197.724/0.9996),2)/3))-Math.exp(-(Easting-500000)/(0.9996*6399593.625/Math.sqrt((1+0.006739496742*Math.pow(Math.cos(north/6366197.724/0.9996),2))))*(1-0.006739496742*Math.pow((Easting-500000)/(0.9996*6399593.625/Math.sqrt((1+0.006739496742*Math.pow(Math.cos(north/6366197.724/0.9996),2)))),2)/2*Math.pow(Math.cos(north/6366197.724/0.9996),2)/3)))/2/Math.cos((north-0.9996*6399593.625*(north/6366197.724/0.9996-0.006739496742*3/4*(north/6366197.724/0.9996+Math.sin(2*north/6366197.724/0.9996)/2)+Math.pow(0.006739496742*3/4,2)*5/3*(3*(north/6366197.724/0.9996+Math.sin(2*north/6366197.724/0.9996)/2)+Math.sin(2*north/6366197.724/0.9996)*Math.pow(Math.cos(north/6366197.724/0.9996),2))/4-Math.pow(0.006739496742*3/4,3)*35/27*(5*(3*(north/6366197.724/0.9996+Math.sin(2*north/6366197.724/0.9996)/2)+Math.sin(2*north/6366197.724/0.9996)*Math.pow(Math.cos(north/6366197.724/0.9996),2))/4+Math.sin(2*north/6366197.724/0.9996)*Math.pow(Math.cos(north/6366197.724/0.9996),2)*Math.pow(Math.cos(north/6366197.724/0.9996),2))/3))/(0.9996*6399593.625/Math.sqrt((1+0.006739496742*Math.pow(Math.cos(north/6366197.724/0.9996),2))))*(1-0.006739496742*Math.pow((Easting-500000)/(0.9996*6399593.625/Math.sqrt((1+0.006739496742*Math.pow(Math.cos(north/6366197.724/0.9996),2)))),2)/2*Math.pow(Math.cos(north/6366197.724/0.9996),2))+north/6366197.724/0.9996)))*Math.tan((north-0.9996*6399593.625*(north/6366197.724/0.9996-0.006739496742*3/4*(north/6366197.724/0.9996+Math.sin(2*north/6366197.724/0.9996)/2)+Math.pow(0.006739496742*3/4,2)*5/3*(3*(north/6366197.724/0.9996+Math.sin(2*north/6366197.724/0.9996)/2)+Math.sin(2*north/6366197.724/0.9996)*Math.pow(Math.cos(north/6366197.724/0.9996),2))/4-Math.pow(0.006739496742*3/4,3)*35/27*(5*(3*(north/6366197.724/0.9996+Math.sin(2*north/6366197.724/0.9996)/2)+Math.sin(2*north/6366197.724/0.9996)*Math.pow(Math.cos(north/6366197.724/0.9996),2))/4+Math.sin(2*north/6366197.724/0.9996)*Math.pow(Math.cos(north/6366197.724/0.9996),2)*Math.pow(Math.cos(north/6366197.724/0.9996),2))/3))/(0.9996*6399593.625/Math.sqrt((1+0.006739496742*Math.pow(Math.cos(north/6366197.724/0.9996),2))))*(1-0.006739496742*Math.pow((Easting-500000)/(0.9996*6399593.625/Math.sqrt((1+0.006739496742*Math.pow(Math.cos(north/6366197.724/0.9996),2)))),2)/2*Math.pow(Math.cos(north/6366197.724/0.9996),2))+north/6366197.724/0.9996))-north/6366197.724/0.9996))*180/Math.PI;
+	        latitude=Math.round(latitude*10000000);
+	        latitude=latitude/10000000;
+	        longitude =Math.atan((Math.exp((Easting-500000)/(0.9996*6399593.625/Math.sqrt((1+0.006739496742*Math.pow(Math.cos(north/6366197.724/0.9996),2))))*(1-0.006739496742*Math.pow((Easting-500000)/(0.9996*6399593.625/Math.sqrt((1+0.006739496742*Math.pow(Math.cos(north/6366197.724/0.9996),2)))),2)/2*Math.pow(Math.cos(north/6366197.724/0.9996),2)/3))-Math.exp(-(Easting-500000)/(0.9996*6399593.625/Math.sqrt((1+0.006739496742*Math.pow(Math.cos(north/6366197.724/0.9996),2))))*(1-0.006739496742*Math.pow((Easting-500000)/(0.9996*6399593.625/Math.sqrt((1+0.006739496742*Math.pow(Math.cos(north/6366197.724/0.9996),2)))),2)/2*Math.pow(Math.cos(north/6366197.724/0.9996),2)/3)))/2/Math.cos((north-0.9996*6399593.625*( north/6366197.724/0.9996-0.006739496742*3/4*(north/6366197.724/0.9996+Math.sin(2*north/6366197.724/0.9996)/2)+Math.pow(0.006739496742*3/4,2)*5/3*(3*(north/6366197.724/0.9996+Math.sin(2*north/6366197.724/0.9996)/2)+Math.sin(2* north/6366197.724/0.9996)*Math.pow(Math.cos(north/6366197.724/0.9996),2))/4-Math.pow(0.006739496742*3/4,3)*35/27*(5*(3*(north/6366197.724/0.9996+Math.sin(2*north/6366197.724/0.9996)/2)+Math.sin(2*north/6366197.724/0.9996)*Math.pow(Math.cos(north/6366197.724/0.9996),2))/4+Math.sin(2*north/6366197.724/0.9996)*Math.pow(Math.cos(north/6366197.724/0.9996),2)*Math.pow(Math.cos(north/6366197.724/0.9996),2))/3)) / (0.9996*6399593.625/Math.sqrt((1+0.006739496742*Math.pow(Math.cos(north/6366197.724/0.9996),2))))*(1-0.006739496742*Math.pow((Easting-500000)/(0.9996*6399593.625/Math.sqrt((1+0.006739496742*Math.pow(Math.cos(north/6366197.724/0.9996),2)))),2)/2*Math.pow(Math.cos(north/6366197.724/0.9996),2))+north/6366197.724/0.9996))*180/Math.PI+Zone*6-183;
+	        longitude=Math.round(longitude*10000000);
+	        longitude=longitude/10000000;       
+	    }   
+	}
+	
 	void fixLatLong(int zone, String dir){
+		
+		Double xx1=Double.parseDouble(xco.trim());
+		//coordinates[i][0]=xx1.intValue()*0.001;
+		double lat=xx1.doubleValue();
+		if (lat>1000){
+		Double yy1=Double.parseDouble(yco.substring(3).trim());
+		//coordinates[i][0]=xx1.intValue()*0.001;
+		double lon=yy1.doubleValue();
+		UTM2Deg ut=new UTM2Deg(lon, lat, zone);
+		//System.out.println(lat+" "+lon+" "+zone+" "+ut.latitude+" "+ut.longitude);
+		
+		xco=new String(ut.latitude+"");
+		yco=new String(ut.longitude+"");
+		
+		writeIndividual();
+		}
+	}
+	
+	
+	void fixLatLong2(int zone, String dir){
 		
 		double e=0.081819191;
 		double b=6356752.314;
@@ -252,6 +315,54 @@ public class Individual {
 	}
 	
 	/**
+	 * gets the Individual Age
+	 * @return a String value of the Individual Age
+	 */
+	public String getAge(){
+		return age;
+	}
+	
+	/**
+	 * sets the Individual Age
+	 * @param s a String value of the Individual Age
+	 */
+	public void setAge(String s){
+		age=s;
+	}
+	
+	/**
+	 * gets the Individual Sex
+	 * @return an int value of the Individual Sex
+	 */
+	public int getSex(){
+		return sex;
+	}
+	
+	/**
+	 * sets the Individual Sex
+	 * @param s an int value of the Individual Sex
+	 */
+	public void setSex(int s){
+		sex=s;
+	}
+	
+	/**
+	 * gets the Individual Rank
+	 * @return a String value of the Individual Rank
+	 */
+	public String getRank(){
+		return rank;
+	}
+	
+	/**
+	 * sets the Individual Rank
+	 * @param s a String value of the Individual Rank
+	 */
+	public void setRank(String s){
+		rank=s;
+	}
+	
+	/**
 	 * gets the ID code. This allows coordination with song objects that have an individual ID too
 	 * @return an int value for ID
 	 */
@@ -299,7 +410,10 @@ public class Individual {
 		query[5]="UPDATE individual SET gridx='"+xco+"' WHERE id="+ID;
 		query[6]="UPDATE individual SET gridy='"+yco+"' WHERE id="+ID;
 		query[7]="UPDATE individual SET name='"+name+"' WHERE id="+ID;
-		for (int i=0; i<8; i++){
+		query[8]="UPDATE individual SET sex="+sex+" WHERE id="+ID;
+		query[9]="UPDATE individual SET rank='"+rank+"' WHERE id="+ID;
+		query[10]="UPDATE individual SET age='"+age+"' WHERE id="+ID;
+		for (int i=0; i<10; i++){
 			dbc.writeToDataBase(query[i]);
 		}
 	}

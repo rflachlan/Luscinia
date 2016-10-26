@@ -51,6 +51,7 @@ public class DatabaseView extends TabType implements ActionListener {
     private static String REMOVE_COMMAND = "remove";
     private static String INFORMATION_COMMAND = "information";
 	private static String SONO_COMMAND = "sonogram";
+	private static String SIMPLE_COMMAND = "simple";
 	private static String ANALYZE_COMMAND = "analyze";
 	private static String EXPAND_COMMAND="expand";
 	private static String COPY_COMMAND="copy";
@@ -66,7 +67,7 @@ public class DatabaseView extends TabType implements ActionListener {
 	private int [] sonq={1,2,3};
 	private int [] eleq={1};
 	int addType=0;
-	JButton manageUsers, addIndButton, addSongButton, addRecordingButton, removeButton, expandTreeButton, analysisButton, sonogramButton, expandButton, logOutButton, copyButton;
+	JButton manageUsers, addIndButton, addSongButton, addRecordingButton, removeButton, expandTreeButton, analysisButton, sonogramButton, simpleButton, expandButton, logOutButton, copyButton;
 	JCheckBox informationCheckBox;
 	
 	File file;
@@ -153,6 +154,11 @@ public class DatabaseView extends TabType implements ActionListener {
 		sonogramButton.addActionListener(this);
 		sonogramButton.setEnabled(false);
 		
+		simpleButton = new JButton("Simple Sonogram");
+		simpleButton.setActionCommand(SIMPLE_COMMAND);
+		simpleButton.addActionListener(this);
+		simpleButton.setEnabled(false);
+		
 		analysisButton = new JButton("Analyze");
 		analysisButton.setActionCommand(ANALYZE_COMMAND);
 		analysisButton.addActionListener(this);
@@ -182,6 +188,7 @@ public class DatabaseView extends TabType implements ActionListener {
 		sidePanel.add(removeButton);
 		sidePanel.add(informationCheckBox);
 		sidePanel.add(sonogramButton);
+		sidePanel.add(simpleButton);
 		sidePanel.add(analysisButton);
 		sidePanel.add(expandButton);
 		sidePanel.add(copyButton);
@@ -506,6 +513,9 @@ public class DatabaseView extends TabType implements ActionListener {
 			}
 			else if (SONO_COMMAND.equals(command)) {
 				openSpectrogram();
+			}
+			else if (SIMPLE_COMMAND.equals(command)) {
+				openSimpleSpectrogram();
 			}
 			else if (ANALYZE_COMMAND.equals(command)) {
 				AnalysisChoose ac=new AnalysisChoose(dbc, defaults);
@@ -856,7 +866,7 @@ public class DatabaseView extends TabType implements ActionListener {
 					//renameSong(treePanel.selnode[i]);
 					
 					Song song=new Song(file2, parentNode.dex);
-					MainPanel mp=new MainPanel(dbc, song, defaults, spectrogramList, this);
+					MainPanel mp=new MainPanel(dbc, song, defaults, spectrogramList, this, false);
 					mp.startDrawing();
 					spectrogramList.add(mp);
 					//dbc.writeSongIntoDatabase(defName, treePanel.selnode[i].dex, file[i]);
@@ -870,18 +880,32 @@ public class DatabaseView extends TabType implements ActionListener {
 	public void openSpectrogram(){
 		if (treePanel.selnode!=null){
 			for (int i=0; i<treePanel.selnode.length; i++){
-				MainPanel mp=new MainPanel(dbc, treePanel.selnode[i].dex, defaults, spectrogramList, this);
-				if (!mp.getSong().getLoaded()){
-					//openWav();
-					//if the song is not present in the database, then some error message should present itself here
-				}
-				else{mp.startDrawing();}
-		
-				spectrogramList.add(mp);
+				
+				makeMainPanel(treePanel.selnode[i].dex, false);
 			}
 		}
 		
 	}
+	
+	public void openSimpleSpectrogram(){
+		if (treePanel.selnode!=null){
+			for (int i=0; i<treePanel.selnode.length; i++){
+				
+				makeMainPanel(treePanel.selnode[i].dex, true);
+			}
+		}
+		
+	}
+	
+	
+	public void makeMainPanel(int id, boolean justGuide){
+		MainPanel mp=new MainPanel(dbc, id, defaults, spectrogramList, this, justGuide);
+		mp.startDrawing();
+		spectrogramList.add(mp);
+	}
+	
+	
+	
 	/*
 	public void updateMeasurements(){
 		

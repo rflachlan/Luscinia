@@ -79,6 +79,8 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 	
 	boolean useTransForSong=true;
 	boolean cycle=true;
+	boolean logTransform=false;
+	boolean linearity=false;
 	boolean dtwComp=true;
 	
 	JLabel progressLabel=new JLabel("Waiting to start");
@@ -131,6 +133,8 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 		dtwComp=sop.dtwComp.isSelected();
 		useTransForSong=sop.useTransForSong.isSelected();
 		cycle=sop.cycle.isSelected();
+		logTransform=sop.logTransform.isSelected();
+		linearity=sop.linearity.isSelected();
 		//popcomp=sop.popComp.isSelected();
 		
 		
@@ -234,7 +238,7 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 			comps[3]=sg.getScores(3);
 		}
 		if ((levels[4])||(levels[5])){
-			sg.compressSongs(dtwComp, useTransForSong, cycle, songUpperLimit, songLowerLimit);
+			sg.compressSongs(dtwComp, useTransForSong, cycle, logTransform, linearity, songUpperLimit, songLowerLimit);
 			comps[4]=sg.getScores(4);
 		}
 		System.out.println("levels5: "+ levels[5]);
@@ -250,7 +254,7 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 	
 	public void analyze(){
 				
-		if ((clustcomp)||(snncomp)||(syntcomp)||(hopcomp)||(andcomp)||(distfunc)){ds=new DisplaySummary(defaults);}
+		if ((clustcomp)||(snncomp)||(syntcomp)||(hopcomp)||(andcomp)||(distfunc)||(mrppcomp)){ds=new DisplaySummary(defaults);}
 		
 		if (mdsNeeded){
 			for (int i=0; i<6; i++){
@@ -288,7 +292,7 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 			updateProgressLabel("calculating geographic comparisons:");
 			for (int i=0; i<levels.length; i++){
 				if (levels[i]){
-					geo[i]=new GeographicComparison(sg, i, dup[i]);
+					geo[i]=new GeographicComparison(sg, i, dup[i], sop.geogOptions);
 					progress();
 					dgc[i]=new DisplayGeographicComparison(geo[i], (int)dim.getWidth(), (int)dim.getHeight(), sg, defaults);
 				}
@@ -431,7 +435,7 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 	public void displayComparisons(){
 		tabPane=new JTabbedPane();
 		
-		if ((syntcomp)||(clustcomp)||(hopcomp)||(andcomp)||(distfunc)){
+		if ((syntcomp)||(clustcomp)||(hopcomp)||(andcomp)||(distfunc)||(mrppcomp)){
 			tabPane.addTab("Statistics", ds);
 		}
 		

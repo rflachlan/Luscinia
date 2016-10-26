@@ -1270,6 +1270,12 @@ void measureFrequencyChange2a(LinkedList<double[][]> freqList, LinkedList<double
 				int time=data[j][0];
 				for (int k=1; k<chunkNum; k+=2){
 					for (int j2=data[j][k]; j2<data[j][k+1]; j2++){
+						if (j2<0){
+							System.out.println("Problem: "+data[j][k]+" "+data[j][k+1]+" "+j2+" "+j+" "+k);
+						}
+						if (time<0){
+							System.out.println("Problem: "+time+" "+j+" "+k);
+						}
 						double n=nout[j2][time];
 						if (n>0){
 							fa[j][j2]=n*n;
@@ -1346,9 +1352,10 @@ void measureFrequencyChange2a(LinkedList<double[][]> freqList, LinkedList<double
 						}
 					}
 					
-					tot=30*(sxy*cx-(sx*sy))/(cx*sx2-sx*sx);
+					tot=(sxy*cx-(sx*sy))/(cx*sx2-sx*sx);
 					//tot=30*sxy/(sx2);
-					dat[k][j]=(float)(0.5+(Math.atan2(tot, 1)/Math.PI));
+					//dat[k][j]=(float)(0.5+(Math.atan2(tot, 1)/Math.PI));
+					dat[k][j]=tot;
 					//if (j==3){System.out.println(k+" "+sy+" "+sx+" "+sxy+" "+sx2+" "+tot+" "+dat[k][j]);}
 				}
 				
@@ -3129,7 +3136,7 @@ void measureFrequencyChange2a(LinkedList<double[][]> freqList, LinkedList<double
 				//measureFrequencyChange2(freqList, freqChangeList);
 				measureFrequencyChange4(tList, freqList, freqChangeList);
 			}
-			catch(Error e){System.out.println(e);}
+			catch(Error e){e.printStackTrace();}
 			
 			double[][] freqChange=freqChangeList.get(0);
 			

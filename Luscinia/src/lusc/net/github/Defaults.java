@@ -356,6 +356,10 @@ public class Defaults {
 		props.setProperty("reco", song.recordist);
 		props.setProperty("rece", song.recordEquipment);
 		props.setProperty("loca", song.location);
+		props.setProperty("songq", song.quality);
+		props.setProperty("songt", song.type);
+		props.setProperty("songc0", song.custom[0]);
+		props.setProperty("songc1", song.custom[1]);
 	}
 	
 	/**
@@ -369,6 +373,10 @@ public class Defaults {
 		song.recordist=props.getProperty("reco");
 		song.recordEquipment=props.getProperty("rece");
 		song.location=props.getProperty("loca");
+		song.quality=props.getProperty("songq");
+		song.type=props.getProperty("songt");
+		song.custom[0]=props.getProperty("songc0");
+		song.custom[1]=props.getProperty("songc1");
 	}
 	
 	/**
@@ -509,6 +517,7 @@ public class Defaults {
 		setIntProperty("dtwmpo", sg.getMinPoints());
 		setDoubleProperty("dtwsrw", sg.getSyllableRepetitionWeighting(), 1000);
 		setDoubleProperty("dtwmaxw", sg.getMaximumWarp(), 1000);
+		setDoubleProperty("dtwatan", sg.getATanTransform(), 100000);
 	}
 	
 	/**
@@ -566,6 +575,7 @@ public class Defaults {
 		sg.setAlignmentCost(getDoubleProperty("dtwalc", 1000, 150));
 		sg.setSyllableRepetitionWeighting(getDoubleProperty("dtwsrw", 1000, 0));
 		sg.setMaximumWarp(getDoubleProperty("dtwmaxw", 1000, 0));
+		sg.setATanTransform(getDoubleProperty("dtwatan", 100000, 0.02));
 	}
 	
 	/**
@@ -597,7 +607,7 @@ public class Defaults {
 		if (results2!=null){
 			sop.setAnalysisLevels(results2);
 		}
-		boolean[] results3=getBooleanArray("anamis", 5);
+		boolean[] results3=getBooleanArray("anamis", 7);
 		if (results3!=null){
 			sop.setMiscOptions(results3);
 		}

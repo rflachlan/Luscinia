@@ -47,13 +47,19 @@ public class IndividualEdit extends JPanel{
 	JLabel gridType=new JLabel("Grid Type: ");
 	JLabel gridx=new JLabel("Latitude (N):   ");
 	JLabel gridy=new JLabel("Longitude (E): ");
+	JLabel sex=new JLabel("Sex:      ");
+	JLabel rank=new JLabel("Rank:     ");
+	JLabel age=new JLabel("Age:       ");
 	
-	JTextField nameT,gridXT, gridYT, speciesT, populationT;
+	JTextField nameT,gridXT, gridYT, speciesT, populationT, rankT, ageT;
 	JTextArea locDescT;
 
 	String [] u={"Latitude/Longitude"};
 	JComboBox gridTypeT=new JComboBox(u);
-	  
+	 
+	String [] v={"Male", "Female", "Unknown"};
+	JComboBox sexT=new JComboBox(v);
+	
 	JPanel contentPane=new JPanel();
 	int ID;
 	
@@ -103,6 +109,13 @@ public class IndividualEdit extends JPanel{
 		populationT=new JTextField(individual.getPopulation());
 		populationT.setColumns(15);
 		
+		ageT=new JTextField(individual.getAge());
+		ageT.setColumns(15);
+		rankT=new JTextField(individual.getRank());
+		rankT.setColumns(15);
+		
+		sexT.setSelectedIndex(individual.getSex());
+		
 		save.addActionListener(new ActionListener(){public void actionPerformed(ActionEvent e){wrapUp();}});
 	
 		useLast.addActionListener(new ActionListener(){public void actionPerformed(ActionEvent e){addInLast();}});
@@ -121,6 +134,21 @@ public class IndividualEdit extends JPanel{
 		JPanel populationPane=new JPanel(new BorderLayout());
 		populationPane.add(population, BorderLayout.LINE_START);
 		populationPane.add(populationT, BorderLayout.CENTER);
+		
+		JPanel agePane=new JPanel(new BorderLayout());
+		agePane.add(age, BorderLayout.LINE_START);
+		agePane.add(ageT, BorderLayout.CENTER);
+		
+		JPanel rankPane=new JPanel(new BorderLayout());
+		rankPane.add(rank, BorderLayout.LINE_START);
+		rankPane.add(rankT, BorderLayout.CENTER);
+		
+		JPanel sexPane=new JPanel(new BorderLayout());
+		sexPane.add(sex, BorderLayout.LINE_START);
+		sexPane.add(sexT, BorderLayout.CENTER);
+		
+		
+		
 		JPanel locPane=new JPanel(new BorderLayout());
 		locPane.add(locDesc, BorderLayout.LINE_START);
 		locPane.add(locDescT, BorderLayout.CENTER);
@@ -137,6 +165,9 @@ public class IndividualEdit extends JPanel{
 		contentPane.add(namePane);
 		contentPane.add(speciesPane);
 		contentPane.add(populationPane);
+		contentPane.add(agePane);
+		contentPane.add(rankPane);
+		contentPane.add(sexPane);
 		contentPane.add(locPane);
 		contentPane.add(gridTypePane);
 		contentPane.add(gridXPane);
@@ -181,6 +212,10 @@ public class IndividualEdit extends JPanel{
 		individual.setSpecies(speciesT.getText());
 		individual.setPopulation(populationT.getText());
 		individual.setLocation(locDescT.getText());
+		individual.setAge(ageT.getText());
+		individual.setSex(sexT.getSelectedIndex());
+		individual.setRank(rankT.getText());
+		
 		individual.setGridType(u[gridTypeT.getSelectedIndex()]);
 		individual.setXco(gridXT.getText());
 		individual.setYco(gridYT.getText());

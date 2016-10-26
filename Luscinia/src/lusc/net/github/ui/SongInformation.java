@@ -47,6 +47,10 @@ public class SongInformation extends JPanel implements ActionListener{
 	JLabel locationL=new JLabel("Location: ");
 	JLabel recordEquipmentL=new JLabel("Recording equipment: ");
 	JLabel recordistL=new JLabel("Recordist: ");
+	JLabel qualityL=new JLabel("Quality: ");
+	JLabel typeL=new JLabel("Type: ");
+	JLabel custom1L=new JLabel("Custom 1: ");
+	JLabel custom2L=new JLabel("Custom 2: ");
 	JLabel notesL=new JLabel("Notes: ");
 	JLabel dateL=new JLabel("  Recording date (dd:mm:yyyy): ");
 	JLabel timeL=new JLabel("Recording time (hh:mm:ss:mmm): ");
@@ -54,7 +58,7 @@ public class SongInformation extends JPanel implements ActionListener{
 	//JCheckBox typeL=new JCheckBox("Archive recording");
 	JLabel eleNumber, sylNumber;
 	
-	JTextField nameT,eleNumberT, sylNumberT, recordEquipmentT, recordistT, locationT, individualT;
+	JTextField nameT,eleNumberT, sylNumberT, recordEquipmentT, recordistT, locationT, individualT, typeT, qualityT, custom1T, custom2T;
 	JTextArea notesT;
 	
 	JSpinner timeSpinner, dateSpinner;
@@ -100,6 +104,14 @@ public class SongInformation extends JPanel implements ActionListener{
 		recordistT.setColumns(15);
 		locationT=new JTextField(song.getLocation());
 		locationT.setColumns(15);
+		typeT=new JTextField(song.getType());
+		typeT.setColumns(15);
+		qualityT=new JTextField(song.getQuality());
+		qualityT.setColumns(15);
+		custom1T=new JTextField(song.getCustom(0));
+		custom1T.setColumns(15);
+		custom2T=new JTextField(song.getCustom(1));
+		custom2T.setColumns(15);
 		individualT=new JTextField(song.getIndividualName());
 		individualT.setColumns(30);
 
@@ -174,6 +186,22 @@ public class SongInformation extends JPanel implements ActionListener{
 		JPanel recPane=new JPanel(new BorderLayout());
 		recPane.add(recordistL, BorderLayout.LINE_START);
 		recPane.add(recordistT, BorderLayout.CENTER);
+		
+		JPanel qualPane=new JPanel(new BorderLayout());
+		qualPane.add(qualityL, BorderLayout.LINE_START);
+		qualPane.add(qualityT, BorderLayout.CENTER);
+		
+		JPanel typePane=new JPanel(new BorderLayout());
+		typePane.add(typeL, BorderLayout.LINE_START);
+		typePane.add(typeT, BorderLayout.CENTER);
+		
+		JPanel custom1Pane=new JPanel(new BorderLayout());
+		custom1Pane.add(custom1L, BorderLayout.LINE_START);
+		custom1Pane.add(custom1T, BorderLayout.CENTER);
+		
+		JPanel custom2Pane=new JPanel(new BorderLayout());
+		custom2Pane.add(custom2L, BorderLayout.LINE_START);
+		custom2Pane.add(custom2T, BorderLayout.CENTER);
 
 		JPanel notesPane=new JPanel(new BorderLayout());
 		notesPane.add(notesL, BorderLayout.LINE_START);
@@ -182,6 +210,8 @@ public class SongInformation extends JPanel implements ActionListener{
 		JPanel locationPane=new JPanel(new BorderLayout());
 		locationPane.add(locationL, BorderLayout.LINE_START);
 		locationPane.add(locationT, BorderLayout.CENTER);
+		
+		
 		
 		JPanel individualPane=new JPanel(new BorderLayout());
 		individualPane.add(individualL, BorderLayout.LINE_START);
@@ -197,6 +227,11 @@ public class SongInformation extends JPanel implements ActionListener{
 		contentPane.add(individualPane);
 		contentPane.add(recEqPane);
 		contentPane.add(recPane);
+		contentPane.add(qualPane);
+		contentPane.add(typePane);
+		contentPane.add(custom1Pane);
+		contentPane.add(custom2Pane);
+		
 		contentPane.add(notesPane);
 		//contentPane.add(typeL);
 		contentPane.add(useLast);
@@ -251,6 +286,10 @@ public class SongInformation extends JPanel implements ActionListener{
 		recordEquipmentT.setText(song.getRecordEquipment());
 		recordistT.setText(song.getRecordist());
 		locationT.setText(song.getLocation());
+		qualityT.setText(song.getQuality());
+		typeT.setText(song.getType());
+		custom1T.setText(song.getCustom(0));
+		custom2T.setText(song.getCustom(1));
 	}
 	
 	public void wrapUp(){
@@ -274,6 +313,10 @@ public class SongInformation extends JPanel implements ActionListener{
 		song.setRecordEquipment(recordEquipmentT.getText());
 		song.setRecordist(recordistT.getText());
 		song.setLocation(locationT.getText());
+		song.setQuality(qualityT.getText());
+		song.setType(typeT.getText());
+		song.setCustom(custom1T.getText(),0);
+		song.setCustom(custom2T.getText(),1);
 		//if (typeL.isSelected()){
 			//song.setArchived(0);
 		//}

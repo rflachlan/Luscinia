@@ -88,7 +88,7 @@ public class ClusterValidation {
 	
 	public double[][] silhouettePValue(UPGMA upgma, double[][] matrix, double[] sds){
 		
-		int repeat=25;
+		int repeat=100;
 		
 		int p=sds.length;
 		//double[] realResults=calculateValidityPerCluster(upgma, matrix);

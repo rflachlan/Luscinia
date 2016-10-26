@@ -95,7 +95,8 @@ public class SyllableInduction extends JFrame implements ActionListener{
 		this.mp=mp;
 		this.song=song;
 		
-		song.sortSyllsEles();
+		song.sortSylls();
+		song.sortEles();
 		song.calculateGaps();
 		num=NumberFormat.getNumberInstance();
 		num.setMaximumFractionDigits(10);	

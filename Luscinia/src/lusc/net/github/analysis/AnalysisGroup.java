@@ -51,13 +51,15 @@ public class AnalysisGroup {
 	public AnalysisGroup(Song[] songs, Defaults defaults, DataBaseController dbc){
 		this.songs=songs;
 		
+		this.defaults=defaults;
+		this.dbc=dbc;
+		
 		//updateFrequencyChange();
 		
 		calculateSyllableRepetitions();
 		countEleNumber();
 		songNumber=songs.length;
-		this.defaults=defaults;
-		this.dbc=dbc;
+		
 		
 	}
 	
@@ -92,6 +94,8 @@ public class AnalysisGroup {
 		songNumber=songs.length;
 		this.defaults=defaults;
 		this.dbc=dbc;
+		//System.out.println("LOADED ANALYSIS GROUP");
+		//updateFrequencyChange();
 	}
 	
 	public void updateFrequencyChange(){
@@ -100,11 +104,21 @@ public class AnalysisGroup {
 		for (int i=0; i<songs.length; i++){
 			checkAndLoadRawData(i);
 			try{
-				//System.out.println("updating: "+i+" "+songs[i].eleList.size()+" "+songs.length+" "+songs[i].individualName+" "+songs[i].name);
-				//System.out.println(songs[i].timeStep+" "+songs[i].dy);
-				//songs[i].setFFTParameters();
-				//songs[i].setFFTParameters2(songs[i].getNx());
-				//songs[i].makeMyFFT(0, songs[i].getNx());
+				System.out.println("updating: "+i+" "+" "+songs.length+" "+songs[i].getIndividualName()+" "+songs[i].getName());
+				System.out.println(songs[i].getTimeStep()+" "+songs[i].getMaxF());
+				
+				if (songs[i].getTimeStep()!=0.5){
+					songs[i].setTimeStep(0.5);
+				}
+				if (songs[i].getMaxF()!=10000){
+					songs[i].setMaxF(10000);
+				}
+				
+				songs[i].setDynRange(75);
+				
+				songs[i].setFFTParameters();
+				songs[i].setFFTParameters2(songs[i].getNx());
+				songs[i].makeMyFFT(0, songs[i].getNx());
 				
 				SpectrogramMeasurement sm=new SpectrogramMeasurement(songs[i]);
 				sm.setUp();
@@ -662,52 +676,30 @@ public class AnalysisGroup {
 	 * @param upperProp This is a parameter for a gating function
 	 */
 	
-	public void compressSongs(boolean dtwComp, boolean useTrans, boolean cycle, double upperProp, double lowerProp){
+	public void compressSongs(boolean dtwComp, boolean useTrans, boolean cycle, boolean logTransform, boolean linearity, double upperProp, double lowerProp){
 		try{
-			System.out.println("Compressing songs: "+dtwComp+" "+useTrans+" "+cycle);
+			System.out.println("Compressing songs: "+dtwComp+" "+useTrans+" "+cycle+" "+logTransform+" "+linearity);
 			CompressComparisons cc=new CompressComparisons();
-			//float[][]sy=logisticTransform(scoresSyll, true, 0.02, 10);
-			//float[][]sy=gateScores(scoresSyll, 0.5, 20);
+			
+			double q=0;
+			if (lowerProp>0){
+				q=scoresSyll.calculatePercentile(lowerProp);
+			}
+			double r=1000000000;
+			if (upperProp<100){
+				r=scoresSyll.calculatePercentile(upperProp);
+			}
+			
 			if (!dtwComp){
-				//double[][] b=cc.compareSongsDigram(scoresSyll.getDiss(), songs, useTrans);
-				double q=0;
-				if (lowerProp>0){
-					q=scoresSyll.calculatePercentile(lowerProp);
-				}
-				double r=1000000000;
-				if (upperProp<100){
-					r=scoresSyll.calculatePercentile(upperProp);
-				}
-				
-				double[][] b=cc.compareSongsDigram(scoresSyll, useTrans, cycle, q, r);
+						
+				double[][] b=cc.compareSongsDigram(scoresSyll, useTrans, cycle, logTransform, q, r);
 				scoresSong=new ComparisonResults(songs, b, 4);
 			}
 			else{
-				//double[][]b=cc.compareSongsDTW(scoresSyll.getDiss(), songs);
-				if (useTrans&&(scoreTrans!=null)){
-					double q=0;
-					if (lowerProp>0){
-						q=scoreTrans.calculatePercentile(lowerProp);
-					}
-					double r=1000000000;
-					if (upperProp<100){
-						r=scoreTrans.calculatePercentile(upperProp);
-					}
-					double[][]b=cc.compareSongsDTW(scoreTrans, cycle, q, r);
-					scoresSong=new ComparisonResults(songs, b, 4);
-				}
-				else{
-					double q=0;
-					if (lowerProp>0){
-						q=scoresSyll.calculatePercentile(lowerProp);
-					}
-					double r=1000000000;
-					if (upperProp<100){
-						r=scoresSyll.calculatePercentile(upperProp);
-					}
-					double[][]b=cc.compareSongsDTW(scoresSyll, cycle, q, r);
-					scoresSong=new ComparisonResults(songs, b, 4);
-				}
+				
+				double[][]b=cc.compareSongsDTW(scoresSyll, cycle, useTrans, logTransform, linearity, q, r);
+				scoresSong=new ComparisonResults(songs, b, 4);
+
 			}
 		}
 		catch(Exception e){e.printStackTrace();}

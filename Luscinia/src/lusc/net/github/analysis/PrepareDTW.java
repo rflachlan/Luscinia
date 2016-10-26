@@ -14,8 +14,8 @@ import lusc.net.github.ui.compmethods.DTWPanel;
 
 public class PrepareDTW {
 	
-	double[] normReal;
-	double meanSDTemp=0;
+	//double[] normReal;
+	//double meanSDTemp=0;
 	
 	int numParams=0;
 	int numTempParams=0;
@@ -47,6 +47,8 @@ public class PrepareDTW {
 	double offsetRemoval=0.0;
 	public double[] parameterValues={1,0,0,0,0,1,0,0,0,1,0,0,0,0,1,0,0, 0, 0,0,0,0,0};
 	
+	double slopeATanTransform=0.01;
+	
 	AnalysisGroup ag;
 	
 	
@@ -67,6 +69,7 @@ public class PrepareDTW {
 		dynamicWarp=dtw.getDynamicWarping();
 		maximumWarp=dtw.getMaximumWarp();
 		squaredDist=dtw.getSquared();
+		slopeATanTransform=dtw.getATanTransform();
 	}
 	
 	
@@ -234,6 +237,39 @@ public class PrepareDTW {
 		}
 	}
 	
+	
+	public double[] getAverages(double[][] m){
+		
+		int n1=m.length;
+		
+		double[] out=new double[4];
+		
+		int a=11;
+		
+		for (int i=0; i<4; i++){
+			double t=0;
+			double u=0;
+			for (int j=5; j<n1; j++){
+				if (logFrequencies){
+					t+=Math.log(m[j][i])*m[j][a];	
+				}
+				else{
+					t+=m[j][i]*m[j][a];
+				}
+				u+=m[j][a];
+			}
+			t/=u;
+			out[i]=t;
+			
+			//System.out.println(i+" "+out[i]+" "+Math.log(m[4][i]));
+			
+		}
+		
+		
+		
+		return out;
+	}
+	
 	public void compressData(){
 		
 		numExtraParams=1;
@@ -262,6 +298,10 @@ public class PrepareDTW {
 			for (int j=0; j<eleSizeS; j++){
 				Element ele=(Element)songs[i].getElement(j);
 				double[][] measu=ele.getMeasurements();
+				
+				
+				double[] averages=getAverages(measu);
+				
 				s=ele.getLength();
 				
 				reductionFactor=mainReductionFactor;
@@ -312,7 +352,11 @@ public class PrepareDTW {
 								data[p][q][c]+=measu[ab][paramType[q]-2];
 							}
 						}
-						
+						else if (paramType[q]<10){
+							
+							data[p][q][c]+=Math.atan2(measu[ab][paramType[q]-2], slopeATanTransform);
+							//System.out.println(paramType[q]+" "+data[p][q][c]+" "+measu[ab][paramType[q]-2]+" "+slopeATanTransform);
+						}
 						else if (paramType[q]<14){
 							data[p][q][c]+=measu[ab][paramType[q]-2];
 
@@ -334,10 +378,12 @@ public class PrepareDTW {
 						}
 						else if ((paramType[q]>16)&&(paramType[q]<21)){
 							if (logFrequencies){
-								data[p][q][c]+=Math.log(measu[ab][paramType[q]-17])-Math.log(measu[4][paramType[q]-17]);
+								//data[p][q][c]+=Math.log(measu[ab][paramType[q]-17])-Math.log(measu[4][paramType[q]-17]);
+								data[p][q][c]+=Math.log(measu[ab][paramType[q]-17])-averages[paramType[q]-17];
 							}
 							else{
-								data[p][q][c]+=measu[ab][paramType[q]-17]-measu[4][paramType[q]-17];
+								//data[p][q][c]+=measu[ab][paramType[q]-17]-measu[4][paramType[q]-17];
+								data[p][q][c]+=measu[ab][paramType[q]-17]-averages[paramType[q]-17];
 							}
 							
 						}
@@ -395,6 +441,11 @@ public class PrepareDTW {
 			for (int j=0; j<songs[i].getNumPhrases(); j++){
 				int[][] p=(int[][]) songs[i].getPhrase(j);
 				
+				
+				
+				
+				
+				
 				for (int k=0; k<p.length; k++){
 					int elePos=countEls;
 					
@@ -405,6 +456,32 @@ public class PrepareDTW {
 							elePos++;
 						}
 					}
+					
+					
+					
+
+					double[] means=new double[paramType.length];
+					
+					for (int q=0; q<paramType.length; q++){
+						if ((paramType[q]>16)&&(paramType[q]<21)){
+							double le=0;
+							for (int g=0; g<p[k].length; g++){
+								if (p[k][g]>=0){
+									Element ele=(Element)songs[i].getElement(p[k][g]);
+									double[][] measu=ele.getMeasurements();
+									
+									if (logFrequencies){
+										means[q]+=ele.getLength()*Math.log(measu[4][paramType[q]-17]);
+									}
+									else{
+										means[q]+=ele.getLength()*measu[4][paramType[q]-17];
+									}
+									le+=ele.getLength();
+								}
+							}	
+							means[q]/=le;
+						}
+					}	
 					
 					double[] dst=new double[sylLength];
 					double[][] ds=new double[numParams][sylLength];
@@ -428,7 +505,7 @@ public class PrepareDTW {
 					while (p[k][q]<0){q++;}
 					
 					Element ele=(Element)songs[i].getElement(p[k][q]);
-					
+					double[][] measu=ele.getMeasurements();
 					double startPos=ele.getBeginTime()*ele.getTimeStep();
 					for (int g=0; g<p[k].length; g++){
 						if (p[k][g]>=0){
@@ -438,11 +515,21 @@ public class PrepareDTW {
 							for (int b=0; b<data[countEls][0].length; b++){
 								if(numTempParams>0){
 									//dataSylsTemp[countSyls][sylLength]=dataTemp[countEls][b]+adjust;
+									
 									dst[sylLength]=dataTemp[countEls][b]+adjust;
 								}
 								for (int a=0; a<numParams; a++){
 									//dataSyls[countSyls][a][sylLength]=data[countEls][a][b];
-									ds[a][sylLength]=data[countEls][a][b];
+									if ((paramType[a]<=16)||(paramType[a]>=21)){
+										ds[a][sylLength]=data[countEls][a][b];
+									}
+									else{
+										double av=measu[4][paramType[a]-17];
+										if (logFrequencies){
+											av=Math.log(av);
+										}
+										ds[a][sylLength]=(data[countEls][a][b]+av)-means[a];
+									}
 								}
 								for (int a=0; a<numExtraParams; a++){
 									//dataSylsExtra[countSyls][a][sylLength]=dataExtra[countEls][a][b];
@@ -638,7 +725,7 @@ public class PrepareDTW {
 			int nr=data2.size();
 			int[] choices=new int[nr];
 			int[][] combos=new int[nr][3];	
-			System.out.println(name+" "+data2.size());
+			//System.out.println(name+" "+data2.size());
 			for (int i=0; i<data2.size(); i++){
 				String[] s=data2.get(i);
 			
@@ -1262,32 +1349,7 @@ public double[][] tuneDTWAll(DTWSwingWorker dtws, boolean stitch){
 
 	public synchronized double[][] runDTW(DTWSwingWorker dtws, boolean stitch){
 		double[][] scoresH=null;
-		/*
-		double[] xx={0.352500916,
-				0.409692556,
-				0.301101297,
-				0.416253537,
-				0.328384697,
-				0.258212,
-				0.340097964,
-				0.355734408,
-				0.333006769,
-				0.383324146};
 		
-		double rbest=1000000;
-		
-		Random random=new Random();
-		for (int repi=0; repi<10000; repi++){
-		
-			validParameters=new double[validParameters.length];
-			double[] oldvp=new double[4];
-			for (int repj=0; repj<4; repj++){
-				oldvp[repj]=validParameters[repj];
-				validParameters[repj]+=random.nextDouble()*2 -1 ;
-				if (validParameters[repj]<=0.01){validParameters[repj]=0.01;}
-			}
-			
-			*/
 		
 		int ncores=Runtime.getRuntime().availableProcessors();
 		
@@ -1311,9 +1373,9 @@ public double[][] tuneDTWAll(DTWSwingWorker dtws, boolean stitch){
 		
 		double[][] scores=new double[eleSize][eleSize];
 		
-		//for (int i=0; i<sdReal.length; i++){
-			//System.out.println(i+" "+sdReal[i]);
-		//}
+		for (int i=0; i<sdReal.length; i++){
+			System.out.println("SD REAL!: "+i+" "+sdReal[i]);
+		}
 		double[] sdOver=new double[15];
 
 		double[][] scoresX=new double[ncores][eleSize];
@@ -1388,7 +1450,7 @@ public double[][] tuneDTWAll(DTWSwingWorker dtws, boolean stitch){
 			}
 		}
 		
-		
+		/*
 		double totweight=0;
 		for (int i=0; i<validParameters.length; i++){
 			totweight+=validParameters[i];
@@ -1422,7 +1484,7 @@ public double[][] tuneDTWAll(DTWSwingWorker dtws, boolean stitch){
 		for (int i=0; i<sdReal.length; i++){
 			normReal[i]=validParameters[i]/(totweight*sdR[i]);
 		}
-		
+		*/
 		//System.out.println("ACTUAL COMPARATORS "+sdT);
 		//for (int i=0; i<sdReal.length; i++){
 			//System.out.println(normReal[i]);

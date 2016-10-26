@@ -57,6 +57,8 @@ public class StatOptionPanel extends JPanel implements PropertyChangeListener, A
 	JRadioButton elementCompression=new JRadioButton("Compress element distance", true);
 	JRadioButton useTransForSong=new JRadioButton("Use syllable transitions for song distance", true);
 	JRadioButton cycle=new JRadioButton("Cycle at end of song: ", true);
+	JRadioButton logTransform=new JRadioButton("Log transform syllable diss.: ", false);
+	JRadioButton linearity=new JRadioButton("Measure linearity: ", false);
 	JRadioButton dtwComp=new JRadioButton("Use DTW to compress songs: ", true);
 	//JRadioButton popComp=new JRadioButton("Population comparison", true);
 	JRadioButton bestSongIndiv=new JRadioButton("Find best song matches for Individual comparisons: ", true);
@@ -64,7 +66,7 @@ public class StatOptionPanel extends JPanel implements PropertyChangeListener, A
 	JFormattedTextField songUpperProp, songLowerProp;
 	
 	JButton dendOptionsButton, distDOptionsButton, mdsOptionsButton, hopkinsOptionsButton, mrppOptionsButton, andersonOptionsButton,
-		distFuncOptionsButton, kMedOptionsButton, snnOptionsButton, apOptionsButton, syntOptionsButton;
+		distFuncOptionsButton, kMedOptionsButton, snnOptionsButton, apOptionsButton, syntOptionsButton, geogOptionsButton;
 	
 	DendrogramOptions dendOptions;
 	DistanceDistributionOptions distDOptions;
@@ -77,11 +79,12 @@ public class StatOptionPanel extends JPanel implements PropertyChangeListener, A
 	SNNOptions snnOptions;
 	SyntaxOptions syntOptions;
 	APOptions apOptions;
+	GeographicAnalysisPreferences geogOptions;
 	
 	
 	boolean[] analysisTypes=new boolean[13];
 	boolean[] analysisLevels=new boolean[5];
-	boolean[] miscOptions=new boolean[4];
+	boolean[] miscOptions=new boolean[7];
 	
 
 	JPanel resultsPanel;
@@ -184,6 +187,10 @@ public class StatOptionPanel extends JPanel implements PropertyChangeListener, A
 		syntOptionsButton=new JButton("options");
 		syntOptionsButton.addActionListener(this);
 		
+		geogOptions=new GeographicAnalysisPreferences(defaults);
+		geogOptionsButton=new JButton("options");
+		geogOptionsButton.addActionListener(this);
+		
 		JPanel optionsettings=new JPanel();
 		optionsettings.setLayout(new GridLayout(0,1));
 		optionsettings.add(matrix);
@@ -203,8 +210,11 @@ public class StatOptionPanel extends JPanel implements PropertyChangeListener, A
 		mdsPanel.add(mdsOptionsButton, BorderLayout.EAST);
 		optionsettings.add(mdsPanel);
 		
-		optionsettings.add(geog);
 		
+		JPanel geogPanel=new JPanel(new BorderLayout());
+		geogPanel.add(geog, BorderLayout.WEST);
+		geogPanel.add(geogOptionsButton, BorderLayout.EAST);
+		optionsettings.add(geogPanel);		
 		
 		JPanel hopkinsPanel=new JPanel(new BorderLayout());
 		hopkinsPanel.add(hopkins, BorderLayout.WEST);
@@ -322,6 +332,8 @@ public class StatOptionPanel extends JPanel implements PropertyChangeListener, A
 		variablesPanel.add(dtwComp);
 		variablesPanel.add(useTransForSong);
 		variablesPanel.add(cycle);
+		variablesPanel.add(logTransform);
+		variablesPanel.add(linearity);
 		variablesPanel.add(bestSongIndiv);
 		//variablesPanel.add(popComp);
 		variablesPanel.add(songPropUpperPan);
@@ -332,6 +344,8 @@ public class StatOptionPanel extends JPanel implements PropertyChangeListener, A
 		useTransForSong.setSelected(miscOptions[1]);
 		//popComp.setSelected(miscOptions[2]);
 		cycle.setSelected(miscOptions[3]);
+		logTransform.setSelected(miscOptions[5]);
+		linearity.setSelected(miscOptions[6]);
 		dtwComp.setSelected(miscOptions[4]);
 		bestSongIndiv.setSelected(miscOptions[2]);
 		
@@ -414,7 +428,8 @@ public class StatOptionPanel extends JPanel implements PropertyChangeListener, A
 		miscOptions[2]=bestSongIndiv.isSelected();
 		miscOptions[3]=cycle.isSelected();
 		miscOptions[4]=dtwComp.isSelected();
-		
+		miscOptions[5]=logTransform.isSelected();
+		miscOptions[6]=linearity.isSelected();
 		defaults.setAnalysisOptions(this);
 		defaults.writeProperties();
 	}
@@ -499,6 +514,10 @@ public class StatOptionPanel extends JPanel implements PropertyChangeListener, A
 		if (e.getSource()==mdsOptionsButton){
 			JOptionPane.showMessageDialog(this, mdsOptions);
 			mdsOptions.wrapUp();
+		}
+		if (e.getSource()==geogOptionsButton){
+			JOptionPane.showMessageDialog(this, geogOptions);
+			geogOptions.wrapUp();
 		}
 		if (e.getSource()==hopkinsOptionsButton){
 			JOptionPane.showMessageDialog(this, hopkinsOptions);

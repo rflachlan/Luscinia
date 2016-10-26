@@ -1324,4 +1324,37 @@ public class Element {
 	}
 	
 	
+	public void updateFreqChangeMeasures(){
+		
+		for (int i=4; i<8; i++){
+			
+			
+			double max=-100000000;
+			double min=100000000;
+			//double timemax=0;
+			//double timemin=0;
+			double av=0;
+			
+			for (int j=5; j<measurements.length; j++){				
+				double x=Math.PI*(measurements[j][i]-0.5);
+				double y=Math.tan(x);
+				measurements[j][i]=y/30.0;
+				
+				av+=y;
+				if (y>max){
+					max=y;				
+				}
+				if (y<min){
+					min=y;
+				}		
+			}
+			
+			av/=(measurements.length-5.0);
+			
+			measurements[0][i]=max;
+			measurements[1][i]=min;
+			measurements[4][i]=av;			
+		}	
+	}
+	
 }

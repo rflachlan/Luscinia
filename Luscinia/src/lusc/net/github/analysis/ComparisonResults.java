@@ -27,9 +27,9 @@ public class ComparisonResults {
 	MultiDimensionalScaling mds=null;
 	int type=0;
 	int[][] lookUps, individuals;
-	int[] lookUpIndividual;
+	int[] lookUpIndividual, lookUpTypes;
 	int n, maxLength, songNumber, individualNumber, tndi;
-	String[] names, individualNames, populations, species;
+	String[] names, individualNames, populations, species, types, sexes, ages, ranks;
 	long[] times;
 	long maxTime, minTime;
 	
@@ -53,7 +53,13 @@ public class ComparisonResults {
 		
 		makePopulationNames();
 		makeSpeciesNames();
+		makeSexNames();
+		makeAgeNames();
+		makeRankNames();
 		makeTimes();
+		makeTypeNames();
+		lookUpTypes=getTypeListArray();
+		
 		System.out.println("made comparison results "+type);
 	}
 	
@@ -121,6 +127,15 @@ public class ComparisonResults {
 	 */
 	public int[] getLookUpIndividuals(){
 		return lookUpIndividual;
+	}
+	
+	
+	/**
+	 * gets the lookUp table for types for the comparison.
+	 * @return
+	 */
+	public int[] getLookUpTypes(){
+		return lookUpTypes;
 	}
 	
 	/**
@@ -208,7 +223,7 @@ public class ComparisonResults {
 	 * gets the names array for the comparison.
 	 * @return String[] array of names
 	 */
-	public String[] getNames(boolean incspec, boolean incpop, boolean incind, boolean incsong){
+	public String[] getNames(boolean incspec, boolean incpop, boolean incind, boolean incsong, boolean inctype){
 		
 		String[] out=new String[n];
 		String sep=":";
@@ -219,12 +234,17 @@ public class ComparisonResults {
 		if (incpop){pop=getPopulationListArray();}
 		int[] ind=null;
 		if (incind){ind=lookUpIndividual;}
-		
+		int[] typ=null;
+		if (inctype){typ=getTypeListArray();}
 		
 		
 		for (int i=0; i<n; i++){
 			boolean started=false;
 			StringBuffer sb=new StringBuffer();
+			if (inctype){
+				sb.append(types[typ[i]]);
+				started=true;
+			}
 			if (incspec){
 				sb.append(species[spec[i]]);
 				started=true;
@@ -266,6 +286,14 @@ public class ComparisonResults {
 	}
 	
 	/**
+	 * gets the names of vocalisation types in the comparison.
+	 * @return String[] array of types
+	 */
+	public String[] getTypeNames(){
+		return types;
+	}
+	
+	/**
 	 * gets the names of individuals in the comparison.
 	 * @return String[] array of individual names
 	 */
@@ -273,12 +301,38 @@ public class ComparisonResults {
 		return individualNames;
 	}
 	
+	
+	
 	/**
 	 * gets the names of populations in the comparison.
 	 * @return String[] array of population names
 	 */
 	public String[] getPopulationNames(){
 		return populations;
+	}
+	
+	/**
+	 * gets the names of sexes in the comparison.
+	 * @return String[] array of sex names
+	 */
+	public String[] getSexNames(){
+		return sexes;
+	}
+	
+	/**
+	 * gets the names of ages in the comparison.
+	 * @return String[] array of age names
+	 */
+	public String[] getAgeNames(){
+		return ages;
+	}
+	
+	/**
+	 * gets the names of ranks in the comparison.
+	 * @return String[] array of rank names
+	 */
+	public String[] getRankNames(){
+		return ranks;
 	}
 	
 	/**
@@ -705,6 +759,34 @@ public class ComparisonResults {
 		return out;
 	}
 	
+	/**
+	 * calculates type names - extracting all the type names in the sample of songs to be analyzed.
+	 */
+	
+	public void makeTypeNames(){
+		LinkedList<String> typeName=new LinkedList<String>();
+		for (int i=0; i<songs.length; i++){
+			String s=songs[i].getType();
+			if (s==null){s=" ";}
+			boolean matched=false;
+			for (int j=0; j<typeName.size(); j++){
+				String t=typeName.get(j);
+				if (t.startsWith(s)){
+					matched=true;
+					j=typeName.size();
+				}
+			}
+			if (!matched){
+				//System.out.println("NEW POPULATION: "+s);
+				typeName.add(s);
+			}
+		}
+		types=new String[typeName.size()];
+		
+		types=typeName.toArray(types);
+	}
+	
+	
 
 	/**
 	 * calculates population names - extracting all the population names found in the sample of songs to be analyzed.
@@ -717,19 +799,97 @@ public class ComparisonResults {
 			boolean matched=false;
 			for (int j=0; j<populationName.size(); j++){
 				String t=populationName.get(j);
-				if (t.startsWith(s)){
+				if (t.equals(s)){
 					matched=true;
 					j=populationName.size();
 				}
 			}
 			if (!matched){
-				//System.out.println("NEW POPULATION: "+s);
+				System.out.println("NEW POPULATION: "+s);
 				populationName.add(s);
 			}
 		}
 		populations=new String[populationName.size()];
 		
 		populations=populationName.toArray(populations);
+	}
+	
+	/**
+	 * calculates sex names - extracting all the sex names found in the sample of songs to be analyzed.
+	 */
+	
+	public void makeSexNames(){
+		LinkedList<String> sexName=new LinkedList<String>();
+		for (int i=0; i<songs.length; i++){
+			String s=songs[i].getSex();
+			boolean matched=false;
+			for (int j=0; j<sexName.size(); j++){
+				String t=sexName.get(j);
+				if (t.equals(s)){
+					matched=true;
+					j=sexName.size();
+				}
+			}
+			if (!matched){
+				System.out.println("NEW Sex: "+s);
+				sexName.add(s);
+			}
+		}
+		sexes=new String[sexName.size()];
+		
+		sexes=sexName.toArray(sexes);
+	}
+	
+	/**
+	 * calculates age names - extracting all the age names found in the sample of songs to be analyzed.
+	 */
+	
+	public void makeAgeNames(){
+		LinkedList<String> ageName=new LinkedList<String>();
+		for (int i=0; i<songs.length; i++){
+			String s=songs[i].getAge();
+			boolean matched=false;
+			for (int j=0; j<ageName.size(); j++){
+				String t=ageName.get(j);
+				if (t.equals(s)){
+					matched=true;
+					j=ageName.size();
+				}
+			}
+			if (!matched){
+				System.out.println("NEW Age: "+s);
+				ageName.add(s);
+			}
+		}
+		ages=new String[ageName.size()];
+		
+		ages=ageName.toArray(ages);
+	}
+	
+	/**
+	 * calculates rank names - extracting all the rank names found in the sample of songs to be analyzed.
+	 */
+	
+	public void makeRankNames(){
+		LinkedList<String> rankName=new LinkedList<String>();
+		for (int i=0; i<songs.length; i++){
+			String s=songs[i].getRank();
+			boolean matched=false;
+			for (int j=0; j<rankName.size(); j++){
+				String t=rankName.get(j);
+				if (t.equals(s)){
+					matched=true;
+					j=rankName.size();
+				}
+			}
+			if (!matched){
+				System.out.println("NEW Rank: "+s);
+				rankName.add(s);
+			}
+		}
+		ranks=new String[rankName.size()];
+		
+		ranks=rankName.toArray(ranks);
 	}
 	
 	/**
@@ -806,6 +966,29 @@ public class ComparisonResults {
 	}
 	
 	/**
+	 * Calculates and returns the type id for each unit.
+	 * @param type hierarchical level (from Element to Song)
+	 * @return an int[] giving the population id for each unit.
+	 */
+	
+	public int[] getTypeListArray(){
+		int[] results=new int[lookUps.length];
+		
+		for (int i=0; i<lookUps.length; i++){
+			for (int j=0; j<types.length; j++){
+				String s=songs[lookUps[i][0]].getType();
+				if (s==null){s=" ";}
+				if (s.equals(types[j])){
+					results[i]=j;
+					j=types.length;
+				}
+			}
+		}
+		return results;
+	}
+	
+	
+	/**
 	 * Calculates and returns the population id for each unit.
 	 * @param type hierarchical level (from Element to Song)
 	 * @return an int[] giving the population id for each unit.
@@ -821,6 +1004,70 @@ public class ComparisonResults {
 					j=populations.length;
 				}
 			}
+			//System.out.println("POP: "+results[i]);
+		}
+		return results;
+	}
+	
+	/**
+	 * Calculates and returns the sex id for each unit.
+	 * @param type hierarchical level (from Element to Song)
+	 * @return an int[] giving the sex id for each unit.
+	 */
+	
+	public int[] getSexListArray(){
+		int[] results=new int[lookUps.length];
+		
+		for (int i=0; i<lookUps.length; i++){
+			for (int j=0; j<sexes.length; j++){
+				if (songs[lookUps[i][0]].getSex().equals(sexes[j])){
+					results[i]=j;
+					j=sexes.length;
+				}
+			}
+			//System.out.println("POP: "+results[i]);
+		}
+		return results;
+	}
+	
+	/**
+	 * Calculates and returns the rank id for each unit.
+	 * @param type hierarchical level (from Element to Song)
+	 * @return an int[] giving the rank id for each unit.
+	 */
+	
+	public int[] getRankListArray(){
+		int[] results=new int[lookUps.length];
+		
+		for (int i=0; i<lookUps.length; i++){
+			for (int j=0; j<ranks.length; j++){
+				if (songs[lookUps[i][0]].getRank().equals(ranks[j])){
+					results[i]=j;
+					j=ranks.length;
+				}
+			}
+			//System.out.println("POP: "+results[i]);
+		}
+		return results;
+	}
+	
+	/**
+	 * Calculates and returns the age id for each unit.
+	 * @param type hierarchical level (from Element to Song)
+	 * @return an int[] giving the age id for each unit.
+	 */
+	
+	public int[] getAgeListArray(){
+		int[] results=new int[lookUps.length];
+		
+		for (int i=0; i<lookUps.length; i++){
+			for (int j=0; j<ages.length; j++){
+				if (songs[lookUps[i][0]].getAge().equals(ages[j])){
+					results[i]=j;
+					j=ages.length;
+				}
+			}
+			//System.out.println("POP: "+results[i]);
 		}
 		return results;
 	}
@@ -1109,6 +1356,30 @@ public class ComparisonResults {
 		double out=temp[y];
 		temp=null;
 		return out;	
+	}
+	
+	public double calculateMax(){
+		double c=0;
+		for (int i=0; i<n; i++){
+			for (int j=0; j<i; j++){
+				if(diss[i][j]>c){
+					c=diss[i][j];
+				}
+			}
+		}
+		return c;
+	}
+	
+	public double calculateMin(){
+		double c=Double.MAX_VALUE;
+		for (int i=0; i<n; i++){
+			for (int j=0; j<i; j++){
+				if(diss[i][j]<c){
+					c=diss[i][j];
+				}
+			}
+		}
+		return c;
 	}
 	
 	

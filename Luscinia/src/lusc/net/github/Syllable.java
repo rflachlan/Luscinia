@@ -46,8 +46,9 @@ public class Syllable {
 		}
 		
 		for (Element ele : eleList){
-			int startE=ele.getBeginTime();
-			int endE=startE+ele.getLength();
+			double startE=ele.getBeginTime()*ele.getTimeStep();
+			double endE=startE+ele.getLength()*ele.getTimeStep();
+			//System.out.println(start+" "+end+" "+startE+" "+endE+" "+ele.getTimeStep());
 			if ((start<=startE)&&(end>=endE)){
 				eles.add(ele);
 				ele.syls.add(this);

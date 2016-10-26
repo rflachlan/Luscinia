@@ -105,7 +105,7 @@ public class ComplexAnalysisDownload extends JPanel implements PropertyChangeLis
 		
 		if (anaso){
 			//sg.compressSongs(useTransForSong, songUpperLimit, songLowerLimit);
-			ag.compressSongs(dtwComp.isSelected(), useTransForSong.isSelected(), cycle.isSelected(), songUpperLimit, songLowerLimit);
+			ag.compressSongs(dtwComp.isSelected(), useTransForSong.isSelected(), cycle.isSelected(), false, false, songUpperLimit, songLowerLimit);
 			//sg.compressSongsAsymm();
 		}
 	}

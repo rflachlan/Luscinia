@@ -83,6 +83,9 @@ public class Song {
 	long tDate=0;
 	int numSylls=0;
 	String notes=" "; 
+	String quality=" ";
+	String type=" ";
+	String[] custom=new String[2];
 	String location=" "; 
 	String recordEquipment=" ";
 	String recordist=" "; 
@@ -111,6 +114,11 @@ public class Song {
 	String individualName=" ";
 	String population=" "; 
 	String species=" ";
+	String age=" ";
+	String sex=" ";
+	String rank=" ";
+	
+	
 	String gridType=" ";
 	String locationX=" "; 
 	String locationY=" ";
@@ -1029,6 +1037,72 @@ public class Song {
 		population=a;
 		if (population==null){population=" ";}
 	}
+	
+	/**
+	 * Gets the age for this song's singer
+	 * @return a String value of the age parameter
+	 * @see Individual
+	 */
+	public String getAge(){
+		return age;
+	}
+	
+	/**
+	 * Sets the age for this song's singer
+	 * @param a String value for the age parameter
+	 * @see Individual
+	 */
+	public void setAge(String a){
+		age=a;
+		if (age==null){age=" ";}
+	}
+	
+	/**
+	 * Gets the rank for this song's singer
+	 * @return a String value of the rank parameter
+	 * @see Individual
+	 */
+	public String getRank(){
+		return rank;
+	}
+	
+	/**
+	 * Sets the rank for this song's singer
+	 * @param a String value for the rank parameter
+	 * @see Individual
+	 */
+	public void setRank(String a){
+		rank=a;
+		if (rank==null){rank=" ";}
+	}
+	
+	/**
+	 * Sets the sex for this song's individual
+	 * @param a String value for the sex parameter
+	 * @see Individual
+	 */
+	public void setSex(String a){
+		if (a.equals("0")){
+			sex="Male";
+		}
+		else if (a.equals("1")){
+			sex="Female";
+		}
+		else{
+			sex="Unknown";
+		}
+	}
+	
+	/**
+	 * Sets the sex for this song's individual
+	 * @return a String value of the sex parameter
+	 * @see Individual
+	 */
+	public String getSex(){
+		return sex;
+	}
+	
+	
 
 	/**
 	 * gets the time and date of the recording
@@ -1076,6 +1150,54 @@ public class Song {
 	 */
 	public void setNotes(String a){
 		notes=a;
+	}
+	
+	/**
+	 * gets the metadata for song quality
+	 * @return String value for quality
+	 */
+	public String getQuality(){
+		return quality;
+	}
+
+	/**
+	 * sets the metadata for song quality
+	 * @param a String value for quality
+	 */
+	public void setQuality(String a){
+		quality=a;
+	}
+	
+	/**
+	 * gets the metadata for song type
+	 * @return String value for type
+	 */
+	public String getType(){
+		return type;
+	}
+
+	/**
+	 * sets the metadata for song type
+	 * @param a String value for type
+	 */
+	public void setType(String a){
+		type=a;
+	}
+	
+	/**
+	 * gets the metadata for custom metadata fields
+	 * @return String value for custom metadata fields
+	 */
+	public String getCustom(int a){
+		return custom[a];
+	}
+
+	/**
+	 * sets the metadata for custom metadata fields
+	 * @param a String value for custom metadata fields
+	 */
+	public void setCustom(String a, int b){
+		custom[b]=a;
 	}
 
 	/**
@@ -1619,7 +1741,7 @@ public class Song {
 			int a=0;
 			int b=0;
 			
-			if (ssizeInBits<=16){
+			if (ssizeInBits<=24){
 				int p1=(int)Math.round(syll[0]-20);
 				if (p1<0){p1=0;}
 				int p2=(int)Math.round(syll[1]+20);
@@ -1633,16 +1755,19 @@ public class Song {
 				System.out.println("NEWSONGBOUNDS: "+a+" "+b+" "+sampleRate+" "+stereo+" "+p1+" "+p2+" "+syll[0]+" "+syll[1]);
 			}
 			
+			
 			byte[] sub=new byte[b-a];
 			System.arraycopy(rawData, a, sub, 0, b-a);
 			Song s=new Song();
 			s.rawData=sub;
+			System.out.println("DATA LENGTH: "+sub.length+" "+a+" "+(b-a));
 			s.ssizeInBits=this.ssizeInBits;
 			s.signed=this.signed;
 			s.bigEnd=this.bigEnd;
 			s.stereo=this.stereo;
 			s.sampleRate=this.sampleRate;
 			s.frameSize=this.frameSize;
+			System.out.println(s.ssizeInBits);
 			String sn=this.name;
 			if (name.endsWith(".wav")){
 				sn=name.substring(0, name.length()-4);
@@ -1664,8 +1789,13 @@ public class Song {
 			s.recordist=this.recordist;
 			s.location=this.location;
 			s.notes=this.notes;
+			s.quality=this.quality;
+			s.type=this.type;
+			s.custom[0]=this.custom[0];
+			s.custom[1]=this.custom[1];
 			songs[i]=s;
 		}
+		System.out.println("A list of "+syllList.size()+" songs has been made and returned");
 		return songs;
 	}
 	
@@ -1728,12 +1858,42 @@ public class Song {
 		}
 	}
 	
+	
+	
+	private byte[] reSetSoundDepth(byte[] rdata, int ssizeInBits, int s){
+			
+		int p=ssizeInBits/8;
+		int q=s/8;
+		
+		int r=Math.min(p,q);
+		
+		int nS=rdata.length/p;
+		
+		byte[] odata=new byte[nS*q];
+		
+		for (int i=0; i<nS; i++){
+			
+			int x=(i+1)*q;
+			
+			int y=(i+1)*p;
+			
+			
+			for (int j=1; j<=r; j++){
+				odata[x-j]=rdata[y-j];
+			}	
+		}	
+		
+		return odata;
+	}
+	
+	
+	
 	/**
 	 * This is an effort to take binary data and transform it into a float[] representation of the sound
 	 * @param start beginning point in the sound
 	 * @param end end point in the sound.
 	 */
-	private void parseSound(int start, int end){
+	private void parseSound(byte[] rawData, int start, int end){
 		int frameSizeC=frameSize/stereo;
 		float[][]look=new float[256][frameSizeC];
 		float divider=(float)(0.5*Math.pow(256, frameSizeC));
@@ -1830,7 +1990,7 @@ public class Song {
 				//int adStartTime=sTime;
 				//int adEndTime=eTime;
 				//System.out.println("PARSESOUND "+adStartTime+" "+adEndTime);
-				parseSound(adStartTime*stereo, adEndTime*stereo);
+				parseSound(rawData, adStartTime*stereo, adEndTime*stereo);
 				//System.out.println("a: "+data.length+" "+adEndTime+" "+adStartTime+" "+rawData.length);
 				//System.out.println("FILTERSOUND "+(sTime-adStartTime)+" "+(eTime-adStartTime));
 				filter(sTime-adStartTime, eTime-adStartTime);
@@ -1919,10 +2079,15 @@ public class Song {
 		*/
 			System.out.println("Dyn Equal");
 			if (dynEqual>0){
-				dynamicEqualizer();
+				dynamicEqualizer(out);
 			}
 			System.out.println("Dyn Range");
-			dynamicRange();
+			if (relativeAmp){
+				dynamicRange(out, maxAmp);
+			}
+			else{
+				dynamicRange(out, maxPossAmp);
+			}
 		//denoiser();
 		//float maxCh=10f;
 		//out=medianFilterXD(10, 0.45f);
@@ -1934,7 +2099,7 @@ public class Song {
 			}
 		//out=m2o.accentuateLines(out, 2, 1);
 			System.out.println("Dereverb");
-			if (echoComp>0){
+			if ((echoComp>0)&&(echoRange>0)){
 			
 			
 			
@@ -1966,7 +2131,7 @@ public class Song {
 			//out=m2o.medianFilterNR(20, 0.25f, 10, out, 0);
 			}
 			System.out.println("Equalize");
-			equalize();	
+			equalize(out);	
 			System.out.println("FInished");
 		}
 	}
@@ -1987,10 +2152,10 @@ public class Song {
 		int adEndTime=e+rangef;
 		if (adEndTime>overSize){adEndTime=overSize;}
 		
-		parseSound(adStartTime*stereo, adEndTime*stereo);
+		parseSound(rawData, adStartTime*stereo, adEndTime*stereo);
 		filter(s-adStartTime, e-s);
 		
-		if (steps<data.length){
+		//if (steps<data.length){
 			
 			double r=(data.length-0.0)/(steps-0.0);
 		
@@ -2003,24 +2168,26 @@ public class Song {
 				float minAmp=1000;
 				//System.out.println(data.length+" "+a+" "+b+" "+r+" "+i+" "+steps);
 				for (int j=a; j<=b; j++){
-					if (data[j]>maxAmp){
-						maxAmp=data[j];
-					}
-					if (data[j]<minAmp){
-						minAmp=data[j];
+					if (b<data.length){
+						if (data[j]>maxAmp){
+							maxAmp=data[j];
+						}
+						if (data[j]<minAmp){
+							minAmp=data[j];
+						}
 					}
 				}
 				envelope[i][0]=maxAmp;
 				envelope[i][1]=minAmp;
 			}
-		}
-		
+		//}
+		/*
 		else{
 			envelope=new float[data.length][1];
 			for (int i=0; i<data.length; i++){
 				envelope[i][0]=data[0];
 			}
-		}	
+		}*/	
 	}
 	
 	/**
@@ -2273,10 +2440,7 @@ public class Song {
 				resample=true;
 				p/=2;
 			}
-			
-			
-			af=new AudioFormat((float)p, ssizeInBits, 2, signed, bigEnd);
-			
+	
 			System.out.println("Stereo: "+stereo);
 							   
 			
@@ -2287,7 +2451,11 @@ public class Song {
 				stereoRawData=rawData;
 			}
 			
+			if (ssizeInBits!=16){
+				stereoRawData=reSetSoundDepth(stereoRawData, ssizeInBits, 16);
+			}
 			
+			af=new AudioFormat((float)p, 16, 2, signed, bigEnd);
 			
 			DataLine.Info   info = new DataLine.Info(SourceDataLine.class, af);
 			
@@ -2298,21 +2466,14 @@ public class Song {
 			line = null;
 			line = (SourceDataLine) AudioSystem.getLine(info);
 			line.open(af);
-			FloatControl fc=(FloatControl)line.getControl(FloatControl.Type.PAN);
-			fc.setValue(1f);
-			
-			
-			
-			
-		
+			//FloatControl fc=(FloatControl)line.getControl(FloatControl.Type.PAN);
+			//FloatControl fc=(FloatControl)line.getControl(FloatControl.Type.BALANCE);
+			//fc.setValue(1f);
 			
 		} 
 		catch (Exception e) {
 			e.printStackTrace();
-			System.out.println("Here's the problem!");
-			System.out.println(e);
-			//System.exit(0);
-		}//
+		}
 	}
 	
 	/**
@@ -2359,10 +2520,43 @@ public class Song {
 	 */
 	
 	public void prepPlaybackScreen(int x, int y){
-		int a=(int)(2*x*Math.round(dx*sampleRate*stereo*0.001));
-		int b=(int)(2*y*Math.round(dx*sampleRate*stereo*0.001));
-		System.out.println(a+" "+b+" "+sampleRate+" "+ssizeInBits+" "+stereo);
+		//int a=(int)(2*x*Math.round(dx*sampleRate*stereo*0.001));
+		//int b=(int)(2*y*Math.round(dx*sampleRate*stereo*0.001));
+		//int m=(int)(frameSize*Math.round(dx*0.001*sampleRate));
+		int m=(int)(2*Math.round(dx*0.001*sampleRate)); //playback file converted to 16bit
+		if (stereo==1){m*=2;}
+		int a=(int)x*m;
+		int b=(int)y*m;
+		//System.out.println(m+" "+x+" "+y+" "+a+" "+b+" "+stereoRawData.length);
+		//System.out.println(x+" "+y+" "+dx+" "+a+" "+b+" "+sampleRate+" "+ssizeInBits+" "+stereo+" "+stereoRawData.length);
 		playSound(a, b);
+	}
+	
+	/**
+	 * This method is called to arrange playback from a point in the song until the end
+	 * @param x start point for playback
+	 */
+	
+	public void prepPlaybackFrom(int x){
+		//int a=(int)(2*x*Math.round(dx*sampleRate*stereo*0.001));
+		//int b=(int)(2*y*Math.round(dx*sampleRate*stereo*0.001));
+		//int m=(int)(frameSize*Math.round(dx*0.001*sampleRate));
+		int m=(int)(2*Math.round(dx*0.001*sampleRate));	//playback sound converted to 16bit
+		if (stereo==1){m*=2;}
+		int a=(int)x*m;
+		int b=stereoRawData.length;
+		//System.out.println(m+" "+x+" "+y+" "+a+" "+b+" "+stereoRawData.length);
+		//System.out.println(x+" "+y+" "+dx+" "+a+" "+b+" "+sampleRate+" "+ssizeInBits+" "+stereo+" "+stereoRawData.length);
+		playSound(a, b);
+	}
+	
+	
+	public void prepPlaybackAll(){
+		int a=0;
+		int b=stereoRawData.length;
+		//System.out.println(a+" "+b+" "+sampleRate+" "+ssizeInBits+" "+stereo+" "+stereoRawData.length);
+		playSound(a,b);
+		
 	}
 	
 	/**
@@ -2375,19 +2569,25 @@ public class Song {
 		int a=0;
 		int b=0;
 		
-		if (ssizeInBits<=16){
+		
+		//int m=(int)(frameSize*Math.round(sampleRate*0.001));
+		int m=(int)(2*Math.round(sampleRate*0.001)); //songs for playback are converted to 16bit
+		if (stereo==1){m*=2;}
+		if (ssizeInBits<=24){
 			int p1=syll[0]-7;
 			if (p1<0){p1=0;}
 			int p2=syll[1]+7;
 			if (p2>=overallLength){
 				p2=overallLength-1;
 			}
-			a=(int)(p1*Math.round(sampleRate*stereo*0.002));
-			b=(int)(p2*Math.round(sampleRate*stereo*0.002));
-			
+			//a=(int)(p1*Math.round(sampleRate*stereo*0.002));
+			//b=(int)(p2*Math.round(sampleRate*stereo*0.002));
+			a=(int)(p1*m);
+			b=(int)(p2*m);
+			System.out.println(m+" "+syll[0]+" "+syll[1]+" "+a+" "+b+" "+stereoRawData.length);
 		}
 		
-		if(rawData.length<=b){
+		if(stereoRawData.length<=b){
 			b=a;
 		}	
 		
@@ -2481,12 +2681,12 @@ public class Song {
 			//double size=rawData.length;
 			//double size2=rawData.length/(stereo*2.0);
 			//byte[]  abData = new byte[EXTERNAL_BUFFER_SIZE];
-			System.out.println(EXTERNAL_BUFFER_SIZE+" "+start+" "+end);
+			//System.out.println(EXTERNAL_BUFFER_SIZE+" "+start+" "+end);
 			try{
 				
 				
 				
-				line.write(stereoRawData, start*2, 2*(end-start));
+				line.write(stereoRawData, start, (end-start));
 				//int a=line.write(stereoRawData, start, (end-start));
 			
 				//while ((line.isOpen())&&(start+EXTERNAL_BUFFER_SIZE<end)){
@@ -2497,7 +2697,7 @@ public class Song {
 							}
 			catch (Exception e) {
 				e.printStackTrace();
-				System.out.println("OWWW");
+				System.out.println("OWWW: "+stereoRawData.length+" "+start+" "+end);
 			}
 		}
 	}
@@ -2633,7 +2833,7 @@ public class Song {
 		float tempr, tempi;							//settings. If that happens, the spectrogram only plots up to the max. resolving power.
 		int a,b,c,d;
 		
-		FFTbase fft=new FFTbase();
+		FFTbase fft=new FFTbase(framePad, true);
 		
 		while(istart<L){
 			//System.out.println(L+" "+start+" "+frame+" "+place);
@@ -2645,13 +2845,13 @@ public class Song {
 				else{
 					datr[i]=0;
 				}
-				dati[i]=0;
+				//dati[i]=0;
 			}
 			
 			//System.out.println(datr.length+" "+dati.length+" "+frame+" "+framePad);
 			
 			
-			double[] dat=fft.fft(datr, dati, true);
+			double[] dat=fft.fft(datr, dati);
 			
 			
 			for (i=0; i<py; i++){
@@ -2985,7 +3185,7 @@ public class Song {
 	 * This method carries out a process of dynamic equalization, making each window of
 	 * a certain length have at least one black point
 	 */
-	private void dynamicEqualizer(){			//a dynamic equalizer; key parameter (dynEqual) varies time-range over which spectrogram is normalized
+	private void dynamicEqualizer(float[][] mat){			//a dynamic equalizer; key parameter (dynEqual) varies time-range over which spectrogram is normalized
 		int dynEqual2=(int)(dynEqual/dx);
 		if (dynEqual2>anx){dynEqual2=anx;}
 		int range2=-1*dynEqual2+1;
@@ -2994,7 +3194,7 @@ public class Song {
 		float[] tops=new float[anx];
 		for (i=0; i<anx; i++){
 			for (j=0; j<ny; j++){
-				if (out[j][i]>tops[i]){tops[i]=out[j][i];}
+				if (mat[j][i]>tops[i]){tops[i]=mat[j][i];}
 			}
 			//System.out.println(tops[i]);
 		}
@@ -3006,7 +3206,7 @@ public class Song {
 			}
 			if (max>0){
 				max=maxAmp/max;				//I'm still not sure maxAmp is appropriate here!
-				for (j=0; j<ny; j++){out[j][i]*=max;}
+				for (j=0; j<ny; j++){mat[j][i]*=max;}
 			}
 		}
 		tops=null;
@@ -3016,23 +3216,23 @@ public class Song {
 	 * This function adjusts spectrogram for dynamic range, leaving values that are to be
 	 * coloured white in the spectrogram <0
 	 */
-	private void dynamicRange(){		//converts power spectrum into logarithmic, decibel scale (relative to maxPossAmp).
+	private void dynamicRange(float[][] mat, double mpa){		//converts power spectrum into logarithmic, decibel scale (relative to maxPossAmp).
 		//System.out.print("a");
 		double logd=10/(Math.log(10));
-		double maxC=dynRange-Math.log(maxPossAmp)*logd;
+		double maxC=dynRange-Math.log(mpa)*logd;
 		
-		if (relativeAmp){
-			maxC=dynRange-Math.log(maxAmp)*logd;
-		}
+		//if (relativeAmp){
+			//maxC=dynRange-Math.log(maxAmp)*logd;
+		//}
 		int i,j;
 		maxAmp2=0;
-		for (i=0; i<ny; i++){
-			for (j=0; j<anx; j++){
-				if (out[i][j]>0){
-					out[i][j]=(float)(Math.log(out[i][j])*logd+maxC);
+		for (i=0; i<mat.length; i++){
+			for (j=0; j<mat[i].length; j++){
+				if (mat[i][j]>0){
+					mat[i][j]=(float)(Math.log(mat[i][j])*logd+maxC);
 				}
 				//if (out[i][j]<0){out[i][j]=0;}
-				if (out[i][j]>maxAmp2){maxAmp2=out[i][j];}
+				if (mat[i][j]>maxAmp2){maxAmp2=mat[i][j];}
 			}
 		}
 		//System.out.println("b");
@@ -3099,12 +3299,13 @@ public class Song {
 		int echoRange2=(int)(echoRange/dx);
 		if (echoRange2>anx){echoRange2=anx;}
 		
-		//System.out.println("ECHO: "+echoRange+" "+echoRange2+" "+anx);
+		System.out.println("ECHO: "+echoRange+" "+echoRange2+" "+anx);
 		
 		double minWeight=5;
 		double decayFactor=(minWeight)/(echoRange2+0.0);
 		//System.out.println(decayFactor);
 		int i,j,k;
+		
 		double[] buffer=new double[echoRange2];
 		int position=0;
 		double bestBuf;
@@ -3200,14 +3401,14 @@ public class Song {
 	/**
 	 * This method carries out a process of dynamic equalization. 
 	 */
-	private void equalize(){
+	private void equalize(float[][] mat){
 		maxDB=-10000;
 		int i,j;
 		int startx=0;
 		if (echoComp>0){startx=(int)(echoRange/dx);}
-		for (i=0; i<ny; i++){
-			for (j=startx; j<anx; j++){
-				if (out[i][j]>maxDB){maxDB=out[i][j];}
+		for (i=0; i<mat.length; i++){
+			for (j=startx; j<mat[i].length; j++){
+				if (mat[i][j]>maxDB){maxDB=mat[i][j];}
 			}
 		}
 		if (setRangeToMax){
@@ -3237,47 +3438,59 @@ public class Song {
 	
 	
 	/**
-	 * This method sorts syllables and elements into chronological order
+	 * This method sorts syllables into chronological order
 	 */
-	public void sortSyllsEles(){
-		int num=syllList.size();
-		int [] dat;
-		while (num>0){
-			int min=10000000;
-			int loc=0;
-			for (int i=0; i<num; i++){
-				dat=syllList.get(i);
-				if (dat[0]<min){
-					loc=i;
-					min=dat[0];
+	public void sortSylls(){
+		if (syllList!=null){
+			int num=syllList.size();
+			int [] dat;
+			while (num>0){
+				int min=10000000;
+				int loc=0;
+				for (int i=0; i<num; i++){
+					dat=syllList.get(i);
+					if (dat[0]<min){
+						loc=i;
+						min=dat[0];
+					}
 				}
-			}
 			
-			dat=syllList.get(loc);
-			syllList.remove(loc);
-			syllList.addLast(dat);
-			num--;
-		}
-		num=eleList.size();
-		while (num>0){
-			double min=10000000;
-			int loc=0;
-			for (int i=0; i<num; i++){
-				Element ele=eleList.get(i);
-				double j=ele.signal[0][0]+0.5*(ele.signal[ele.signal.length-1][0]-ele.signal[0][0]);
-				if (j<min){
-					loc=i;
-					min=j;
-				}
+				dat=syllList.get(loc);
+				syllList.remove(loc);
+				syllList.addLast(dat);
+				num--;
 			}
-		
-			Element ele=eleList.get(loc);
-			eleList.remove(loc);
-			eleList.addLast(ele);
-			num--;
+			dat=null;
 		}
-		dat=null;
 	}
+	
+	/**
+	 * This method sorts elements into chronological order
+	 */
+	public void sortEles(){
+		if (eleList!=null){
+			int num=eleList.size();
+			while (num>0){
+				double min=10000000;
+				int loc=0;
+				for (int i=0; i<num; i++){
+					Element ele=eleList.get(i);
+					double j=ele.signal[0][0]+0.5*(ele.signal[ele.signal.length-1][0]-ele.signal[0][0]);
+					if (j<min){
+						loc=i;
+						min=j;
+					}
+				}
+		
+				Element ele=eleList.get(loc);
+				eleList.remove(loc);
+				eleList.addLast(ele);
+				num--;
+			}
+		}
+	}
+	
+	
 
 	/**
 	 * This method takes a set of syllables, and parses them into phrases.
@@ -3458,6 +3671,54 @@ public class Song {
 			}
 		}
 	}
+
+	
+	/**
+	 * This method calculates the double[] phase object which is used in pitch calculation - both
+	 * for pitch representation and for fundamental frequency estimation.
+	 * This should only be called once upon initiation of a new spectrogram.
+	 */
+	public void makePhase2(){
+		
+		double log2Adj=1/Math.log(2);
+		double logMax=Math.log(ny-1)*log2Adj;
+		double logMin=Math.log(minFreq)*log2Adj;
+		double step=(logMax-logMin)/(ny+0.0);
+		octstep=1/step;
+		double[] logTransform=new double[ny];
+		for (int i=0; i<ny; i++){
+			logTransform[i]=Math.pow(2, logMin+(i*step));
+		}
+
+		phase=new double[ny*ny];
+
+		int count=0;
+		for (int j=0; j<ny; j++){			
+			double tot=0;
+			for (int i=0; i<ny; i++){
+				double g=i-logTransform[j]*Math.round(i/logTransform[j]);
+				
+				double h=Math.cos(Math.PI*g/logTransform[ny/2]);
+				
+				if (Math.abs(g)>logTransform[0]){h=0;}
+				
+				double q=Math.cos(Math.PI*((i)/logTransform[j]));
+				q=Math.pow(h, 2);
+				if (i<logTransform[j]*0.5){q=0;}
+				phase[count]=q;
+				tot+=q;
+				//if (j==ny/2){
+					//System.out.println(j+" "+i+" "+phase[count]);
+				//}
+				count++;
+			}
+			count-=ny;
+			for (int i=0; i<ny; i++){
+				phase[count]/=tot;
+				count++;
+			}
+		}
+	}
 	
 	public void updateElements(){
 		for (int i=0; i<eleList.size(); i++){
@@ -3477,63 +3738,6 @@ public class Song {
 			Element ele2=eleList.get(i+1);
 			ele2.setTimeBefore(ele1.getTimeAfter());	
 		}	
-	}
-	
-	/**
-	 * This method calculates the pitch representation. Specifically, it calculates the
-	 * number of available cores and creates instances of PitchCalculator to do the
-	 * calculation
-	 * @param unx the number of columns in the spectrogram. Not obvious why this needs to 
-	 * be sent to the method.
-	 * @return a float[][] pitch representation of the sound.
-	 */
-	public float[][] runPitchCalculator(int unx){
-		int ncores=Runtime.getRuntime().availableProcessors();
-		
-		float[][] pout=new float[unx][ny];
-		
-		PitchCalculator ct[]=new PitchCalculator[ncores];
-		
-		
-		int[] starts=new int[ncores];
-		int[] stops=new int[ncores];
-		for (int i=0; i<ncores; i++){
-			starts[i]=i*(unx/ncores);
-			stops[i]=(i+1)*(unx/ncores);
-		}
-		stops[ncores-1]=unx;
-		//System.out.println("CORES USED: "+ncores);
-		
-		for (int i=0; i<ncores; i++){
-			ct[i]=new PitchCalculator(starts[i], stops[i]);
-			ct[i].setPriority(Thread.MIN_PRIORITY);
-			ct[i].start();
-		}
-		
-		try{
-			for (int cores=0; cores<ncores; cores++){
-				ct[cores].join();
-			}
-			for (int cores=0; cores<ncores; cores++){
-				//System.out.println(cores);
-				for (int i=ct[cores].start; i<ct[cores].end; i++){
-					int ii=i-ct[cores].start;
-					for (int j=0; j<ny; j++){
-						pout[i][j]=ct[cores].pout[ii][j];
-						/*
-						int h=ny-j-1;
-						int sh=ct[cores].out[ii][j];
-
-						img.setRGB(i, h, colpal[sh]);
-						*/
-					}
-				}
-			}
-		}
-		catch (Exception e){
-			e.printStackTrace();
-		}
-		return pout;
 	}
 	
 	public boolean checkSong(Component parentComponent){
@@ -3694,6 +3898,96 @@ public class Song {
 	
 	
 	/**
+	 * This method calculates the pitch representation. Specifically, it calculates the
+	 * number of available cores and creates instances of PitchCalculator to do the
+	 * calculation
+	 * @param unx the number of columns in the spectrogram. Not obvious why this needs to 
+	 * be sent to the method.
+	 * @return a float[][] pitch representation of the sound.
+	 */
+	public float[][] runPitchCalculator(int unx){
+		int ncores=Runtime.getRuntime().availableProcessors();
+		
+		float[][] pout=new float[ny][unx];
+		
+		PitchCalculator ct[]=new PitchCalculator[ncores];
+		
+		
+		int[] starts=new int[ncores];
+		int[] stops=new int[ncores];
+		for (int i=0; i<ncores; i++){
+			starts[i]=i*(unx/ncores);
+			stops[i]=(i+1)*(unx/ncores);
+		}
+		stops[ncores-1]=unx;
+		//System.out.println("CORES USED: "+ncores);
+		
+		for (int i=0; i<ncores; i++){
+			ct[i]=new PitchCalculator(starts[i], stops[i]);
+			ct[i].setPriority(Thread.MIN_PRIORITY);
+			ct[i].start();
+		}
+		
+		try{
+			for (int cores=0; cores<ncores; cores++){
+				ct[cores].join();
+			}
+			for (int cores=0; cores<ncores; cores++){
+				//System.out.println(cores);
+				for (int i=ct[cores].start; i<ct[cores].end; i++){
+					int ii=i-ct[cores].start;
+					for (int j=0; j<ny; j++){
+						pout[j][i]=ct[cores].pout[ii][j];
+						/*
+						int h=ny-j-1;
+						int sh=ct[cores].out[ii][j];
+	
+						img.setRGB(i, h, colpal[sh]);
+						*/
+					}
+				}
+			}
+		}
+		catch (Exception e){
+			e.printStackTrace();
+		}
+		
+		/*
+		if (dynEqual>0){
+			dynamicEqualizer(pout);
+		}
+		System.out.println("Dyn Range");
+		dynamicRange(pout, maxAmp);
+
+	
+		System.out.println("Equalize");
+		equalize(pout);	
+		System.out.println("FInished");
+		*/
+		
+		float max=0;
+		for (int i=0; i<ny; i++){
+			for (int j=0; j<unx; j++){
+				
+				//System.out.println(i+" "+j+" "+pout[i][j]);
+				
+				if (pout[i][j]>max){
+					max=pout[i][j];
+				}
+			}
+		}
+		for (int i=0; i<ny; i++){
+			for (int j=0; j<unx; j++){
+				//if (pout[i][j]>max){
+					pout[i][j]/=max;
+				//}
+			}
+		}
+		
+		return pout;
+	}
+
+	/**
 	 * This internal class calculates the 'pitch' representation of sounds. By making
 	 * it an internal class, it makes it possible to use multiple threads/cores
 	 * @author Rob
@@ -3712,15 +4006,18 @@ public class Song {
 		}
 
 		public void run(){
+			double adjust=0;
 			int oct=(int)Math.round(octstep);
 			double[] spectrum=new double[ny];
 			double[] hscor=new double[ny];
+			double[] iscor=new double[ny];
 			double maxHscor;
 			double subSuppression=fundAdjust;
 			for (int i=start; i<end; i++){
-				double peakAmp=-1000;
+				double peakAmp=0;
+				double sumAmp=0;
 				for (int j=0; j<ny; j++){
-					spectrum[j]=out[j][i];
+					spectrum[j]=out[j][i]+adjust;
 					if (spectrum[j]<0){
 						spectrum[j]=0;
 					}
@@ -3729,21 +4026,30 @@ public class Song {
 					if (spectrum[j]>peakAmp){
 						peakAmp=spectrum[j];
 					}
-					spectrum[j]=Math.pow(spectrum[j], subSuppression);
+					sumAmp+=spectrum[j];
+					//spectrum[j]=Math.pow(spectrum[j], subSuppression);
 				}
 
 				int count=0;
 				double sumxy=0;
+				double sumx=0;
+				double p;
 				for (int j=0; j<ny; j++){
 					sumxy=0;
+					sumx=0;
 					for (int k=0; k<ny; k++){
-						sumxy+=phase[count]*spectrum[k];
+						p=phase[count];
+						sumxy+=p*p*spectrum[k];
+						sumx+=p*p;
 						count++;
 					}
-					hscor[j]=sumxy;
+					hscor[j]=sumxy/sumx;
+					
+					//System.out.println(j+" "+spectrum[j]+" "+hscor[j]);
+					
 				}
 				maxHscor=-1000000;
-
+				/*
 				for (int j=0; j<ny-oct; j++){
 					hscor[j]-=subsup*hscor[j+oct];
 					if (hscor[j]<0.0001){hscor[j]=0.0001;}
@@ -3778,6 +4084,7 @@ public class Song {
 				for (int j=minFreq; j<ny; j++){
 					pout[ii][j]=(float)hscor[j];
 				}
+				*/
 				/*
 				for (int j=minFreq; j<ny; j++){
 					double p=1-hscor[j];
@@ -3787,6 +4094,76 @@ public class Song {
 					out[ii][j]=q;
 				}
 				*/
+				
+				for (int j=0; j<ny; j++){
+					
+					double p1=hscor[j];
+					double p2=p1;
+					if (j>=oct){p2=hscor[j-oct];}
+					double p3=p1;
+					if (j<ny-oct){p3=hscor[j+oct];}
+					
+					iscor[j]=p1-p2;
+					
+					if (iscor[j]<0.0001){iscor[j]=0.0001;}
+				}
+				
+				for (int j=0; j<ny; j++){
+					
+					double p1=iscor[j];
+					double p2=p1;
+					if (j>=oct){p2=iscor[j-oct];}
+					double p3=p1;
+					if (j<ny-oct){p3=iscor[j+oct];}
+					
+					hscor[j]=p1-p3;
+					
+					if (hscor[j]<0.0001){hscor[j]=0.0001;}
+				}
+				
+				for (int j=0; j<ny; j++){
+					//hscor[j]=Math.pow(hscor[j], 2);
+					//hscor[j]=iscor[j];
+					if (hscor[j]>maxHscor){
+						maxHscor=hscor[j];
+					}
+				}
+				double atot=0;
+				for (int j=0; j<ny; j++){
+					//hscor[j]=(hscor[j]/maxHscor);
+					if (hscor[j]>0){
+						atot+=hscor[j];
+					}
+					
+				}
+				//System.out.println(sumAmp+" "+atot+" "+peakAmp+" "+atot);
+				if (maxHscor>0){
+					for (int j=minFreq; j<ny; j++){
+						
+						hscor[j]*=(peakAmp-adjust)/maxHscor;	
+						//hscor[j]*=sumAmp/atot;
+					}
+				}
+				else{
+					for (int j=0; j<ny; j++){
+						hscor[j]=0;
+					}
+				}
+				
+				int ii=i-start;
+				for (int j=minFreq; j<ny; j++){
+					//if (iscor[j]>0){
+					//pout[ii][j]=(float)Math.log(iscor[j]);
+					
+					//if (pout[ii][j]>maxAmp){
+						//maxAmp=pout[ii][j];
+					//}
+					//}
+					pout[ii][j]=(float)hscor[j];
+				}
+				
+				
+				
 			}
 		}
 	}

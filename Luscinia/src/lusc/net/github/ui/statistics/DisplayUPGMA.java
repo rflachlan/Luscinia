@@ -96,8 +96,8 @@ public class DisplayUPGMA extends DisplayPane implements ActionListener, MouseIn
 	JComboBox<String> branchLabels;
 	int branchLabelIndex=0;
 	
-	JCheckBox songname, indname, popname, specname;
-	boolean addsong, addind, addpop, addspec;
+	JCheckBox songname, indname, popname, specname, typename;
+	boolean addsong, addind, addpop, addspec, addtype;
 	
 	public DisplayUPGMA (UPGMA upgma, ComparisonResults cr, AnalysisGroup sg, int width, int height, Defaults defaults){
 		this.upgma=upgma;
@@ -243,6 +243,12 @@ public class DisplayUPGMA extends DisplayPane implements ActionListener, MouseIn
 		addspec=false;
 		specname.addActionListener(this);
 		
+		typename=new JCheckBox("Type");
+		typename.setSelected(false);
+		addtype=false;
+		typename.setFont(font);
+		typename.addActionListener(this);
+		
 		
 		//status=new JLabel("Number of leaves: "+elements+" Cut-off: 0");
 		//status.setBorder(BorderFactory.createEmptyBorder(10,10,10,20));
@@ -277,6 +283,9 @@ public class DisplayUPGMA extends DisplayPane implements ActionListener, MouseIn
 		namePane.add(indname);
 		namePane.add(popname);
 		namePane.add(specname);
+		if (dataType<5){
+			namePane.add(typename);
+		}
 		
 		JPanel rightPane=new JPanel(new BorderLayout());
 		rightPane.add(labelPane, BorderLayout.WEST);
@@ -499,7 +508,7 @@ public class DisplayUPGMA extends DisplayPane implements ActionListener, MouseIn
 	public void paintPanel(){
 		
 		
-		String[] names=cr.getNames(addspec, addpop, addind, addsong);
+		String[] names=cr.getNames(addspec, addpop, addind, addsong, addtype);
 			
 		int ny=(int)Math.round(scale*(elespace*elements+2*ydisp));
 		System.out.println("UPGMA TREE HEIGHT: "+ny);
@@ -947,6 +956,9 @@ public class DisplayUPGMA extends DisplayPane implements ActionListener, MouseIn
 		else if(e.getSource()==specname){
 			addspec=specname.isSelected();
 		}
+		else if (e.getSource()==typename){
+			addtype=typename.isSelected();
+		}
 
 		paintPanel();
 		spg.paintImage(imf, scale);
@@ -1007,13 +1019,16 @@ public class DisplayUPGMA extends DisplayPane implements ActionListener, MouseIn
 					sd.writeLine();
 					sd.writeString("y points");
 					//sd.writeString("upgma scores");
-					sd.writeString("node children...");
-					sd.writeLine();
+					
+					//sd.writeLine();
 			
-					int[][] cats=upgma.calculateClassificationMembers(100);
+					int[][] cats=upgma.calculateClassificationMembers(500);
 					//float[][] scores=upgma.calculateMeanClusterDistances(100);
 			
-					
+					for(int i=1; i<cats[0].length; i++){
+						sd.writeInt(i+1);
+					}
+					sd.writeLine();
 					
 					for (int i=0; i<upgma.getLength(); i++){
 						sd.writeString(names[i]);

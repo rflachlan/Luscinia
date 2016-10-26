@@ -18,11 +18,15 @@ import javax.swing.event.TreeModelEvent;
 import javax.swing.event.TreeModelListener;
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
+
 import java.awt.*;
 import java.awt.datatransfer.*;
 import java.awt.dnd.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.*;
 import java.util.List;
+
 import javax.swing.*;
 
 public class DatabaseTree extends JPanel {
@@ -43,6 +47,7 @@ public class DatabaseTree extends JPanel {
         treeModel.addTreeModelListener(new MyTreeModelListener());
 
         tree = new JTree(treeModel);
+        tree.setCellRenderer(new MyTreeCellRenderer(sc.dbc, sc.defaults));
         tree.setEditable(true);
         //tree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
 		tree.getSelectionModel().setSelectionMode(TreeSelectionModel.DISCONTIGUOUS_TREE_SELECTION);
@@ -70,6 +75,18 @@ public class DatabaseTree extends JPanel {
 				if (selnode == null) return;
 				//Object nodeInfo = selnode[0].getUserObject();
 			}
+		});
+		
+		tree.addMouseListener(new MouseAdapter(){
+			 public void mouseClicked(MouseEvent e) {
+		            if (e.getClickCount() == 2) {
+		                myNode node = (myNode) tree.getLastSelectedPathComponent();
+		                if (node == null) return;
+		                if (node.getLevel()==2){
+		                	sc.openSpectrogram();
+		                }
+		            }
+		        }
 		});
 
         JScrollPane scrollPane = new JScrollPane(tree);
@@ -334,6 +351,7 @@ public class DatabaseTree extends JPanel {
 			sc.addRecordingButton.setEnabled(false);
 			sc.removeButton.setEnabled(false);
 			sc.sonogramButton.setEnabled(false);
+			sc.simpleButton.setEnabled(false);
 			sc.hideInformationPanel();
 		}
 		else{
@@ -343,6 +361,7 @@ public class DatabaseTree extends JPanel {
 				sc.addRecordingButton.setEnabled(true);
 				sc.removeButton.setEnabled(true);
 				sc.sonogramButton.setEnabled(false);
+				sc.simpleButton.setEnabled(false);
 				sc.showInformationIndividual();
 			}
 			else{
@@ -351,6 +370,7 @@ public class DatabaseTree extends JPanel {
 				sc.addRecordingButton.setEnabled(false);
 				sc.removeButton.setEnabled(true);
 				sc.sonogramButton.setEnabled(true);
+				sc.simpleButton.setEnabled(true);
 				sc.showInformationSong();
 			}
 		}

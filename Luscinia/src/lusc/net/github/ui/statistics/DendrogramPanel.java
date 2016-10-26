@@ -32,6 +32,8 @@ public class DendrogramPanel extends DisplayPane implements ChangeListener{
 	private static final long serialVersionUID = -6895812043248447269L;
 	Defaults defaults;
 	int elespace=50;
+	int unitsize=2;
+	int maxy=1500;
 	int clickedX=-1;
 	int clickedY=-1;
 	int clickedLoc=-1;
@@ -73,6 +75,7 @@ public class DendrogramPanel extends DisplayPane implements ChangeListener{
 		decorateNodes=false;
 		dat=den.getDat();	
 		buildUI();
+		System.out.println("DONE BUILDING DENDROGRAM");
 	}
 	
 	public DendrogramPanel (Dendrogram den, AnalysisGroup sg, int dataType, int width, int height, double[] nodeDetails, Defaults defaults){
@@ -85,21 +88,23 @@ public class DendrogramPanel extends DisplayPane implements ChangeListener{
 
 		this.nodeDetails=nodeDetails;
 		this.defaults=defaults;
-		decorateNodes=true;
+		decorateNodes=false;
 		dat=den.getDat();	
 		buildUI();
+		System.out.println("DONE BUILDING DENDROGRAM");
 	}
 	
 	void makeImage(){
 		int dwidth=width/2;
 		String[] name=sg.getScores(dataType).getNames();
 		
+		System.out.println("IMAGE DIMENSION: "+dwidth+" "+elespace+" "+maxy);
 		
 		if (decorateNodes){
-			dden=new DisplayDendrogram(dat, name, sg, dataType, dwidth, elespace, 2, nodeDetails, defaults);
+			dden=new DisplayDendrogram(dat, name, sg, dataType, dwidth, elespace, maxy, unitsize, nodeDetails, defaults);
 		}
 		else{
-			dden=new DisplayDendrogram(dat, name, sg, dataType, dwidth, elespace, 2, defaults);
+			dden=new DisplayDendrogram(dat, name, sg, dataType, dwidth, elespace, maxy, unitsize, defaults);
 		}
 		
 		for (int i=0; i<songs.length; i++){
@@ -144,10 +149,7 @@ public class DendrogramPanel extends DisplayPane implements ChangeListener{
 		//height=height*2;
 		System.out.println("WIDTH: "+width);
 		dsk=new DisplaySketches(sg);
-		
-		
-		
-						
+					
 		makeImage();
 		
 		
@@ -173,7 +175,7 @@ public class DendrogramPanel extends DisplayPane implements ChangeListener{
 		zoomPanel.add(status, BorderLayout.EAST);
 		this.add(zoomPanel, BorderLayout.NORTH);
 		
-		
+		System.out.println("DONE BUILDING UI");
 		
 	}
 	
@@ -206,13 +208,16 @@ public class DendrogramPanel extends DisplayPane implements ChangeListener{
 			}
 		}
 		int height2=dden.imf.getHeight();
-		sketchImage=new BufferedImage((int)maxBuWidth+2, height2, BufferedImage.TYPE_INT_ARGB);
+		
+		System.out.println("SKETCH SIZE: "+maxBuWidth+" "+width2);
+		
+		sketchImage=new BufferedImage(width2, height2, BufferedImage.TYPE_INT_ARGB);
 		Graphics2D g=sketchImage.createGraphics();
 		g.setColor(Color.WHITE);
 		g.fillRect(0,0,width2,height2);
-		if (maxBuWidth<width2){
-			maxBuWidth=width2;
-		}
+		//if (maxBuWidth<width2){
+			//maxBuWidth=width2;
+		//}
 		g.setColor(Color.BLACK);
 		
 		Element ele=(Element)songs[0].getElement(0);
@@ -250,11 +255,11 @@ public class DendrogramPanel extends DisplayPane implements ChangeListener{
 				g.drawRect(xloc, yp, xp, eg[1]);
 				int k=0;
 				while (k<xp){
-					g.drawLine(xloc+k, yp+eg[1], xloc+k, yp+eg[1]-2);
+					g.drawLine(xloc+k, yp+eg[1], xloc+k, yp+eg[1]-unitsize);
 					k+=(int)Math.round(interval*xp/(rowIm[i][j].getWidth()+0.0));
 				}
 				for (int yt=0; yt<yticks; yt++){
-					g.drawLine(xloc, ytickslocs[yt], xloc+2, ytickslocs[yt]);
+					g.drawLine(xloc, ytickslocs[yt], xloc+unitsize, ytickslocs[yt]);
 				}
 				xloc+=xp;
 				rowIm[i][j]=null;
@@ -362,6 +367,8 @@ public class DendrogramPanel extends DisplayPane implements ChangeListener{
 		g.drawImage(sketchImage, x1, 0, this);
 		g.dispose();
 		
+		System.out.println("IMAGE TO SAVEIMAGE: "+x1+" "+x2+" "+y1);
+		
 		@SuppressWarnings("unused")
 		SaveImage si=new SaveImage(imt, this, defaults);
 		//si.save();
@@ -369,13 +376,20 @@ public class DendrogramPanel extends DisplayPane implements ChangeListener{
 	
 	public BufferedImage resizeImage(double ratio){
 		
+		System.out.println("SAVE RATIO: "+ratio);
+		
 		int archiveWidth=width;
 		int archiveHeight=height;
 		int archiveElespace=elespace;
+		int archivemaxy=maxy;
+		int archiveunitsize=unitsize;
 		
 		width=(int)Math.round(width*ratio);
 		height=(int)Math.round(height*ratio);
 		elespace=(int)Math.round(elespace*ratio);
+		unitsize=(int)Math.round(unitsize*ratio);
+		
+		maxy=(int)Math.round(dden.imf.getHeight()*ratio);
 		
 		makeImage();
 		updateDisplay(cutoff);
@@ -385,6 +399,8 @@ public class DendrogramPanel extends DisplayPane implements ChangeListener{
 		int x2=sketchImage.getWidth();		
 		int x=x1+x2;
 		int y=y1;	
+		
+		System.out.println("NEW DIMS: "+x1+" "+y1+" "+x2);
 		
 		BufferedImage imt=new BufferedImage(x, y, BufferedImage.TYPE_INT_ARGB);
 		
@@ -397,6 +413,8 @@ public class DendrogramPanel extends DisplayPane implements ChangeListener{
 		width=archiveWidth;
 		height=archiveHeight;
 		elespace=archiveElespace;
+		maxy=archivemaxy;
+		unitsize=archiveunitsize;
 		makeImage();
 		updateDisplay(cutoff);
 		return imt;

@@ -500,6 +500,21 @@ public class PCPane extends JPanel implements MouseInputListener{
 			g.setColor(Color.BLACK);
 		}
 		else if (labelType==1){
+			String[] types=cr.getTypeNames();
+			palette=getColorPalette(types.length);
+			for (int i=0; i<types.length; i++){
+
+				g.setColor(palette[i]);
+				int xe=xsh+gridsize+legendSpacer;
+				int ye=ysh+i*iconSpacer;
+				paintIcon(i, xe, ye, iconSize, false, g);
+				g.setColor(Color.BLACK);
+				TextLayout layout = new TextLayout(types[i], labelFont, frc);
+				Rectangle r = layout.getPixelBounds(null, 0, 0);
+				layout.draw(g, xe+ics*2+textSpacer, ye+0.5f*r.height);
+			}	
+		}
+		else if (labelType==2){
 			String[] individuals=cr.getIndividualNames();
 			palette=getColorPalette(individuals.length);
 			for (int i=0; i<individuals.length; i++){
@@ -514,7 +529,7 @@ public class PCPane extends JPanel implements MouseInputListener{
 				layout.draw(g, xe+ics*2+textSpacer, ye+0.5f*r.height);
 			}		
 		}
-		else if (labelType==2){
+		else if (labelType==3){
 			String[] populations=cr.getPopulationNames();
 			palette=getColorPalette(populations.length);
 			for (int i=0; i<populations.length; i++){
@@ -529,7 +544,7 @@ public class PCPane extends JPanel implements MouseInputListener{
 				layout.draw(g, xe+ics*2+textSpacer, ye+0.5f*r.height);
 			}		
 		}
-		else if (labelType==3){
+		else if (labelType==4){
 			
 			for (int i=0; i<barHeight; i++){
 				
@@ -560,7 +575,7 @@ public class PCPane extends JPanel implements MouseInputListener{
 			layoutM.draw(g, xsh+gridsize+legendSpacer+barWidth+textSpacer, ysh+barHeight*0.5f+0.5f*r2.height);
 			
 		}
-		else if (labelType==4){
+		else if (labelType==5){
 			
 			for (int i=0; i<barHeight; i++){
 				
@@ -592,7 +607,7 @@ public class PCPane extends JPanel implements MouseInputListener{
 			
 		}
 		
-		else if (labelType==5){
+		else if (labelType==6){
 			palette=getColorPalette(clusterN);
 			for (int i=0; i<clusterN; i++){
 				
@@ -609,7 +624,7 @@ public class PCPane extends JPanel implements MouseInputListener{
 			}			
 		}
 		
-		else if (labelType==6){
+		else if (labelType==7){
 			palette=getColorPalette(clusterN);
 			for (int i=0; i<clusterN; i++){
 				
@@ -709,10 +724,10 @@ public class PCPane extends JPanel implements MouseInputListener{
 		g.setStroke(fs3);
 		
 		double[] labels=null;
-		if (labelType==3){
+		if (labelType==4){
 			labels=cr.getPosition();
 		}
-		if (labelType==4){
+		if (labelType==5){
 			labels=cr.getRelativeTimes();
 		}
 		int[][] lookUp=cr.getLookUp();
@@ -734,7 +749,7 @@ public class PCPane extends JPanel implements MouseInputListener{
 			location[i][1]=y;
 			if ((connectors)&&(i>0)){
 				
-				if ((labelType==3)||(labelType==4)){
+				if ((labelType==4)||(labelType==5)){
 					float p=0;
 					
 					if (labels!=null){
@@ -775,7 +790,7 @@ public class PCPane extends JPanel implements MouseInputListener{
 			if(labelType==0){
 				paintIcon(0, x, y, iconSize, false, g);
 			}
-			else if ((labelType==3)||(labelType==4)){
+			else if ((labelType==4)||(labelType==5)){
 				double p=0;
 				if (labels!=null){
 					p=labels[i];
@@ -793,36 +808,42 @@ public class PCPane extends JPanel implements MouseInputListener{
 				paintIcon(0, x, y, iconSize, false, g);
 			}
 			else if (labelType==1){
-				int[] q2=cr.getLookUpIndividuals();
+				int[] q2=cr.getLookUpTypes();
 				int q=q2[i];
 				g.setColor(palette[q]);
 				paintIcon(q, x, y, iconSize, false,  g);
 			}
 			else if (labelType==2){
+				int[] q2=cr.getLookUpIndividuals();
+				int q=q2[i];
+				g.setColor(palette[q]);
+				paintIcon(q, x, y, iconSize, false,  g);
+			}
+			else if (labelType==3){
 				int q=cr.lookUpPopulation(i);
 				g.setColor(palette[q]);
 				paintIcon(q, x, y, iconSize, false,  g);
 			}	
-			else if (labelType==5){				
+			else if (labelType==6){				
 				int best=dpc.km.getOverallAssignments()[clusterN-2][i];
 				g.setColor(palette[best]);
 				while(best>6){best-=6;}
 				paintIcon(best, x,y,iconSize, false, g);
 			}
 			
-			else if (labelType==6){
+			else if (labelType==7){
 				int best=dpc.ent.getOverallAssignment()[clusterN-2][i];
 				g.setColor(palette[best]);
 				while(best>6){best-=6;}
 				paintIcon(best, x,y,iconSize, false, g);
 			}	
-			else if (labelType==7){
+			else if (labelType==8){
 				int best=dpc.snn.getDBSCANClusters()[i];
 				g.setColor(palette[best]);
 				while(best>6){best-=6;}
 				paintIcon(best, x,y,iconSize, false, g);
 			}
-			else if (labelType==8){
+			else if (labelType==9){
 				int best=dpc.af.getAssignments()[i];
 				g.setColor(palette[best]);
 				while(best>6){best-=6;}
@@ -879,7 +900,7 @@ public class PCPane extends JPanel implements MouseInputListener{
 					if(labelType==0){
 						paintIcon(0, x, y, 2*iconSize, true, g);
 					}
-					else if ((labelType==3)||(labelType==4)){
+					else if ((labelType==4)||(labelType==5)){
 						double p=0;
 						if (labels!=null){
 							p=labels[i];
@@ -896,30 +917,36 @@ public class PCPane extends JPanel implements MouseInputListener{
 						paintIcon(0, x, y, 2*iconSize, true, g);
 					}
 					else if (labelType==1){
-						int[] q2=cr.getLookUpIndividuals();
+						int[] q2=cr.getLookUpTypes();
 						int q=q2[i];
 						g.setColor(palette[q]);
 						paintIcon(q, x, y, 2*iconSize, true,  g);
 					}
 					else if (labelType==2){
+						int[] q2=cr.getLookUpIndividuals();
+						int q=q2[i];
+						g.setColor(palette[q]);
+						paintIcon(q, x, y, 2*iconSize, true,  g);
+					}
+					else if (labelType==3){
 						int q=cr.lookUpPopulation(i);
 						g.setColor(palette[q]);
 						paintIcon(q, x, y, 2*iconSize, true, g);
 					}	
-					else if (labelType==5){				
+					else if (labelType==6){				
 						int best=dpc.km.getOverallAssignments()[clusterN-2][i];
 						g.setColor(palette[best]);
 						while(best>6){best-=6;}
 						paintIcon(best, x,y,2*iconSize, true, g);
 					}
 					
-					else if (labelType==6){
+					else if (labelType==7){
 						int best=dpc.ent.getOverallAssignment()[clusterN-2][i];
 						g.setColor(palette[best]);
 						while(best>6){best-=6;}
 						paintIcon(best, x,y,2*iconSize, true, g);
 					}	
-					else if (labelType==7){
+					else if (labelType==8){
 						int best=dpc.snn.getDBSCANClusters()[i];
 						g.setColor(palette[best]);
 						while(best>6){best-=6;}

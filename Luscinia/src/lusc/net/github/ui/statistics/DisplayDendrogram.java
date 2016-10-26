@@ -39,6 +39,7 @@ public class DisplayDendrogram extends JPanel{
 	int amt=0;
 	int elespace=10;
 	int elespace2=10;
+	int maxy=1500;
 	int clickedX=-1;
 	int clickedY=-1;
 	int clickedLoc=-1;
@@ -48,7 +49,7 @@ public class DisplayDendrogram extends JPanel{
 	boolean includeNodeMarkers=false;
 	boolean displayColors=false;
 	boolean displayArcs=false;
-	boolean displayText=true;
+	boolean displayText=false;
 	
 	int width, ygap, elements;
 	protected Font bodyFont;
@@ -64,11 +65,12 @@ public class DisplayDendrogram extends JPanel{
 	double avsils[][]=null;
 	double nodeMarkers[]=null;
 	
-	public DisplayDendrogram (TreeDat[] dat, String[] name, AnalysisGroup sg, int dataType, int width, int elespace, int unitSize, Defaults defaults){
+	public DisplayDendrogram (TreeDat[] dat, String[] name, AnalysisGroup sg, int dataType, int width, int elespace, int maxy, int unitSize, Defaults defaults){
 		this.sg=sg;
 		this.dataType=dataType;
 		this.width=width;
 		this.elespace=elespace;
+		this.maxy=maxy;
 		this.dat=dat;	
 		this.name=name;
 		this.unitSize=unitSize;
@@ -78,11 +80,12 @@ public class DisplayDendrogram extends JPanel{
 		includeNodeMarkers=false;
 	}	
 	
-	public DisplayDendrogram (TreeDat[] dat, String[] name, AnalysisGroup sg, int dataType, int width, int elespace, int unitSize, double[] nodeMarkers, Defaults defaults){
+	public DisplayDendrogram (TreeDat[] dat, String[] name, AnalysisGroup sg, int dataType, int width, int elespace, int maxy, int unitSize, double[] nodeMarkers, Defaults defaults){
 		this.sg=sg;
 		this.dataType=dataType;
 		this.width=width;
 		this.elespace=elespace;
+		this.maxy=maxy;
 		this.dat=dat;	
 		this.name=name;
 		this.unitSize=unitSize;
@@ -167,8 +170,8 @@ public class DisplayDendrogram extends JPanel{
 		
 		ysize=elements*elespace2;
 		
-		if ((ysize>1500)&&(elespace2>10)){
-			elespace2=1500/elements;
+		if ((ysize>maxy)&&(elespace2>10)){
+			elespace2=maxy/elements;
 			if (elespace2<10){elespace2=10;}
 			ysize=elespace2*elements;
 		}
@@ -203,6 +206,9 @@ public class DisplayDendrogram extends JPanel{
 	public void paintPanel(double cutoff){
 		
 		int ny=elespace2*elements+2*ydisp;
+		
+		System.out.println(ny+" "+elespace2+" "+elements);
+		
 		imf=new BufferedImage(width, ny, BufferedImage.TYPE_INT_ARGB);
 		Graphics2D g=imf.createGraphics();
 		g.setColor(Color.WHITE);

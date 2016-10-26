@@ -40,17 +40,36 @@ public class MRPP {
 		int[] partition=null;
 		int s=mo.levelSel;
 		if (s==0){
+			partition=cr.getLookUpTypes();
+			levelNames=cr.getTypeNames();
+		}
+		if (s==1){
 			partition=cr.getSpeciesListArray();
 			levelNames=cr.getSpeciesNames();
 		}
-		else if (s==1){
+		else if (s==2){
 			partition=cr.getPopulationListArray();
 			levelNames=cr.getPopulationNames();
 		}
-		else if (s==2){
+		else if (s==3){
 			partition=cr.getLookUpIndividuals();
 			levelNames=cr.getIndividualNames();
 		}
+		else if (s==4){
+			partition=cr.getSexListArray();
+			levelNames=cr.getSexNames();
+		}
+		else if (s==5){
+			partition=cr.getRankListArray();
+			levelNames=cr.getRankNames();
+		}
+		else if (s==6){
+			partition=cr.getAgeListArray();
+			levelNames=cr.getAgeNames();
+		}
+		
+		//System.out.println("MRPP: "+partition.length+" "+levelNames.length);
+		
 		weightingMethod=mo.weightingSel;
 		nresamp=mo.numRepeats;
 		pairwise=mo.pairwise;
