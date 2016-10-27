@@ -30,26 +30,30 @@ public class MultivariateDispersionTest {
 		this.permutations=ao.numRepeats;
 		int[] group=null;
 		if (ao.levelSel==0){
+			names=cr.getTypeNames();
+			group=cr.getLookUpTypes();
+		}
+		else if (ao.levelSel==1){
 			names=cr.getSpeciesNames();
 			group=cr.getSpeciesListArray();
 		}
-		else if (ao.levelSel==1){
+		else if (ao.levelSel==2){
 			names=cr.getPopulationNames();
 			group=cr.getPopulationListArray();
 		}
-		else if (ao.levelSel==2){
+		else if (ao.levelSel==3){
 			names=cr.getIndividualNames();
 			group=cr.getLookUpIndividuals();
 		}
-		else if (ao.levelSel==3){
+		else if (ao.levelSel==4){
 			names=cr.getSexNames();
 			group=cr.getSexListArray();
 		}
-		else if (ao.levelSel==4){
+		else if (ao.levelSel==5){
 			names=cr.getRankNames();
 			group=cr.getRankListArray();
 		}
-		else if (ao.levelSel==5){
+		else if (ao.levelSel==6){
 			names=cr.getAgeNames();
 			group=cr.getAgeListArray();
 		}

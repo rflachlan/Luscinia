@@ -33,7 +33,7 @@ import lusc.net.github.ui.SaveImage;
 import lusc.net.github.ui.SpectrogramSideBar;
 
 public class DisplayPC  extends DisplayPane implements  ActionListener, ChangeListener{	
-	private static String labs[] = {"None","Type", "Individual", "Population", "Position", "Time", "K-Medoid Cluster", "Syntax Cluster", "SNN Cluster", "Aff. Prop. Cluster"};
+	private static String labs[] = {"None","Type", "Individual", "Population", "Species", "Sex", "Age", "Rank", "Position", "Time", "K-Medoid Cluster", "Syntax Cluster", "SNN Cluster", "Aff. Prop. Cluster"};
 	
 	Defaults defaults;
 	ComparisonResults cr;
@@ -185,7 +185,7 @@ public class DisplayPC  extends DisplayPane implements  ActionListener, ChangeLi
 		
 		JLabel pointLabel=new JLabel("Labels for points: ");
 		pointLabel.setFont(font);
-		int p=6;
+		int p=10;
 		if (km!=null){p++;}
 		if (ent!=null){p++;}
 		if (snn!=null){p++;}
@@ -199,21 +199,25 @@ public class DisplayPC  extends DisplayPane implements  ActionListener, ChangeLi
 		labelTypes[3]=labs[3];
 		labelTypes[4]=labs[4];
 		labelTypes[5]=labs[5];
-		p=5;
+		labelTypes[6]=labs[6];
+		labelTypes[7]=labs[7];
+		labelTypes[8]=labs[8];
+		labelTypes[9]=labs[9];
+		p=10;
 		if (km!=null){
-			labelTypes[p]=labs[6];
+			labelTypes[p]=labs[10];
 			p++;
 		}
 		if (ent!=null){
-			labelTypes[p]=labs[7];
+			labelTypes[p]=labs[11];
 			p++;
 		}
 		if (snn!=null){
-			labelTypes[p]=labs[8];
+			labelTypes[p]=labs[12];
 			p++;
 		}
 		if (af!=null){
-			labelTypes[p]=labs[9];
+			labelTypes[p]=labs[13];
 			p++;
 		}
 					
@@ -489,7 +493,7 @@ public class DisplayPC  extends DisplayPane implements  ActionListener, ChangeLi
 					for (int i=0; i<pcp.selP.length; i++){
 						int a=pcp.selP[i];
 						
-						if (labelType==6){
+						if (labelType==10){
 							int[][] overallAssignments=km.getOverallAssignments();
 							int b=overallAssignments[cluster-2][a];
 							int c=0;
@@ -508,7 +512,7 @@ public class DisplayPC  extends DisplayPane implements  ActionListener, ChangeLi
 							}
 							ssb.draw(dataType, wr);
 						}
-						else if (labelType==7){
+						else if (labelType==11){
 							int[][] overallAssignments=ent.getOverallAssignment();
 							int b=overallAssignments[cluster-2][a];
 							int c=0;
@@ -527,7 +531,7 @@ public class DisplayPC  extends DisplayPane implements  ActionListener, ChangeLi
 							}
 							ssb.draw(dataType, wr);
 						}	
-						else if (labelType==8){
+						else if (labelType==12){
 							int[] db=snn.getDBSCANClusters();
 							int b=db[a];
 							int c=0;
@@ -546,7 +550,7 @@ public class DisplayPC  extends DisplayPane implements  ActionListener, ChangeLi
 							}
 							ssb.draw(dataType, wr);
 						}	
-						else if (labelType==9){
+						else if (labelType==13){
 							int[] db=af.getAssignments();
 							int b=db[a];
 							int c=0;
@@ -596,7 +600,7 @@ public class DisplayPC  extends DisplayPane implements  ActionListener, ChangeLi
 					for (int i=0; i<labs.length; i++){
 						if (labs[i]==s){labelType=i;}
 					}
-					if ((labelType==6)||(labelType==7)||(labelType==8)||(labelType==9)){
+					if ((labelType==10)||(labelType==11)||(labelType==12)||(labelType==13)){
 						selectAllCat.setEnabled(true);
 					}
 					else{
@@ -609,10 +613,10 @@ public class DisplayPC  extends DisplayPane implements  ActionListener, ChangeLi
 			}
 		}
 		int tcluster=cluster;
-		if (labelType==8){
+		if (labelType==12){
 			tcluster=snn.getNumClusts()+1;
 		}
-		if (labelType==9){
+		if (labelType==13){
 			tcluster=af.getNC();
 		}
 		

@@ -61,6 +61,8 @@ public class Individual {
 		sex=Integer.parseInt((String)list.get(7));
 		rank=(String)list.get(8);
 		age=(String)list.get(9);
+		
+		
 		/*
 		if (!xco.equals("")){
 			if (population.equals("Adirondacks, NY")){
@@ -401,7 +403,7 @@ public class Individual {
 	 * this method updates the individual details into the database.
 	 */
 	public void writeIndividual(){
-		String []query=new String[8];
+		String []query=new String[11];
 		query[0]="UPDATE individual SET name='"+name+"' WHERE id="+ID;
 		query[1]="UPDATE individual SET SpecID='"+species+"' WHERE id="+ID;
 		query[2]="UPDATE individual SET PopID='"+population+"' WHERE id="+ID;
@@ -413,7 +415,7 @@ public class Individual {
 		query[8]="UPDATE individual SET sex="+sex+" WHERE id="+ID;
 		query[9]="UPDATE individual SET rank='"+rank+"' WHERE id="+ID;
 		query[10]="UPDATE individual SET age='"+age+"' WHERE id="+ID;
-		for (int i=0; i<10; i++){
+		for (int i=0; i<11; i++){
 			dbc.writeToDataBase(query[i]);
 		}
 	}

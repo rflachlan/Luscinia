@@ -545,6 +545,66 @@ public class PCPane extends JPanel implements MouseInputListener{
 			}		
 		}
 		else if (labelType==4){
+			String[] species=cr.getSpeciesNames();
+			palette=getColorPalette(species.length);
+			for (int i=0; i<species.length; i++){
+
+				g.setColor(palette[i]);
+				int xe=xsh+gridsize+legendSpacer;
+				int ye=ysh+i*iconSpacer;
+				paintIcon(i, xe, ye, iconSize, false, g);
+				g.setColor(Color.BLACK);
+				TextLayout layout = new TextLayout(species[i], labelFont, frc);
+				Rectangle r = layout.getPixelBounds(null, 0, 0);
+				layout.draw(g, xe+ics*2+textSpacer, ye+0.5f*r.height);
+			}		
+		}
+		else if (labelType==5){
+			String[] sexes=cr.getSexNames();
+			palette=getColorPalette(sexes.length);
+			for (int i=0; i<sexes.length; i++){
+
+				g.setColor(palette[i]);
+				int xe=xsh+gridsize+legendSpacer;
+				int ye=ysh+i*iconSpacer;
+				paintIcon(i, xe, ye, iconSize, false, g);
+				g.setColor(Color.BLACK);
+				TextLayout layout = new TextLayout(sexes[i], labelFont, frc);
+				Rectangle r = layout.getPixelBounds(null, 0, 0);
+				layout.draw(g, xe+ics*2+textSpacer, ye+0.5f*r.height);
+			}		
+		}
+		else if (labelType==6){
+			String[] ages=cr.getAgeNames();
+			palette=getColorPalette(ages.length);
+			for (int i=0; i<ages.length; i++){
+
+				g.setColor(palette[i]);
+				int xe=xsh+gridsize+legendSpacer;
+				int ye=ysh+i*iconSpacer;
+				paintIcon(i, xe, ye, iconSize, false, g);
+				g.setColor(Color.BLACK);
+				TextLayout layout = new TextLayout(ages[i], labelFont, frc);
+				Rectangle r = layout.getPixelBounds(null, 0, 0);
+				layout.draw(g, xe+ics*2+textSpacer, ye+0.5f*r.height);
+			}		
+		}
+		else if (labelType==7){
+			String[] ranks=cr.getRankNames();
+			palette=getColorPalette(ranks.length);
+			for (int i=0; i<ranks.length; i++){
+
+				g.setColor(palette[i]);
+				int xe=xsh+gridsize+legendSpacer;
+				int ye=ysh+i*iconSpacer;
+				paintIcon(i, xe, ye, iconSize, false, g);
+				g.setColor(Color.BLACK);
+				TextLayout layout = new TextLayout(ranks[i], labelFont, frc);
+				Rectangle r = layout.getPixelBounds(null, 0, 0);
+				layout.draw(g, xe+ics*2+textSpacer, ye+0.5f*r.height);
+			}		
+		}
+		else if (labelType==8){
 			
 			for (int i=0; i<barHeight; i++){
 				
@@ -575,7 +635,7 @@ public class PCPane extends JPanel implements MouseInputListener{
 			layoutM.draw(g, xsh+gridsize+legendSpacer+barWidth+textSpacer, ysh+barHeight*0.5f+0.5f*r2.height);
 			
 		}
-		else if (labelType==5){
+		else if (labelType==9){
 			
 			for (int i=0; i<barHeight; i++){
 				
@@ -607,7 +667,7 @@ public class PCPane extends JPanel implements MouseInputListener{
 			
 		}
 		
-		else if (labelType==6){
+		else if (labelType==10){
 			palette=getColorPalette(clusterN);
 			for (int i=0; i<clusterN; i++){
 				
@@ -624,7 +684,7 @@ public class PCPane extends JPanel implements MouseInputListener{
 			}			
 		}
 		
-		else if (labelType==7){
+		else if (labelType==11){
 			palette=getColorPalette(clusterN);
 			for (int i=0; i<clusterN; i++){
 				
@@ -724,10 +784,10 @@ public class PCPane extends JPanel implements MouseInputListener{
 		g.setStroke(fs3);
 		
 		double[] labels=null;
-		if (labelType==4){
+		if (labelType==8){
 			labels=cr.getPosition();
 		}
-		if (labelType==5){
+		if (labelType==9){
 			labels=cr.getRelativeTimes();
 		}
 		int[][] lookUp=cr.getLookUp();
@@ -749,7 +809,7 @@ public class PCPane extends JPanel implements MouseInputListener{
 			location[i][1]=y;
 			if ((connectors)&&(i>0)){
 				
-				if ((labelType==4)||(labelType==5)){
+				if ((labelType==8)||(labelType==9)){
 					float p=0;
 					
 					if (labels!=null){
@@ -790,7 +850,7 @@ public class PCPane extends JPanel implements MouseInputListener{
 			if(labelType==0){
 				paintIcon(0, x, y, iconSize, false, g);
 			}
-			else if ((labelType==4)||(labelType==5)){
+			else if ((labelType==8)||(labelType==9)){
 				double p=0;
 				if (labels!=null){
 					p=labels[i];
@@ -823,27 +883,51 @@ public class PCPane extends JPanel implements MouseInputListener{
 				int q=cr.lookUpPopulation(i);
 				g.setColor(palette[q]);
 				paintIcon(q, x, y, iconSize, false,  g);
-			}	
-			else if (labelType==6){				
+			}
+			else if (labelType==4){
+				int[] q2=cr.getSpeciesListArray();
+				int q=q2[i];
+				g.setColor(palette[q]);
+				paintIcon(q, x, y, iconSize, false,  g);
+			}
+			else if (labelType==5){
+				int[] q2=cr.getSexListArray();
+				int q=q2[i];
+				g.setColor(palette[q]);
+				paintIcon(q, x, y, iconSize, false,  g);
+			}
+			else if (labelType==6){
+				int[] q2=cr.getAgeListArray();
+				int q=q2[i];
+				g.setColor(palette[q]);
+				paintIcon(q, x, y, iconSize, false,  g);
+			}
+			else if (labelType==7){
+				int[] q2=cr.getRankListArray();
+				int q=q2[i];
+				g.setColor(palette[q]);
+				paintIcon(q, x, y, iconSize, false,  g);
+			}
+			else if (labelType==10){				
 				int best=dpc.km.getOverallAssignments()[clusterN-2][i];
 				g.setColor(palette[best]);
 				while(best>6){best-=6;}
 				paintIcon(best, x,y,iconSize, false, g);
 			}
 			
-			else if (labelType==7){
+			else if (labelType==11){
 				int best=dpc.ent.getOverallAssignment()[clusterN-2][i];
 				g.setColor(palette[best]);
 				while(best>6){best-=6;}
 				paintIcon(best, x,y,iconSize, false, g);
 			}	
-			else if (labelType==8){
+			else if (labelType==12){
 				int best=dpc.snn.getDBSCANClusters()[i];
 				g.setColor(palette[best]);
 				while(best>6){best-=6;}
 				paintIcon(best, x,y,iconSize, false, g);
 			}
-			else if (labelType==9){
+			else if (labelType==13){
 				int best=dpc.af.getAssignments()[i];
 				g.setColor(palette[best]);
 				while(best>6){best-=6;}
@@ -854,19 +938,20 @@ public class PCPane extends JPanel implements MouseInputListener{
 		//DRAW SONGLINE!
 		if ((selP!=null)&&(linked)){
 			g.setStroke(fs2);
-			for (int i=0; i<n; i++){
+			for (int i=1; i<n; i++){
 			
 				x=location[i][0];
 				y=location[i][1];
 				
 				boolean toDraw=false;
 				int ref2=-1;
-				//double ref1=-1;
+				int ref1=-1;
 				if (dataType<4){
 					//ref1=labels[i]; 
 					ref2=lookUp[i][0];
+					ref1=lookUp[i-1][0];
 				}
-				if(ref2>=0){
+				if((ref2>=0)&&(ref2==ref1)){
 					for (int z=0; z<selP.length; z++){
 						if ((dataType<4)&&(ref2==lookUp[selP[z]][0])){toDraw=true;}
 					}
@@ -900,7 +985,7 @@ public class PCPane extends JPanel implements MouseInputListener{
 					if(labelType==0){
 						paintIcon(0, x, y, 2*iconSize, true, g);
 					}
-					else if ((labelType==4)||(labelType==5)){
+					else if ((labelType==8)||(labelType==9)){
 						double p=0;
 						if (labels!=null){
 							p=labels[i];
@@ -933,20 +1018,44 @@ public class PCPane extends JPanel implements MouseInputListener{
 						g.setColor(palette[q]);
 						paintIcon(q, x, y, 2*iconSize, true, g);
 					}	
-					else if (labelType==6){				
+					else if (labelType==4){
+						int[] q2=cr.getSpeciesListArray();
+						int q=q2[i];
+						g.setColor(palette[q]);
+						paintIcon(q, x, y, 2*iconSize, true, g);
+					}	
+					else if (labelType==5){
+						int[] q2=cr.getSexListArray();
+						int q=q2[i];
+						g.setColor(palette[q]);
+						paintIcon(q, x, y, 2*iconSize, true, g);
+					}	
+					else if (labelType==6){
+						int[] q2=cr.getAgeListArray();
+						int q=q2[i];
+						g.setColor(palette[q]);
+						paintIcon(q, x, y, 2*iconSize, true, g);
+					}	
+					else if (labelType==7){
+						int[] q2=cr.getRankListArray();
+						int q=q2[i];
+						g.setColor(palette[q]);
+						paintIcon(q, x, y, 2*iconSize, true, g);
+					}	
+					else if (labelType==10){				
 						int best=dpc.km.getOverallAssignments()[clusterN-2][i];
 						g.setColor(palette[best]);
 						while(best>6){best-=6;}
 						paintIcon(best, x,y,2*iconSize, true, g);
 					}
 					
-					else if (labelType==7){
+					else if (labelType==11){
 						int best=dpc.ent.getOverallAssignment()[clusterN-2][i];
 						g.setColor(palette[best]);
 						while(best>6){best-=6;}
 						paintIcon(best, x,y,2*iconSize, true, g);
 					}	
-					else if (labelType==8){
+					else if (labelType==12){
 						int best=dpc.snn.getDBSCANClusters()[i];
 						g.setColor(palette[best]);
 						while(best>6){best-=6;}

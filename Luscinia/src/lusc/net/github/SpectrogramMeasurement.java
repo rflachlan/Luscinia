@@ -362,7 +362,7 @@ public class SpectrogramMeasurement {
 			int start=ele.getBeginTime()-currentMinX;
 			int end=ele.getLength()+start;
 			
-			System.out.println("CHECKING: "+start+" "+end+" "+minx+" "+maxx);
+			//System.out.println("CHECKING: "+start+" "+end+" "+minx+" "+maxx);
 			
 			if (((start<minx)&&(end>minx))||((start>=minx)&&(start<maxx))){
 				System.out.println("PROCESSING");
@@ -380,15 +380,15 @@ public class SpectrogramMeasurement {
 					for (int k=0; k<ny; k++){col[k]=false;}
 					
 					
-					System.out.println(signal[j].length);
+					//System.out.println(signal[j].length);
 					for (int k=1; k<signal[j].length; k+=2){
-						System.out.println(j+" "+k+" "+signal[j][k]+" "+signal[j][k+1]);
+						//System.out.println(j+" "+k+" "+signal[j][k]+" "+signal[j][k+1]);
 						for (int a=ny-signal[j][k]; a<ny-signal[j][k+1]; a++){
 							col[a]=true;
 							y++;
 						}	
 					}
-					System.out.println(y);
+					//System.out.println(y);
 					for (int i=minx; i<maxx; i++){
 						int x=i+currentMinX;				
 						if (signal[j][0]==x){
@@ -400,7 +400,7 @@ public class SpectrogramMeasurement {
 							}
 						}
 					}
-					System.out.println(y);		
+					//System.out.println(y);		
 					if (y>0){
 						cols.add(col);
 					}
@@ -410,7 +410,14 @@ public class SpectrogramMeasurement {
 						for (int i=0; i<cols.size(); i++){
 							boolean[] col2=cols.get(i);
 							
-							int xloc=signal[j][0]-cols.size()+i-currentMinX+1;
+							int jj=j;
+							if ((y==0)&&(j>0)){jj--;}
+							
+							int xloc=signal[jj][0]-cols.size()+i-currentMinX+1;
+							
+							//System.out.println(y+" "+j+" "+signal.length+" "+cols.size()+" "+i);
+							//System.out.println(xloc+" "+signal[i][0]);
+							
 							int segs=0;
 							for (int k=0; k<ny-1; k++){
 								if ((!col2[k])&&(col2[k+1])){
@@ -419,7 +426,7 @@ public class SpectrogramMeasurement {
 							}
 							
 							sig[i]=new int[1+2*segs];
-							System.out.println("NEW SIG: "+sig.length+" "+i+" "+sig[i].length);
+							//System.out.println("NEW SIG: "+sig.length+" "+i+" "+sig[i].length);
 							sig[i][0]=xloc;
 							int a=1;
 							for (int k=0; k<ny-1; k++){

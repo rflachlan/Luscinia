@@ -213,7 +213,7 @@ public class DatabaseView extends TabType implements ActionListener {
 		
 		extractFromDatabase();
 		
-		System.out.println(tstore.size()+" "+ustore.size());
+		System.out.println("POPULATING TREE: "+tstore.size()+" "+ustore.size());
 		
 		myNode nullpar=new myNode("temp");
 		for (int i=0; i<tstore.size(); i++){
@@ -259,6 +259,9 @@ public class DatabaseView extends TabType implements ActionListener {
 	
 	
 	public void extractFromDatabase(){
+		
+		System.out.println("EXTRACTING FROM DB");
+		
 		tstore=null;
 		tstore=new LinkedList();
 		query="SELECT name, id FROM individual";
@@ -282,9 +285,14 @@ public class DatabaseView extends TabType implements ActionListener {
 			tstore.add(0, s);
 		}
 		
+		System.out.println("LOADING SONG DETAILS");
+		
 		ustore=null;
 		ustore=new LinkedList();
 		ustore=dbc.loadSongDetailsFromDatabase();
+		
+		System.out.println("SORTING SONGS");
+		
 		try{
 			Collections.sort(ustore, new ByDate());
 			Collections.sort(ustore, new HasSylls());

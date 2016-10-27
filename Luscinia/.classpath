@@ -14,7 +14,6 @@
 	<classpathentry exported="true" kind="lib" path="/Users/Rob/Documents/workspace/colt.jar"/>
 	<classpathentry exported="true" kind="lib" path="/Users/Rob/Documents/workspace/hsqldb.jar"/>
 	<classpathentry exported="true" kind="lib" path="/Users/Rob/Documents/workspace/mysql-connector-java-3.0.15-ga-bin.jar"/>
-	<classpathentry exported="true" kind="lib" path="/Users/Rob/Documents/workspace/poi-2.5.1-final-20040804.jar"/>
 	<classpathentry exported="true" kind="lib" path="/Users/Rob/Documents/Programming Projects/git/LusciniaRepository/Luscinia/ejml-0.20.jar"/>
 	<classpathentry exported="true" kind="lib" path="/Users/Rob/Documents/Programming Projects/git/LusciniaRepository/Luscinia/mdsj.jar"/>
 	<classpathentry kind="lib" path="/Users/Rob/Documents/workspace/h2-1.3.176.jar"/>
@@ -23,5 +22,9 @@
 			<attribute name="maven.pomderived" value="true"/>
 		</attributes>
 	</classpathentry>
+	<classpathentry kind="lib" path="/Users/Rob/Documents/workspace/poi-3.14-20160307.jar"/>
+	<classpathentry kind="lib" path="/Users/Rob/Documents/workspace/poi-ooxml-3.14-20160307.jar"/>
+	<classpathentry kind="lib" path="/Users/Rob/Documents/workspace/xmlbeans-2.6.0.jar"/>
+	<classpathentry kind="lib" path="/Users/Rob/Documents/workspace/poi-ooxml-schemas-3.14-20160307.jar"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>
