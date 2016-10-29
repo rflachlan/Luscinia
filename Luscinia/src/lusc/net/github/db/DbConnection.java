@@ -231,6 +231,8 @@ public class DbConnection {
 		
 		//updateDB6();
 		
+		//updateDB5();
+		
 		//updateDB7();
 		
 		//updateDB7();
@@ -1259,12 +1261,20 @@ public class DbConnection {
 				song.setSongID(id);
 				song.setIndividualID(indID);
 				song.setTDate(time);
+				
+				
+				//song.setSyllList(loadSyllablesFromDatabase(id));
+				
 				otable.put(id, song);
 			}
 		}
 		catch (Exception e){
 			e.printStackTrace();
 		}
+		
+		
+		
+		
 			
 		/*
 		System.out.println("Checking times");

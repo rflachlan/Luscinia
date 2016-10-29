@@ -13,6 +13,7 @@ public class myNode extends DefaultMutableTreeNode{
 	
 	int dex=0;
 	boolean individual=true;
+	boolean isMeasured=false;
 	
 	public myNode(Object name){
 		this.userObject=name;

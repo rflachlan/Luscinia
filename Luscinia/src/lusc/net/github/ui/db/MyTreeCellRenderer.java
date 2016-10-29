@@ -30,13 +30,18 @@ public class MyTreeCellRenderer extends DefaultTreeCellRenderer{
 		
 		if (n.getLevel()==2){
 			
-			Song song=dbc.loadSongFromDatabase(n.dex, 0);
+			//Song song=dbc.loadSongFromDatabase(n.dex, 0);
 			
-			int p=song.getNumElements();
+			//int p=song.getNumElements();
 
-			if (p==0){
+			//if (p==0){
+				//setForeground(Color.GRAY);
+			//}
+			
+			if (!n.isMeasured){
 				setForeground(Color.GRAY);
 			}
+			
 		}
 		
 		if (leaf){

@@ -38,6 +38,8 @@ public class DatabaseTree extends JPanel {
 	private DatabaseView sc;
 	myNode[] selnode;
 	
+	String expansionState;
+	
     public DatabaseTree(DatabaseView sc, String name) {
         super(new GridLayout(1,0));
 		this.sc=sc;
@@ -468,6 +470,39 @@ public class DatabaseTree extends JPanel {
         if (parent == null) {parent = rootNode;}
         treeModel.insertNodeInto(childNode, parent, parent.getChildCount());
         return childNode;
+    }
+    
+    public static boolean isDescendant(TreePath path1, TreePath path2){
+        int count1 = path1.getPathCount();
+        int count2 = path2.getPathCount();
+        if(count1<=count2)
+            return false;
+        while(count1!=count2){
+            path1 = path1.getParentPath();
+            count1--;
+        }
+        return path1.equals(path2);
+    }
+    
+    public String getExpansionState(){
+        //TreePath rowPath = tree.getPathForRow(row);
+        StringBuffer buf = new StringBuffer();
+        int rowCount = tree.getRowCount();
+        for(int i=0; i<rowCount; i++){
+            TreePath path = tree.getPathForRow(i);
+            if(tree.isExpanded(path)){
+            	buf.append(","+String.valueOf(i));
+            }
+        }
+        return buf.toString();
+    }
+ 
+    public void restoreExpansionState(String expansionState){
+        StringTokenizer stok = new StringTokenizer(expansionState, ",");
+        while(stok.hasMoreTokens()){
+            int token = Integer.parseInt(stok.nextToken());
+            tree.expandRow(token);
+        }
     }
 
     class MyTreeModelListener implements TreeModelListener {

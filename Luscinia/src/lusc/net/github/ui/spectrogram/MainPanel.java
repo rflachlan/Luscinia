@@ -3302,7 +3302,8 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 			song.sortSylls();
 			song.sortEles();
 			song.calculateGaps();
-			dbc.writeSongMeasurements(song);	
+			dbc.writeSongMeasurements(song);
+			dbv.refreshTree();
 		}
 		else{
 			Song[] songs=song.splitSong();

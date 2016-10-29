@@ -116,9 +116,11 @@ public class DatabaseView extends TabType implements ActionListener {
     }
     
     public void refreshTree(){
+    	String expState=treePanel.getExpansionState();
     	this.remove(treePanel);
     	treePanel = new DatabaseTree(this, dbc.getDBName());
     	populateTree(treePanel);
+    	treePanel.restoreExpansionState(expState);
     	this.add(treePanel, BorderLayout.CENTER);
     	this.revalidate();
     }
@@ -240,12 +242,19 @@ public class DatabaseView extends TabType implements ActionListener {
 					found=true;
 					myNode chile=treePanel.addObject(posspar, nam0, true);
 					chile.dex=nam1;
+					if (nam.getNumSylls()>0){
+						chile.isMeasured=true;
+						
+					}
 					j=numind;
 				}
 			}
 			if (!found){
 				myNode chile=treePanel.addObject(nullpar, nam0, true);
 				chile.dex=nam1;
+				if (nam.getNumSylls()>0){
+					chile.isMeasured=true;
+				}
 			}
 			
 		}

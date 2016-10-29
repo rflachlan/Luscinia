@@ -172,6 +172,7 @@ public class DataBaseController {
 		if (db.connected){
 			Song song=db.loadSongFromDatabase(ID, info);
 			
+			
 			//System.out.println("I: "+song.individualID);
 			song.setEleList(db.loadElementsFromDatabase(ID));
 			
