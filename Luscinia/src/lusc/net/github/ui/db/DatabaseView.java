@@ -22,6 +22,7 @@ import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.TreePath;
 
 import java.util.*;
 import java.io.*;
@@ -117,11 +118,20 @@ public class DatabaseView extends TabType implements ActionListener {
     
     public void refreshTree(){
     	String expState=treePanel.getExpansionState();
+    	//myNode[] sn=treePanel.selnode;
+    	//TreePath tp=new TreePath(sn[0].getPath());
+    	
+    	int tr=treePanel.tree.getMinSelectionRow();
+    	if (tr>0){tr--;}
+    	System.out.println("CURRENT ROW "+tr);
+    	
     	this.remove(treePanel);
     	treePanel = new DatabaseTree(this, dbc.getDBName());
     	populateTree(treePanel);
     	treePanel.restoreExpansionState(expState);
+    	treePanel.tree.scrollRowToVisible(tr);
     	this.add(treePanel, BorderLayout.CENTER);
+    	
     	this.revalidate();
     }
 		

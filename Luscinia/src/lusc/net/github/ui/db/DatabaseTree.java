@@ -65,7 +65,7 @@ public class DatabaseTree extends JPanel {
 				TreePath[] currentSelection=tree.getSelectionPaths();
 				//TreePath currentSelection = tree.getSelectionPath();
 				if (currentSelection != null) {
-					System.out.println(currentSelection.length);
+					//System.out.println(currentSelection.length);
 					selnode=new myNode[currentSelection.length];
 					for (int i=0; i<currentSelection.length; i++){
 						selnode[i] = (myNode)(currentSelection[i].getLastPathComponent());
