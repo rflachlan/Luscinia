@@ -18,6 +18,7 @@ import java.util.*;
 import lusc.net.github.Defaults;
 import lusc.net.github.Element;
 import lusc.net.github.Song;
+import lusc.net.github.Syllable;
 import lusc.net.github.db.DataBaseController;
 import lusc.net.github.ui.SaveDocument;
 
@@ -178,7 +179,8 @@ public class ParameterOutput extends JPanel implements ActionListener{
 					LinkedList details=dbc.populateContentPane(song.getIndividualID());
 					String indname=(String)details.get(0);
 					int ne=song.getNumElements();
-					int ns=song.getNumSyllables();
+					//int ns=song.getSyllList().size();
+					int ns=song.getPhrases().size();
 					for (int j=0; j<ne; j++){
 						Element ele=(Element)song.getElement(j);
 						ele.calculateStatisticsAbsolute();
@@ -187,7 +189,9 @@ public class ParameterOutput extends JPanel implements ActionListener{
 						int syll=-1;
 						int aa=ele.getLength()-1;
 						for (int b=0; b<ns; b++){
-							int[] dat=(int[])song.getSyllable(b);
+							//int[] dat=song.getSyllable(b).getLoc();
+							int[] dat=song.getPhrase(b).getLoc();
+							//int[] dat=(int[])song.getSyllable(b);
 							if ((signal[0][0]*ele.getTimeStep()<dat[1])&&(signal[aa][0]*ele.getTimeStep()>dat[0])){
 								syll=b+1;
 							}
@@ -305,9 +309,33 @@ public class ParameterOutput extends JPanel implements ActionListener{
 			
 					LinkedList details=dbc.populateContentPane(song.getIndividualID());
 					String indname=(String)details.get(0);
-					song.interpretSyllables();
-					int np=song.getNumPhrases();
+					//song.interpretSyllables();
+					LinkedList<Syllable> phr=song.getPhrases();
+					int np=phr.size();
 					for (int j=0; j<np; j++){
+						Syllable pr=phr.get(j);
+						LinkedList<Syllable>ch=pr.getSyllables();
+						for (int jj=0; jj<pr.getMaxSyllLength(); jj++){
+							LinkedList<Element> eles=new LinkedList<Element>();
+							
+							for (Syllable s: ch){
+								int q=s.getOffset()+jj;
+								if ((q>=0)&&(q<s.getNumEles())){
+									eles.add(s.getElement(q));
+								}
+		
+							}
+							
+							Element[] ele=eles.toArray(new Element[eles.size()]);
+							
+							//int countEles=eles.size();
+							//for (int a=0; a<countEles; a++){
+							//	ele[a].calculateStatisticsAbsolute();
+							//}
+						
+							Element combele=new Element(ele, false);
+							
+						/*	
 						int[][] phrase=(int[][])song.getPhrase(j);
 						for (int jj=0; jj<phrase[0].length; jj++){
 							int countEles=0;
@@ -323,12 +351,14 @@ public class ParameterOutput extends JPanel implements ActionListener{
 									countEles++;
 								}
 							}
+							*/
 									
 							sd.writeString(indname);
 							sd.writeString(song.getName());
 							sd.writeInt(j+1);
 							sd.writeInt(jj+1);
-							sd.writeInt(phrase.length);
+							//sd.writeInt(phrase.length);
+							sd.writeInt(ch.size());
 							if (chooser[0]){
 								sd.writeDouble(ele[0].getTimeStep());
 								sd.writeDouble(ele[0].getFrameLength());
@@ -362,13 +392,16 @@ public class ParameterOutput extends JPanel implements ActionListener{
 								sd.writeDouble(ele[0].getBeginTime()*ele[0].getTimeStep());
 							}
 							if (chooser[8]){
-								double tot=0;
-								for (int a=0; a<countEles; a++){tot+=ele[a].getTimelength();}
-								sd.writeDouble(tot/(countEles+0.0));
+								//double tot=0;
+								//for (int a=0; a<countEles; a++){tot+=ele[a].getTimelength();}
+								//sd.writeDouble(tot/(countEles+0.0));
+								sd.writeDouble(combele.getTimelength());
+								
 							}
 
 
 							if (chooser[9]){
+								/*
 								double tot=0;
 								double counter=0;
 								for (int a=0; a<countEles; a++){
@@ -383,8 +416,11 @@ public class ParameterOutput extends JPanel implements ActionListener{
 								else{
 									sd.writeDouble(-10000);
 								}
+								*/
+								sd.writeDouble(combele.getTimeBefore());
 							}
 							if (chooser[10]){
+								/*
 								double tot=0;
 								double counter=0;
 								for (int a=0; a<countEles; a++){
@@ -399,8 +435,25 @@ public class ParameterOutput extends JPanel implements ActionListener{
 								else{
 									sd.writeDouble(-10000);
 								}
+								*/
+								sd.writeDouble(combele.getTimeAfter());
 							}
 							for (int k=11; k<30; k++){
+								double[][] measurements=combele.getMeasurements();
+								if (chooser[k]){
+									for (int a=0; a<6; a++){
+										if(chooser2[a]){
+											sd.writeDouble(measurements[a][k-11]);
+										}
+									}
+									if (chooser2[6]){
+										sd.writeDouble(measurements[measurements.length-1][k-11]);
+									}
+								}
+							}
+									
+								
+							/*	
 								if (chooser[k]){
 									for (int a=0; a<6; a++){
 										if(chooser2[a]){
@@ -422,15 +475,20 @@ public class ParameterOutput extends JPanel implements ActionListener{
 									}
 								}
 							}
+							*/
+							
 							if (chooser[30]){
-								double tot=0;
-								for (int b=0; b<countEles; b++){tot+=ele[b].getOverallPeak1();}
-								sd.writeDouble(tot/(countEles+0.0));
+								sd.writeDouble(combele.getOverallPeak1());
+								//double tot=0;
+								//for (int b=0; b<countEles; b++){tot+=ele[b].getOverallPeak1();}
+								//sd.writeDouble(tot/(countEles+0.0));
 							}
 							if (chooser[31]){
-								double tot=0;
-								for (int b=0; b<countEles; b++){tot+=ele[b].getOverallPeak2();}
-								sd.writeDouble(tot/(countEles+0.0));
+								sd.writeDouble(combele.getOverallPeak2());
+								
+								//double tot=0;
+								//for (int b=0; b<countEles; b++){tot+=ele[b].getOverallPeak2();}
+								//sd.writeDouble(tot/(countEles+0.0));
 							}
 							sd.writeLine();
 						}

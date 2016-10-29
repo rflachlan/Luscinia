@@ -20,6 +20,10 @@ import java.nio.*;
 import lusc.net.github.Element;
 import lusc.net.github.Song;
 import lusc.net.github.SpectrogramMeasurement;
+import lusc.net.github.Syllable;
+import lusc.net.github.sound.Sound;
+import lusc.net.github.sound.Spectrogram;
+import lusc.net.github.sound.SpectrogramOperations;
 import lusc.net.github.ui.compmethods.ABXdiscrimination;
 
 import org.h2.tools.*;
@@ -235,7 +239,11 @@ public class DbConnection {
 		
 		//updateDB7();
 		
-		//updateDB7();
+		//updateDB8();
+		
+		//updateDBRob();
+		
+		//updateAddPhrase();
 		
 		if ((!version[0].equals(lversionD))||(!version[1].equals(dversionD))){
 			writeToDataBase("INSERT INTO dbdetails (version, luscvers) VALUES ('"+version[0]+"' , '"+version[1]+"')");
@@ -243,9 +251,9 @@ public class DbConnection {
 			int p2=version[0].indexOf(".", p1+1);
 			int p3=version[0].indexOf(".", p2+1);
 			int p4=version[0].indexOf(".", p3+1);
-			int da= Integer.valueOf(version[0].substring(p1+1, p2));
+			int ye= Integer.valueOf(version[0].substring(p1+1, p2));
 			int mo= Integer.valueOf(version[0].substring(p2+1, p3));
-			int ye= Integer.valueOf(version[0].substring(p3+1, p4));
+			int da= Integer.valueOf(version[0].substring(p3+1, p4));
 			
 			System.out.println("VERSION PARSE: "+p1+" "+p2+" "+p3+" "+p4+" "+da+" "+mo+" "+ye);
 			
@@ -270,6 +278,10 @@ public class DbConnection {
 				System.out.println("Attempting to fix freq slopes");
 				updateDB7();
 				//updateDB8();
+			}
+			if ((moye<12*16+11)){
+				System.out.println("Adding new column for modality to comparetriplet");
+				updateDB8();
 			}
 			
 		}
@@ -394,6 +406,7 @@ public class DbConnection {
 					String [] nam=new String[whattoget.length];
 					for (int i=0; i<whattoget.length; i++){
 						nam[i]=rs.getString(whattoget[i]);
+						if (nam[i]==null) {nam[i]=" ";}
 					}
 					store.add(nam);
 				}
@@ -674,7 +687,7 @@ public class DbConnection {
 				}
 				
 				ele.setSignal(signal);
-				
+				ele.setBeginTime(signal[0][0]);
 				ele.setLength(signal.length);
 				double[][] measurements=new double[signal.length+5][15];
 				try{
@@ -749,6 +762,10 @@ public class DbConnection {
 					}
 				}
 				ele.setPowerSpectrum(powerSpectrum);
+				
+				
+				
+				
 				eleList.add(ele);
 			}
 		}
@@ -769,6 +786,172 @@ public class DbConnection {
 		return eleList;
 	}
 
+	public LinkedList<lusc.net.github.sound.Element> loadElementsFromDatabase2(int id){
+		LinkedList<lusc.net.github.sound.Element> eleList=new LinkedList<lusc.net.github.sound.Element>();
+		oldloader=false;
+		//int output[][];
+		//double output2[][];  
+		String query="SELECT signal, peakfreq, meanfreq, medianfreq, fundfreq, peakfreqchange, meanfreqchange, medianfreqchange, fundfreqchange, harmonicity, wiener, bandwidth, amplitude, reverberation, trillamp, trillrate, powerspectrum, songID, id, overallpeakfreq1, overallpeakfreq2, starttime, timelength, gapbefore, gapafter, timestep, framelength, dy, maxf, windowmethod, echocomp, echorange, dyncomp, dynrange FROM element WHERE songID = "+id;
+
+		String [] fields={"peakfreq", "meanfreq", "medianfreq", "fundfreq", "peakfreqchange", "meanfreqchange", 
+						  "medianfreqchange", "fundfreqchange", "harmonicity", "wiener", "bandwidth", "amplitude", "reverberation", "trillamp", "trillrate"};
+		//String query="SELECT signal, peakfreq, meanfreq, medianfreq, fundfreq, peakfreqchange, meanfreqchange, medianfreqchange, fundfreqchange, harmonicity, wiener, bandwidth, amplitude, reverberation, powerspectrum, songID, overallpeakfreq1, overallpeakfreq2, starttime, timelength, gapbefore, gapafter, timestep, framelength, dy, maxf, windowmethod, echocomp, echorange, dyncomp, dynrange FROM element WHERE songID = "+id;
+		//String [] fields={"peakfreq", "meanfreq", "medianfreq", "fundfreq", "peakfreqchange", "meanfreqchange", 
+		//				  "medianfreqchange", "fundfreqchange", "harmonicity", "wiener", "bandwidth", "amplitude", "reverberation"};
+		
+		PreparedStatement stmt = null; 
+		ResultSet rs = null; 
+		String s;
+		int ind, ind2;
+		try {
+			stmt = con.prepareStatement(query);
+			rs = stmt.executeQuery( );
+			while( rs.next( ) ) {
+				lusc.net.github.sound.Element ele=new lusc.net.github.sound.Element();
+				s = rs.getString("signal");
+				int Le=rs.getInt("starttime");
+				LinkedList<int[]> LList=new LinkedList<int[]>();
+				ind=0;
+				ind2=0;
+				ind2=s.indexOf(" ", ind);
+				while(ind2!=-1){
+					String t=s.substring(ind, ind2);
+					ind=ind2+1;
+					ind2=s.indexOf(" ", ind);
+					int v=Integer.parseInt(t);
+					
+					//System.out.println(v);
+					
+					int[] out=new int[v];
+					int q=0;
+					if (v % 2 ==0){
+						out=new int[1+v];
+						out[q]=Le;
+						q++;
+					}
+					
+					
+					
+					for (int i=0; i<v; i++){
+						String u=s.substring(ind, ind2);
+						out[q]=Integer.parseInt(u);
+						q++;
+						ind=ind2+1;
+						ind2=s.indexOf(" ", ind);
+					}
+					LList.add(out);
+					Le++;
+				}
+				int[][] signal=new int[LList.size()][];
+				for (int i=0; i<LList.size(); i++){
+					int[] a=LList.get(i);
+					signal[i]=new int[a.length];
+					for (int j=0; j<a.length; j++){
+						signal[i][j]=a[j];
+					}
+				}
+				
+				ele.setSignal(signal);
+				ele.setBeginTime(signal[0][0]);
+				ele.setLength(signal.length);
+				double[][] measurements=new double[signal.length+5][15];
+				try{
+					for (int i=0; i<15; i++){
+						s = rs.getString(fields[i]);
+						ind=0;
+						ind2=0;
+						int count=0;
+						if (s!=null){
+							ind2=s.indexOf(" ", ind);
+							while(ind2!=-1){
+								String t=s.substring(ind, ind2);
+								ind=ind2+1;
+								ind2=s.indexOf(" ", ind);
+								measurements[count][i]=Double.parseDouble(t);
+								count++;
+							}
+						}
+					}
+				}
+				catch(Exception e){
+					for (int i=0; i<13; i++){
+						s = rs.getString(fields[i]);
+						ind=0;
+						ind2=0;
+						int count=0;
+						if (s!=null){
+							ind2=s.indexOf(" ", ind);
+							while(ind2!=-1){
+								String t=s.substring(ind, ind2);
+								ind=ind2+1;
+								ind2=s.indexOf(" ", ind);
+								measurements[count][i]=Double.parseDouble(t);
+								count++;
+							}
+						}
+					}
+				}
+				ele.setMeasurements(measurements);
+				
+				
+				ele.setTimeStep(rs.getDouble("timestep"));
+				ele.setFrameLength(rs.getDouble("framelength"));
+				ele.setMaxf(rs.getInt("maxf"));
+				ele.setWindowMethod(rs.getInt("windowmethod"));
+				ele.setDynEqual(rs.getDouble("dynrange"));
+				ele.setDynRange(rs.getDouble("dyncomp"));
+				ele.setEchoRange(rs.getInt("echorange"));
+				ele.setEchoComp(rs.getDouble("echocomp"));
+				ele.setDy(rs.getDouble("dy"));
+				ele.setTimeBefore(rs.getFloat("gapbefore"));
+				ele.setTimeAfter(rs.getFloat("gapafter"));
+				ele.setBeginTime(rs.getInt("starttime"));
+				ele.setTimelength(rs.getFloat("timelength"));
+				ele.setOverallPeak1(rs.getFloat("overallpeakfreq1"));
+				ele.setOverallPeak2(rs.getFloat("overallpeakfreq2"));
+				ele.setId(rs.getInt("id"));
+				int ny=(int)Math.floor(ele.getMaxF()/ele.getDy());
+				double[] powerSpectrum=new double[ny];
+				s=rs.getString("powerspectrum");
+				ind2=0;
+				ind=0;
+				int co=0;
+				if (s!=null){
+					ind2=s.indexOf(" ", ind);
+					while(ind2!=-1){
+						String t=s.substring(ind, ind2);
+						powerSpectrum[co]=Double.parseDouble(t);
+						ind=ind2+1;
+						ind2=s.indexOf(" ", ind);
+						co++;
+					}
+				}
+				ele.setPowerSpectrum(powerSpectrum);
+				
+				
+				
+				
+				eleList.add(ele);
+			}
+		}
+		catch (Exception e){
+			e.printStackTrace();
+			//eleList=loadElementsFromDatabaseOld(id, song);
+		}
+		finally { 
+			if (rs != null) { 
+				try {rs.close();} catch (SQLException sqlEx) {} 
+				rs = null; 
+			}
+			if (stmt != null) { 
+				try { stmt.close();} catch (SQLException sqlEx) {} 
+				stmt = null; 
+			} 
+		}
+		return eleList;
+	}
+	
+	
 	public void updateDB1(){
 		Statement stmt = null; 
 		ResultSet rs = null; 
@@ -1013,36 +1196,75 @@ public class DbConnection {
 			song2.setEleList(loadElementsFromDatabase(ID));
 			
 			double ts=song2.getTimeStep();
-			System.out.println(ts);
+			//System.out.println(ts);
 			//if (ts>0){
 			
 			try{
 				
-				if (song2.getTimeStep()!=1){
-					song2.setTimeStep(1);
+				/*
+				if ((song2.getTimeStep()!=0.5)||(song2.getMaxF()!=10000)){
+					
+					song2.setMaxF(10000);
 					song2.setFrameLength(5);
+					song2.setTimeStep(0.5);
+					song2.setFrequencyCutOff(1000);
+					song2.setWindowMethod(1);
+					song.setEchoComp(100);
+					song.setEchoRange(50);
+					
 				}
-				if (song2.getMaxF()!=10400){
-					song2.setMaxF(10400);
-				}
+				*/
 				
-				song2.setDynRange(50);
+				//song2.setMaxF(12000);
+				//song2.setFrameLength(5);
+				//song2.setFrequencyCutOff(500);
+				//song2.setTimeStep(1);
+				/*
+				song2.setFrameLength(5);
+				song2.setTimeStep(1);
+				song2.setFrequencyCutOff(1000);
+				song2.setWindowMethod(1);
+				song.setEchoComp(100);
+				song.setEchoRange(50);
+				*/
+				double dr=song2.getDynRange();
+				song2.setDynRange(60);
+				song2.setDynEqual(200);
 				
-				song2.setFFTParameters();
-				song2.setFFTParameters2(song2.getNx());
-				song2.makeMyFFT(0, song2.getNx());
+				/*
+				song2.setMaxF(10000);
+				song2.setTimeStep(0.5);
+				song2.setFrameLength(5);
+				song2.setWindowMethod(1);
+				song2.setEchoComp(1);
+				song2.setEchoRange(50);
+				song2.setDynRange(40);
+				song2.setDynEqual(200);
+				*/
 				
-				SpectrogramMeasurement sm=new SpectrogramMeasurement(song2);
-				sm.setUp();
+				
 				
 				
 				int n=song2.getNumElements();
+				System.out.println(n);
 				if (n!=0){
+					song2.setFFTParameters();
+					song2.setFFTParameters2(song2.getNx());
+					song2.makeMyFFT(0, song2.getNx());
+					System.out.println("Made spect");
+					SpectrogramMeasurement sm=new SpectrogramMeasurement(song2);
+					sm.setUp();
 					sm.updateChangeMeasures();
+					System.out.println("updated eles");
+					
+					song2.setDynRange(dr);
+					
 					writeElements(song2);
+					System.out.println("written song");
 					
 				}
 				
+				writeSongInfo(song2);
 				song2=null;
 				System.gc();
 			}
@@ -1070,6 +1292,87 @@ public class DbConnection {
 			}
 			*/
 		}
+	}
+	
+	public void updateDB8(){
+		Statement stmt = null; 
+		
+		try {
+			String query1="ALTER TABLE comparetriplet ADD COLUMN (modtype INT)";	
+			stmt = con.createStatement(); 
+			stmt.executeUpdate(query1);
+			
+		} 
+		catch (Exception e){
+			e.printStackTrace();
+		}
+		finally { 
+			if (stmt != null) { 
+				try { stmt.close();} catch (SQLException sqlEx) {} 
+				stmt = null; 
+			} 
+		}	
+	}
+	
+	public void updateAddPhrase(){
+		LinkedList<Song> songs=loadSongDetailsFromDatabase();
+		for (Song song: songs){
+			try{
+				int ID=song.getSongID();
+				System.out.println("Adding phrase: "+ID);
+				Song song2=loadSongFromDatabase(ID, 0);
+				song2.setEleList(loadElementsFromDatabase(ID));
+				
+				song2.setEleGaps();
+				song2.sortEles();
+				song2.loadSyllables(loadSyllablesFromDatabase(ID));
+				song2.addPhrase();
+				writeSyllables(song2);
+			}
+			catch(Exception e){e.printStackTrace();}
+		}
+	}
+	
+	public void updateDBRob(){
+		LinkedList<Song> songs=loadSongDetailsFromDatabase();
+		
+		for (Song song: songs){
+			song.setRecordist("R F Lachlan");
+			song.setRecordEquipment("Sony PCM D50 / Shure SM57 / Sony PBR330");
+			writeSongInfo(song);
+			
+			
+			int sid=song.getSongID();
+			String w=" WHERE id="+sid;
+
+			String query="UPDATE songdata SET timestep=0.5"+ w;
+			writeToDataBase(query);
+			query="UPDATE songdata SET maxfreq=10000"+ w;
+			writeToDataBase(query);
+			query="UPDATE songdata SET echocomp=1"+ w;
+			writeToDataBase(query);
+			query="UPDATE songdata SET echorange=50"+ w;
+			writeToDataBase(query);
+			query="UPDATE songdata SET dynrange=200"+ w;
+			writeToDataBase(query);
+			query="UPDATE songdata SET dyncomp=40"+ w;
+			writeToDataBase(query);
+			query="UPDATE songdata SET framelength=5"+ w;
+			writeToDataBase(query);
+			query="UPDATE songdata SET filtercutoff=1000"+ w;
+			writeToDataBase(query);
+			query="UPDATE songdata SET windowmethod=1"+ w;
+			writeToDataBase(query);
+			//System.out.println(query);
+			 
+			
+			//String query2="SELECT name, echocomp, echorange, noise1, noise2, noise3, dyncomp, dynrange, maxfreq, framelength, timestep, filtercutoff, windowmethod, dx, dy, IndividualID FROM songdata WHERE id = "+id;
+
+			
+			
+		}
+		
+		
 	}
 	
 	/*
@@ -1326,18 +1629,158 @@ public class DbConnection {
 		catch (Exception e){
 			e.printStackTrace();
 		}
-		System.out.println("Done");
+		//System.out.println("Done");
 		LinkedList<Song> olist=new LinkedList<Song>(otable.values());
-		System.out.println(olist.size());
+		//System.out.println(olist.size());
 		return olist;
 	}
+	
+	public void loadSoundFromDatabase(Sound sound, lusc.net.github.sound.Song song, int id, int info) {
+		String query="SELECT songid, filename, wav, samplerate, framesize, stereo, bigend, ssizeinbits, time, signed FROM wavs WHERE songid = "+id;
+		String queryb="SELECT time FROM wavs WHERE songid = "+id;
+		PreparedStatement stmt = null; 
+		ResultSet rs = null; 
+		try {
+			song.loaded=true;
+			if (info==1){
+				stmt = con.prepareStatement(queryb);
+				rs = stmt.executeQuery( );
+				if( !rs.next( ) ) {
+					System.out.println("No such file stored. "+id);
+					song.loaded=false;
+				}
+				else {		
+					song.tDate=rs.getLong("time");
+				}
+			}
+			if (info!=1){
+				stmt = con.prepareStatement(query);
+				rs = stmt.executeQuery( );
+				if( !rs.next( ) ) {
+					System.out.println("No such file stored. "+id);
+					song.loaded=false;
+				}
+				else {
+					int fs=rs.getInt("framesize");
+					if (fs>0){
+						sound.setFrameSize(fs);
+					}
+					int stereo=rs.getInt("stereo");
+					if (stereo==0){
+						stereo=1;
+					}
+					sound.setStereo(stereo);
+					sound.setSampleRate(rs.getDouble("samplerate"));
+					Blob b = rs.getBlob(3);
+					sound.setRawData(b.getBytes(1L, (int)b.length()));
+					song.name=rs.getString("filename");
+					int bigend=rs.getInt("bigend");
+					if (bigend==0){sound.setBigEnd(false);}
+					else{sound.setBigEnd(true);}
+					sound.setSizeInBits(rs.getInt("ssizeinbits"));
+					song.tDate=rs.getLong("time");
+					int signed=rs.getInt("signed");
+					if (signed==0){sound.setSigned(false);}
+					else{sound.setSigned(true);}
+					
+				}
+			}
+		}
+		catch (Exception e){
+			e.printStackTrace();
+		}
+		finally { 
+			if (rs != null) { 
+				try {rs.close();} catch (SQLException sqlEx) {} 
+				rs = null; 
+			}
+			if (stmt != null) { 
+				try { stmt.close();} catch (SQLException sqlEx) {} 
+				stmt = null; 
+			} 
+		}
+	}
+		
+	public void loadSongDataFromDatabase (lusc.net.github.sound.Song song, int id){
+		
+		String query1="SELECT echocomp, echorange, noise1, noise2, noise3, dyncomp, dynrange, maxfreq, framelength, timestep, filtercutoff, windowmethod, dx, dy FROM songdata WHERE id = "+id;
+		String query2="SELECT name, IndividualID, call_location, call_context, RecordingEquipment, Recorder, Quality, Type, Custom0 ,Custom1 FROM songdata WHERE id = "+id;
+
+		PreparedStatement stmt = null; 
+		ResultSet rs = null; 
+		try {
+			stmt = con.prepareStatement(query1);
+			rs = stmt.executeQuery( );
+			if( !rs.next( ) ) {
+				System.out.println("No such file stored. "+id);
+			}
+			else {
+				
+				song.sound.frequencyCutOff=rs.getDouble("filtercutoff");
+				
+				Spectrogram spect=song.spectrogram;
+				
+				spect.maxf=rs.getInt("maxfreq");
+				spect.frameLength=rs.getDouble("framelength");
+				spect.timeStep=rs.getDouble("timestep");
+				spect.windowMethod=rs.getInt("windowmethod");
+				spect.dy=rs.getDouble("dy");
+				spect.dx=rs.getDouble("dx");
+				
+				SpectrogramOperations spop=song.spop;
+				
+				
+				spop.echoComp=rs.getDouble("echocomp");
+				spop.echoRange=rs.getInt("echorange");
+				spop.dynRange=rs.getDouble("dyncomp");
+				spop.dynEqual=rs.getInt("dynrange");
+				spop.noiseRemoval=rs.getFloat("noise1");
+				spop.noiseLength1=rs.getInt("noise2");
+				spop.noiseLength2=rs.getInt("noise3");
+			}
+			stmt.close();
+			rs.close();
+			
+			stmt = con.prepareStatement(query2);
+			rs = stmt.executeQuery( );
+			if( !rs.next( ) ) {
+				System.out.println("No such file stored. "+id);
+			}
+			else {
+				song.name=rs.getString("name");
+				song.individualID=rs.getInt("IndividualID");
+				song.location=rs.getString("call_location");
+				song.notes=rs.getString("call_context");
+				song.recordEquipment=rs.getString("RecordingEquipment");
+				song.recordist=rs.getString("Recorder");
+				song.quality=rs.getString("Quality");
+				song.type=rs.getString("Type");
+				song.custom[0]=rs.getString("Custom0");
+				song.custom[1]=rs.getString("Custom1");
+			}
+			
+		}
+		catch (Exception e){
+			e.printStackTrace();
+		}
+		finally { 
+			if (rs != null) { 
+				try {rs.close();} catch (SQLException sqlEx) {} 
+				rs = null; 
+			}
+			if (stmt != null) { 
+				try { stmt.close();} catch (SQLException sqlEx) {} 
+				stmt = null; 
+			} 
+		}
+	}
+	
 	
 	public  Song loadSongFromDatabase (int id, int info){
 		Song song=new Song();
 		String query="SELECT songid, filename, wav, samplerate, framesize, stereo, bigend, ssizeinbits, time, signed FROM wavs WHERE songid = "+id;
 		String queryb="SELECT time FROM wavs WHERE songid = "+id;
 		String query2="SELECT name, echocomp, echorange, noise1, noise2, noise3, dyncomp, dynrange, maxfreq, framelength, timestep, filtercutoff, windowmethod, dx, dy, IndividualID FROM songdata WHERE id = "+id;
-		
 		String query3="SELECT call_location FROM songdata WHERE id = "+id;
 		String query4="SELECT call_context FROM songdata WHERE id = "+id;
 		String query5="SELECT RecordingEquipment FROM songdata WHERE id = "+id;
@@ -1421,6 +1864,9 @@ public class DbConnection {
 				song.setNoiseLength1(rs.getInt("noise2"));
 				song.setNoiseLength2(rs.getInt("noise3"));
 			}
+			
+			
+			//System.out.println("TIMESTEP: "+song.getTimeStep());
 			
 			stmt = con.prepareStatement(query3);
 			rs = stmt.executeQuery( );
@@ -1550,7 +1996,7 @@ public class DbConnection {
 	
 	public void writeSongIntoDatabase(String name, int p, File f){
 		String insertStmt = "INSERT INTO wavs (songid, filename, wav, samplerate, framesize, stereo, bigend, ssizeinbits, time, signed) values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-		System.out.println("trying to read song");
+		//System.out.println("trying to read song");
 		PreparedStatement stmt = null; 
 		ResultSet rs = null; 
 		try {
@@ -1572,7 +2018,7 @@ public class DbConnection {
 			  //  System.out.println("Target " + lines[n].toString() + " " + lines[n].getLineClass());
 			//}
 			
-			System.out.println("NUMBER OF LINES: "+lines.length);
+			//System.out.println("NUMBER OF LINES: "+lines.length);
 			if(afFormat.isBigEndian()){
 			
 				
@@ -1607,7 +2053,7 @@ public class DbConnection {
 			if (afe.toString().startsWith("PCM_SIGNED")){signed=1;}
 			int ssizebits=AFStreamA.getFormat().getSampleSizeInBits();
 			
-			System.out.println("PROCESSED SOUND: "+samplerate+" "+stereo+" "+FrameSize+" "+length+" "+afe.toString());
+			//System.out.println("PROCESSED SOUND: "+samplerate+" "+stereo+" "+FrameSize+" "+length+" "+afe.toString());
 			
 			byte[] rawData=new byte[(int)length];
 			AFStreamA.read(rawData);
@@ -1627,7 +2073,7 @@ public class DbConnection {
 			stmt.setInt(10, signed);
 			stmt.executeUpdate();
 			
-			System.out.println("ADDED TO DB");
+			//System.out.println("ADDED TO DB");
 			
 		} 
 		catch (Exception e){
@@ -1647,7 +2093,7 @@ public class DbConnection {
 	
 	public void writeSongIntoDatabase(Song s){
 		String insertStmt = "INSERT INTO wavs (songid, filename, wav, samplerate, framesize, stereo, bigend, ssizeinbits, time, signed) values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-		System.out.println("trying to read song");
+		//System.out.println("trying to read song");
 		PreparedStatement stmt = null; 
 		ResultSet rs = null; 
 		try {
@@ -1714,7 +2160,7 @@ public class DbConnection {
 			
 			int ne=song.getNumElements();
 			
-			System.out.println("Saving song " +song.getName()+" with "+ne +" elements");
+			//System.out.println("Saving song " +song.getName()+" with "+ne +" elements");
 			for (int i=0; i<ne; i++){
 				Element ele=(Element)song.getElement(i);
 				StringBuffer bus=new StringBuffer();
@@ -1783,12 +2229,23 @@ public class DbConnection {
 			stmt = con.createStatement(); 
 			stmt.executeUpdate(su); 
 			String sv="INSERT INTO syllable (songID, starttime, endtime)VALUES (";
+			/*
 			int ns=song.getNumSyllables();
 			for (int i=0; i<ns; i++){
 				int[]ele=song.getSyllable(i);
 				stmt = con.createStatement(); 
 				stmt.executeUpdate(sv+song.getSongID()+b+ele[0]+b+ele[1]+")");
 			}
+			*/
+			
+			LinkedList<Syllable> syls=song.getSyllList();
+			for (Syllable sy: syls){
+				int[] ele=sy.getLoc();
+				stmt = con.createStatement(); 
+				stmt.executeUpdate(sv+song.getSongID()+b+ele[0]+b+ele[1]+")");
+			}
+			
+			
 		} 
 		catch (Exception e){
 			e.printStackTrace();
@@ -2483,7 +2940,7 @@ public class DbConnection {
 		LinkedList<String> userData=new LinkedList<String>();
 		LinkedList<int[]> otherData=new LinkedList<int[]>();
 		
-		String query1="SELECT user, songA, songB, songX, choice, trial, exptype FROM comparetriplet";
+		String query1="SELECT user, songA, songB, songX, choice, trial, exptype, modtype FROM comparetriplet";
 		PreparedStatement stmt = null; 
 		ResultSet rs = null; 
 		try {
@@ -2493,13 +2950,14 @@ public class DbConnection {
 				String user=rs.getString("user");
 				userData.add(user);
 				
-				int[] data=new int[6];
+				int[] data=new int[7];
 				data[0]=rs.getInt("songA");
 				data[1]=rs.getInt("songB");
 				data[2]=rs.getInt("songX");
 				data[3]=rs.getInt("choice");
 				data[4]=rs.getInt("trial");
 				data[5]=rs.getInt("exptype");
+				data[6]=rs.getInt("modtype");
 				otherData.add(data);
 			}
 			abx.userData=new String[userData.size()];
@@ -2511,7 +2969,7 @@ public class DbConnection {
 				abx.otherData[i]=otherData.get(i);
 			}
 		}
-		catch (Exception e){}
+		catch (Exception e){e.printStackTrace();}
 		finally { 
 			if (rs != null) { 
 				try {rs.close();} catch (SQLException sqlEx) {} 

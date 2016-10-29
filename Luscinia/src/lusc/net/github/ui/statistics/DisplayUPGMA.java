@@ -96,8 +96,8 @@ public class DisplayUPGMA extends DisplayPane implements ActionListener, MouseIn
 	JComboBox<String> branchLabels;
 	int branchLabelIndex=0;
 	
-	JCheckBox songname, indname, popname, specname, typename;
-	boolean addsong, addind, addpop, addspec, addtype;
+	JCheckBox songname, indname, inddayname, popname, specname, typename;
+	boolean addsong, addind, addindday, addpop, addspec, addtype;
 	
 	public DisplayUPGMA (UPGMA upgma, ComparisonResults cr, AnalysisGroup sg, int width, int height, Defaults defaults){
 		this.upgma=upgma;
@@ -197,10 +197,10 @@ public class DisplayUPGMA extends DisplayPane implements ActionListener, MouseIn
 		cutOffLabel.setBorder(BorderFactory.createEmptyBorder(10,10,10,20));
 		
 		int choices=1;
-		if (dataType==4){
+		if (dataType==5){
 			choices=3;
 		}
-		if (dataType==5){
+		if (dataType==6){
 			choices=4;
 		}
 		String[] subLab=new String[labels.length-choices+1];
@@ -218,7 +218,7 @@ public class DisplayUPGMA extends DisplayPane implements ActionListener, MouseIn
 		songname=new JCheckBox("Song");
 		songname.setSelected(true);
 		addsong=true;
-		if (dataType==5){
+		if (dataType==6){
 			addsong=false;
 		}
 		songname.setFont(font);
@@ -227,11 +227,20 @@ public class DisplayUPGMA extends DisplayPane implements ActionListener, MouseIn
 		indname=new JCheckBox("Individual");
 		indname.setFont(font);
 		addind=false;
-		if (dataType==5){
+		if (dataType==7){
 			indname.setSelected(true);
 			addind=true;
 		}
 		indname.addActionListener(this);
+		
+		inddayname=new JCheckBox("Individual/Day");
+		inddayname.setFont(font);
+		addindday=false;
+		if (dataType==6){
+			inddayname.setSelected(true);
+			addindday=true;
+		}
+		inddayname.addActionListener(this);
 		
 		popname=new JCheckBox("Population");
 		popname.setFont(font);
@@ -277,13 +286,14 @@ public class DisplayUPGMA extends DisplayPane implements ActionListener, MouseIn
 		labelPane.add(branchLabels);
 		
 		JPanel namePane=new JPanel(new GridLayout(2,0));
-		if (dataType<5){
+		if (dataType<6){
 			namePane.add(songname);
 		}
 		namePane.add(indname);
+		namePane.add(inddayname);
 		namePane.add(popname);
 		namePane.add(specname);
-		if (dataType<5){
+		if (dataType<6){
 			namePane.add(typename);
 		}
 		
@@ -508,7 +518,7 @@ public class DisplayUPGMA extends DisplayPane implements ActionListener, MouseIn
 	public void paintPanel(){
 		
 		
-		String[] names=cr.getNames(addspec, addpop, addind, addsong, addtype);
+		String[] names=cr.getNames(addspec, addpop, addind, addindday, addsong, addtype);
 			
 		int ny=(int)Math.round(scale*(elespace*elements+2*ydisp));
 		System.out.println("UPGMA TREE HEIGHT: "+ny);
@@ -953,6 +963,9 @@ public class DisplayUPGMA extends DisplayPane implements ActionListener, MouseIn
 		else if(e.getSource()==indname){
 			addind=indname.isSelected();
 		}
+		else if(e.getSource()==inddayname){
+			addindday=inddayname.isSelected();
+		}
 		else if(e.getSource()==specname){
 			addspec=specname.isSelected();
 		}
@@ -967,7 +980,11 @@ public class DisplayUPGMA extends DisplayPane implements ActionListener, MouseIn
 	
 	public void export(){
 		
+		String[][] indNames=cr.getNamesArray(false, false, true, false, false);
+		
 		String[] names=cr.getNames();
+		
+		//String[] indNames=cr.getIndividualNames();
 		
 		JPanel optionPanel=new JPanel();
 		
@@ -1015,14 +1032,16 @@ public class DisplayUPGMA extends DisplayPane implements ActionListener, MouseIn
 			
 				if (cOut){
 					sd.writeSheet("Classifications");
-					sd.writeDouble(cutoff);
-					sd.writeLine();
-					sd.writeString("y points");
+					//sd.writeDouble(cutoff);
+					//sd.writeLine();
+					sd.writeString("Individual");
+					sd.writeString("Names");
 					//sd.writeString("upgma scores");
 					
 					//sd.writeLine();
 			
-					int[][] cats=upgma.calculateClassificationMembers(500);
+					//int[][] cats=upgma.calculateClassificationMembers(500);
+					int[][] cats=upgma.calculateClassificationMembers();
 					//float[][] scores=upgma.calculateMeanClusterDistances(100);
 			
 					for(int i=1; i<cats[0].length; i++){
@@ -1031,6 +1050,7 @@ public class DisplayUPGMA extends DisplayPane implements ActionListener, MouseIn
 					sd.writeLine();
 					
 					for (int i=0; i<upgma.getLength(); i++){
+						sd.writeString(indNames[i][0]);
 						sd.writeString(names[i]);
 						
 				

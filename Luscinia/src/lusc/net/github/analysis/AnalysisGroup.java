@@ -9,6 +9,7 @@ import lusc.net.github.Defaults;
 import lusc.net.github.Element;
 import lusc.net.github.Song;
 import lusc.net.github.SpectrogramMeasurement;
+import lusc.net.github.Syllable;
 import lusc.net.github.db.DataBaseController;
 import lusc.net.github.ui.SpectrogramSideBar;
 import lusc.net.github.ui.spectrogram.SpectrPane;
@@ -29,7 +30,7 @@ public class AnalysisGroup {
 	int songNumber;
 	boolean[][] compScheme;
 	int eleNumber, eleNumberC, syllNumber, transNumber;
-	ComparisonResults scoresEle, scoresEleC, scoresSyll, scoresSyll2, scoreTrans, scoresSong, scoresInd;
+	ComparisonResults scoresEle, scoresEleC, scoresSyllTrue, scoresSyll, scoresSyll2, scoreTrans, scoresSong, scoresInd, scoresIndDays;
 	Defaults defaults;
 	DataBaseController dbc;
 	SpectrogramSideBar ssb=new SpectrogramSideBar(this);
@@ -60,7 +61,7 @@ public class AnalysisGroup {
 		countEleNumber();
 		songNumber=songs.length;
 		
-		
+		checkSongs();
 	}
 	
 	/**
@@ -75,6 +76,8 @@ public class AnalysisGroup {
 		countEleNumber();
 		songNumber=songs.length;
 		this.defaults=defaults;
+		
+		checkSongs();
 	}
 	
 	/**
@@ -94,8 +97,23 @@ public class AnalysisGroup {
 		songNumber=songs.length;
 		this.defaults=defaults;
 		this.dbc=dbc;
+		
+		checkSongs();
 		//System.out.println("LOADED ANALYSIS GROUP");
 		//updateFrequencyChange();
+	}
+	
+	public void checkSongs(){
+		for (int i=0; i<songs.length; i++){
+			LinkedList<String[]>x=songs[i].checkElements();
+			
+			System.out.println("CHECKING SONGS: "+x.size());
+			
+			//if (x.size()==0) {
+				//checkAndLoadRawData(i);
+				//songs[i].automaticMeasurement();
+			//}
+		}
 	}
 	
 	public void updateFrequencyChange(){
@@ -107,13 +125,25 @@ public class AnalysisGroup {
 				System.out.println("updating: "+i+" "+" "+songs.length+" "+songs[i].getIndividualName()+" "+songs[i].getName());
 				System.out.println(songs[i].getTimeStep()+" "+songs[i].getMaxF());
 				
-				if (songs[i].getTimeStep()!=0.5){
-					songs[i].setTimeStep(0.5);
-				}
-				if (songs[i].getMaxF()!=10000){
-					songs[i].setMaxF(10000);
-				}
+				//if (songs[i].getTimeStep()!=0.5){
+				//	songs[i].setTimeStep(0.5);
+				//}
+				//if (songs[i].getMaxF()!=10000){
+				//	songs[i].setMaxF(10000);
+				//}
 				
+				//LinkedList<Element> ele=songs[i].getEleList2();
+				//Element ele1=ele.get(0);
+				//boolean check=ele1.checkElement(songs[i].getMaxF());
+				//System.out.println(songs[i].getMaxF()+" "+ele1.maxf+" "+check);
+				//if (!check) {
+				//	int maxf=songs[i].getMaxF();
+				//	for (Element elex : ele) {
+				//		elex.maxf=maxf;
+				//		elex.resetSignal(8000);
+				//	}
+				//}
+				//songs[i].setMaxF(8000);
 				songs[i].setDynRange(75);
 				
 				songs[i].setFFTParameters();
@@ -124,7 +154,12 @@ public class AnalysisGroup {
 				sm.setUp();
 				
 				sm.updateChangeMeasures();
+				songs[i].setDynRange(40);
+				
 				dbc.writeSongMeasurements(songs[i]);
+				
+				
+				
 			}
 			catch (Exception e) {
 				//System.out.println(e);
@@ -231,9 +266,10 @@ public class AnalysisGroup {
 		int[][] b=null;
 		if (a==0){b=scoresEle.getLookUp();}
 		else if (a==1){b=scoresEleC.getLookUp();}
-		else if (a==2){b=scoresSyll.getLookUp();}
-		else if (a==3){b=scoreTrans.getLookUp();}
-		else if (a==4){b=scoresSong.getLookUp();}
+		else if (a==2){b=scoresSyllTrue.getLookUp();}
+		else if (a==3){b=scoresSyll.getLookUp();}
+		else if (a==4){b=scoreTrans.getLookUp();}
+		else if (a==5){b=scoresSong.getLookUp();}
 		return b;
 	}
 	
@@ -247,9 +283,10 @@ public class AnalysisGroup {
 		int[] b=null;
 		if (a==0){b=scoresEle.getPopulationListArray();}
 		else if (a==1){b=scoresEleC.getPopulationListArray();}
-		else if (a==2){b=scoresSyll.getPopulationListArray();}
-		else if (a==3){b=scoreTrans.getPopulationListArray();}
-		else if (a==4){b=scoresSong.getPopulationListArray();}
+		else if (a==2){b=scoresSyllTrue.getPopulationListArray();}
+		else if (a==3){b=scoresSyll.getPopulationListArray();}
+		else if (a==4){b=scoreTrans.getPopulationListArray();}
+		else if (a==5){b=scoresSong.getPopulationListArray();}
 		return b;
 	}
 	
@@ -270,9 +307,12 @@ public class AnalysisGroup {
 			j=scoresEleC.getID(i);
 		}
 		else if (dataType==2){
-			j=scoresSyll.getID(i);
+			j=scoresSyllTrue.getID(i);
 		}
 		else if (dataType==3){
+			j=scoresSyll.getID(i);
+		}
+		else if (dataType==4){
 			j=scoreTrans.getID(i);
 		}
 		else{
@@ -293,9 +333,10 @@ public class AnalysisGroup {
 		int[][] s=null;
 		if (a==0){s=scoresEle.getIndividuals();}
 		else if (a==1){s=scoresEleC.getIndividuals();}
-		else if (a==2){s=scoresSyll.getIndividuals();}
-		else if (a==3){s=scoreTrans.getIndividuals();}
-		else if (a==4){s=scoresSong.getIndividuals();}
+		else if (a==2){s=scoresSyllTrue.getIndividuals();}
+		else if (a==3){s=scoresSyll.getIndividuals();}
+		else if (a==4){s=scoreTrans.getIndividuals();}
+		else if (a==5){s=scoresSong.getIndividuals();}
 		return s;
 	}
 	
@@ -362,11 +403,15 @@ public class AnalysisGroup {
 			scoresEleC=new ComparisonResults(songs, b, a);
 		}
 		else if (a==2){
+			scoresSyllTrue=new ComparisonResults(songs, b, a);
+		}
+		else if (a==3){
 			scoresSyll=new ComparisonResults(songs, b, a);
 		}
 		else if (a==3){
 			scoreTrans=new ComparisonResults(songs, b, a);
 		}
+		
 		else if (a==4){
 			scoresSong=new ComparisonResults(songs, b, a);
 		}
@@ -378,6 +423,14 @@ public class AnalysisGroup {
 		}
 	}
 	
+	
+	public void augmentScores(double[][] b) {
+				
+		scoresSyllTrue.augmentScores(b);
+		
+	}
+	
+	
 	/**
 	 * Gets the various float[][] score matrices at the heart of this class.
 	 * @param a an index from 0 for elements to 4 for songs, and 5 for a second syllable matrix
@@ -387,11 +440,14 @@ public class AnalysisGroup {
 		ComparisonResults b=null;
 		if (a==0){b=scoresEle;}
 		else if (a==1){b=scoresEleC;}
-		else if (a==2){b=scoresSyll;}
-		else if (a==3){b=scoreTrans;}
-		else if (a==4){b=scoresSong;}
-		else if (a==5){b=scoresInd;}
-		else if (a==6){b=scoresSyll2;}
+		else if (a==2){b=scoresSyllTrue;}
+		else if (a==3){b=scoresSyll;}
+		else if (a==4){b=scoreTrans;}
+		else if (a==5){b=scoresSong;}
+		else if (a==6){b=scoresIndDays;}
+		else if (a==7){b=scoresInd;}
+		//else if (a==6){b=scoresInd;}
+		//else if (a==7){b=scoresSyll2;}
 		return b;
 	}
 	
@@ -404,9 +460,10 @@ public class AnalysisGroup {
 		double[] s=null;
 		if (a==0){s=scoresEle.getPositionListArray();}
 		else if (a==1){s=scoresEleC.getPositionListArray();}
-		else if (a==2){s=scoresSyll.getPositionListArray();}
-		else if (a==3){s=scoreTrans.getPositionListArray();}
-		else if (a==4){s=scoresSong.getPositionListArray();}
+		else if (a==2){s=scoresSyllTrue.getPositionListArray();}
+		else if (a==3){s=scoresSyll.getPositionListArray();}
+		else if (a==4){s=scoreTrans.getPositionListArray();}
+		else if (a==5){s=scoresSong.getPositionListArray();}
 		return s;
 	}
 	
@@ -423,6 +480,15 @@ public class AnalysisGroup {
 		int songcount=0;
 		for (int i=0; i<songs.length; i++){
 			int q=songs[i].getNumElements();
+			
+			if (q==0) {
+				automaticMeasurement(i);
+				q=songs[i].getNumElements();
+			}
+			
+			
+			
+			
 			eleNumber+=q;
 			if (q==0){
 				x[i]=false;
@@ -431,15 +497,16 @@ public class AnalysisGroup {
 				x[i]=true;
 				songcount++;
 			}
-			int a=songs[i].getNumPhrases();
+			LinkedList<Syllable> sys=songs[i].getPhrases();
+			int a=sys.size();
 			if (a>0){
 				syllNumber+=a;
 				transNumber+=a-1;
-				for (int j=0; j<a; j++){
-					int[][] p=(int[][])songs[i].getPhrase(j);
-					eleNumberC+=p[0].length;
+				for (Syllable sy : sys){
+					eleNumberC+=sy.getMaxSyllLength();
 				}
 			}
+			
 		}
 		if (songcount<songs.length){
 			System.out.println("REMOVING EMPTY SONGS");
@@ -466,7 +533,7 @@ public class AnalysisGroup {
 		else if (a==1){
 			b=eleNumberC;
 		}
-		else if (a==2){
+		else if (a==3){
 			b=syllNumber;
 		}
 		else if (a==4){
@@ -479,20 +546,27 @@ public class AnalysisGroup {
 	 * This method calculates the number of repetitions for each phrase in the sample
 	 */
 	public void calculateSyllableRepetitions(){
+				
 		int n=0;
 		for (int i=0; i<songs.length; i++){
-			n+=songs[i].getNumPhrases();
+			n+=songs[i].getNumSyllables(2);
 		}
 		
 		syllableRepetitions=new int[n];
 		int k=0;
 		for (int i=0; i<songs.length; i++){
+			LinkedList<Syllable> syls=songs[i].getPhrases();
+			for (Syllable sy: syls){
+				syllableRepetitions[k]=sy.getNumSyllables();
+			}
+			/*
 			for (int j=0; j<songs[i].getNumPhrases(); j++){
 				int[][] p=(int[][])songs[i].getPhrase(j);
 				syllableRepetitions[k]=p.length;
 				//System.out.println("REPEAT: "+k+" "+syllableRepetitions[k]);
 				k++;
 			}
+			*/
 		}
 		
 	}
@@ -502,6 +576,7 @@ public class AnalysisGroup {
 	 */
 	public void makeEveryElementASyllable(){
 		for (int i=0; i<songs.length; i++){
+			/*
 			LinkedList<int[][]> phrases=new LinkedList<int[][]>();
 			for (int j=0; j<songs[i].getNumElements(); j++){
 				int[][] a=new int[1][1];
@@ -509,6 +584,8 @@ public class AnalysisGroup {
 				phrases.add(a);
 			}
 			songs[i].setPhrases(phrases);
+			*/
+			songs[i].makeEveryElementASyllable();	
 		}
 		calculateSyllableRepetitions();
 		countEleNumber();
@@ -525,6 +602,8 @@ public class AnalysisGroup {
 			sc.compressSong2(songs[i]);
 			//sc.compressSong3(songs[i]);
 			songs[i]=sc.s;
+			
+			
 		}
 		//calculateSyllableRepetitions();
 		countEleNumber();
@@ -536,27 +615,38 @@ public class AnalysisGroup {
 	 * @param thresh a threshold in ms
 	 */
 	public void segmentSyllableBasedOnThreshold(double thresh){
+		
+		System.out.println("Resegmenting Songs!!!");
+		
 		for (int i=0; i<songs.length; i++){
-			LinkedList<int[][]> phrases=new LinkedList<int[][]>();
+			
+			//songs[i].segmentSyllableBasedOnThreshold(thresh);
+			
+			
+			LinkedList<Syllable> phrases=new LinkedList<Syllable>();
 			
 			int j=0;
-			
+			LinkedList<Element> eleList=songs[i].getEleList2();
 			while (j<songs[i].getNumElements()){
-				int k=j;
+				LinkedList<Element> eles=new LinkedList<Element>();
 				Element ele=(Element)songs[i].getElement(j);
+				eles.add(ele);
 				while ((ele.getTimeAfter()<thresh)&&(ele.getTimeAfter()>-10000)){
+					System.out.println(i+" "+songs[i].getName()+" "+j+" "+songs[i].getNumElements()+" "+ele.getTimeAfter());
 					j++;
 					ele=(Element)songs[i].getElement(j);
+					eles.add(ele);
 				}
-				int[][] a=new int[1][j-k+1];
-				for (int l=k; l<=j; l++){
-					a[0][l-k]=l;
-				}
-				phrases.add(a);
+				
+				Syllable syl=new Syllable(eles, songs[i].getSongID());
+				syl.addFamily(phrases, eleList);
+				syl.checkMaxLevel();
+				phrases.add(syl);
 				j++;
-			}
+			}	
 			
-			songs[i].setPhrases(phrases);
+			songs[i].setSylList(phrases);
+			
 		}
 	}
 	
@@ -605,6 +695,14 @@ public class AnalysisGroup {
 	
 	
 	
+	public void makeIndividualDays() {
+		//System.out.println("I'm here...");
+		IndividualDays id=new IndividualDays(songs);
+		id.calculateTimeCategoriesByDayAndAmount(30, 5);
+	}
+	
+	
+	
 	/**
 	 * This function takes Element comparisons and outputs compressed Element comparisons (averages for all versions of an element within a phrase)
 	 */
@@ -618,13 +716,31 @@ public class AnalysisGroup {
 	}
 	
 	/**
-	 * This function compresses syllables - takes arrays of syllable comparisons, and outputs arrays of phrase comparisons
+	 * This function compresses syllables - takes arrays of element comparisons, and outputs ComparisonResults objects of syllable comparisons
 	 */
 	
 	public void compressSyllables(){
+		System.out.println("Compressing syllables...");
 		CompressComparisons cc=new CompressComparisons();
+		
+		//System.out.println("ALIGNMENT COST: "+alignmentCost);
 		double[][] b=cc.phraseComp(scoresEle.getDiss(), songs, (float)alignmentCost);
-		scoresSyll=new ComparisonResults(songs, b, 2);	
+		//System.out.println("NUMBER OF SYLS: "+b.length);
+		scoresSyllTrue=new ComparisonResults(songs, b, 2);	
+		
+	}
+	
+	
+	/**
+	 * This function compresses phrases - takes arrays of syllable comparisons, and outputs ComparisonResults objects of phrase comparisons
+	 */
+	
+	public void compressPhrases() {
+		CompressComparisons cc=new CompressComparisons();
+		double[][] b=scoresSyllTrue.getDiss();
+		double[][] x=cc.compareSyllables5(b, songs, 0);
+		scoresSyll=new ComparisonResults(songs, x, 3);
+		
 	}
 	
 	/**
@@ -658,6 +774,14 @@ public class AnalysisGroup {
 		scoresSyll=new ComparisonResults(songs, b, 2);
 	}
 	
+	public void compressSyllablesStitch(LinkedList<int[][]> d){
+		
+		CompressComparisons cc=new CompressComparisons();
+		double[][] b=cc.phraseComp2(scoresSyll2.getDiss(), songs, (float)alignmentCost, d);
+		scoresSyll=new ComparisonResults(songs, b, 2);	
+
+	}
+	
 	/**
 	 * This function compresses syllable-phrase comparisons into transition comparison
 	 */
@@ -665,7 +789,7 @@ public class AnalysisGroup {
 	public void compressSyllableTransitions(){
 		CompressComparisons cc=new CompressComparisons();
 		double[][] b=cc.compareSyllableTransitions2(scoresSyll.getDiss(), songs);
-		scoreTrans=new ComparisonResults(songs, b, 3);
+		scoreTrans=new ComparisonResults(songs, b, 4);
 		
 	}
 	
@@ -693,17 +817,30 @@ public class AnalysisGroup {
 			if (!dtwComp){
 						
 				double[][] b=cc.compareSongsDigram(scoresSyll, useTrans, cycle, logTransform, q, r);
-				scoresSong=new ComparisonResults(songs, b, 4);
+				scoresSong=new ComparisonResults(songs, b, 5);
 			}
 			else{
 				
 				double[][]b=cc.compareSongsDTW(scoresSyll, cycle, useTrans, logTransform, linearity, q, r);
-				scoresSong=new ComparisonResults(songs, b, 4);
+				scoresSong=new ComparisonResults(songs, b, 5);
 
 			}
+			//System.out.println("Songs Compressed");
 		}
 		catch(Exception e){e.printStackTrace();}
 	}
+	
+	
+	/**
+	 * This function constructs individual comparisons, based on song comparisons
+	 */
+	public void compressIndividualDays(boolean a){
+		
+		CompressComparisons cc=new CompressComparisons();
+		double[][] b=cc.compareIndividuals(scoresSong.getDiss(), scoresSong.getIndividualDays(), a);
+		scoresIndDays=new ComparisonResults(songs, b, 6);
+	}
+	
 	
 	/**
 	 * This function constructs individual comparisons, based on song comparisons
@@ -711,7 +848,7 @@ public class AnalysisGroup {
 	public void compressIndividuals(boolean a){
 		CompressComparisons cc=new CompressComparisons();
 		double[][] b=cc.compareIndividuals(scoresSong.getDiss(), scoresSong.getIndividuals(), a);
-		scoresInd=new ComparisonResults(songs, b, 5);
+		scoresInd=new ComparisonResults(songs, b, 7);
 	}
 	
 	/**
@@ -919,6 +1056,12 @@ public class AnalysisGroup {
 		}
 		System.out.println("Weighted sharing: "+a+" "+b+" "+count);
 		return count;
+	}
+	
+	public void automaticMeasurement(int x) {
+		loadSongRawData(x);
+		Song song=songs[x];
+		song.automaticMeasurement();
 	}
 	
 	

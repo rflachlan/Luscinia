@@ -87,12 +87,12 @@ public class SongInformation extends JPanel implements ActionListener{
 		int p=song.getNumElements();
 		String s1="Number of elements: "+p;
 		eleNumberL=new JLabel(s1);
-		int q=song.getNumSyllables();
+		int q=song.getNumSyllables(0);
 		String s2="Number of syllables: "+q;
 		sylNumberL=new JLabel(s2);
 		
 		//if (song.phrases==null){song.interpretSyllables();}
-		int r=song.getNumPhrases();
+		int r=song.getNumSyllables(2);
 		String s3="Number of phrases "+r;
 		phrNumberL=new JLabel(s3);
 		

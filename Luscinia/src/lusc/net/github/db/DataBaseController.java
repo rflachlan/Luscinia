@@ -177,17 +177,9 @@ public class DataBaseController {
 			song.setEleList(db.loadElementsFromDatabase(ID));
 			
 			song.setEleGaps();
-			
-			//System.out.println("I: "+song.individualID);
-			song.setSyllList(db.loadSyllablesFromDatabase(ID));
-			if (db.oldloader){
-				song.updateSyllableList();
-			}
-			//song.updateElements();
-			song.sortSylls();
 			song.sortEles();
-			song.interpretSyllables();
-						
+			song.loadSyllables(db.loadSyllablesFromDatabase(ID));
+				
 			LinkedList<?> store2=db.populateContentPane(song.getIndividualID());
 			song.setSongID(ID);
 			song.setIndividualName((String)store2.get(0));
@@ -200,6 +192,8 @@ public class DataBaseController {
 			song.setRank((String)store2.get(8));
 			song.setAge((String)store2.get(9));
 
+			//song.checkFreqs();
+			
 			return song;
 		}
 		return null;

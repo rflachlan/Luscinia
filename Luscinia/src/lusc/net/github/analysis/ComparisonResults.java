@@ -5,6 +5,7 @@ import java.util.LinkedList;
 
 import lusc.net.github.Element;
 import lusc.net.github.Song;
+import lusc.net.github.Syllable;
 import lusc.net.github.analysis.clustering.AffinityPropagation;
 import lusc.net.github.analysis.clustering.KMedoids;
 import lusc.net.github.analysis.clustering.SNNDensity;
@@ -12,24 +13,34 @@ import lusc.net.github.analysis.multivariate.MultiDimensionalScaling;
 import lusc.net.github.analysis.syntax.EntropyAnalysis;
 import lusc.net.github.ui.AnalysisSwingWorker;
 
+/**
+ * ComparisonResults is a class that holds the output of a simple comparison. At its heart is a dissimilarity matrix, representing the dissimilarity between the units involved in the comparison.
+ * It also provides linked data about the id of the sound units, and some clustering analyses of the comparison
+ * @author Rob
+ *
+ */
+
+
 public class ComparisonResults {
 	
 	public static int ELEMENT_TYPE=0;
 	public static int COMP_ELEMENT_TYPE=1;
 	public static int SYLLABLE_TYPE=2;
-	public static int TRANSITION_TYPE=3;
-	public static int SONG_TYPE=4;
-	public static int INDIVIDUAL_TYPE=5;
+	public static int PHRASE_TYPE=3;
+	public static int TRANSITION_TYPE=4;
+	public static int SONG_TYPE=5;
+	public static int INDIVIDUAL_DAY_TYPE=6;
+	public static int INDIVIDUAL_TYPE=7;
 	
 	
 	double[][] diss, dissT;
 	Song[] songs;
 	MultiDimensionalScaling mds=null;
 	int type=0;
-	int[][] lookUps, individuals;
-	int[] lookUpIndividual, lookUpTypes;
-	int n, maxLength, songNumber, individualNumber, tndi;
-	String[] names, individualNames, populations, species, types, sexes, ages, ranks;
+	int[][] lookUps, individuals, individualDays;
+	int[] lookUpIndividual, lookUpIndividualDays, lookUpTypes;
+	int n, maxLength, songNumber, individualNumber, individualDayNumber,  tndi;
+	String[] names, individualNames, individualDayNames, populations, species, types, sexes, ages, ranks;
 	long[] times;
 	long maxTime, minTime;
 	
@@ -38,19 +49,24 @@ public class ComparisonResults {
 	EntropyAnalysis ent;
 	AffinityPropagation ap;
 	
-	
+	/**
+	 * Constructor for a ComparisonResults
+	 * @param songs set of {@link Song songs} that were compared
+	 * @param diss the square dissimilarity matrix that was the output of the comparison
+	 * @param type the type of song unit compared (from {@link Element} to {@link Individual}.
+	 */
 	public ComparisonResults(Song[] songs, double[][] diss, int type){
 		this.songs=songs;
 		this.diss=diss;
 		this.type=type;
 		n=diss.length;
 		songNumber=songs.length;
-		System.out.println("making comparison results "+type);
+		//System.out.println("making comparison results "+type);
 		makeLookUps();
 		calculateMaximumLength();
 		calculateIndividuals();
 		makeNames();
-		
+		//System.out.println("made comparison results halfway "+type);
 		makePopulationNames();
 		makeSpeciesNames();
 		makeSexNames();
@@ -60,7 +76,7 @@ public class ComparisonResults {
 		makeTypeNames();
 		lookUpTypes=getTypeListArray();
 		
-		System.out.println("made comparison results "+type);
+		//System.out.println("made comparison results "+type);
 	}
 	
 	/**
@@ -69,6 +85,16 @@ public class ComparisonResults {
 	 */
 	public Song[] getSongs(){
 		return songs;
+	}
+	
+	
+	public long[] getSongDates(){
+		
+		long[] x=new long[songs.length];
+		for (int i=0; i<songs.length; i++){
+			x[i]=songs[i].getTDate();
+		}
+		return x;
 	}
 	
 	/**
@@ -84,7 +110,12 @@ public class ComparisonResults {
 	 * @return
 	 */
 	public double[][] getDissT(){
-		return dissT;
+		if (dissT==null){
+			return diss;
+		}
+		else{
+			return dissT;
+		}
 	}
 	
 	
@@ -138,6 +169,9 @@ public class ComparisonResults {
 		return lookUpTypes;
 	}
 	
+	
+	
+	
 	/**
 	 * gets the individuals table for the comparison.
 	 * @return
@@ -145,6 +179,16 @@ public class ComparisonResults {
 	public int[][] getIndividuals(){
 		//System.out.println("get inds: "+individuals.length);
 		return individuals;
+	}
+	
+
+	/**
+	 * gets the individuals table for the comparison.
+	 * @return
+	 */
+	public int[][] getIndividualDays(){
+		//System.out.println("get inds: "+individuals.length);
+		return individualDays;
 	}
 	
 	/**
@@ -223,7 +267,7 @@ public class ComparisonResults {
 	 * gets the names array for the comparison.
 	 * @return String[] array of names
 	 */
-	public String[] getNames(boolean incspec, boolean incpop, boolean incind, boolean incsong, boolean inctype){
+	public String[] getNames(boolean incspec, boolean incpop, boolean incind, boolean incday, boolean incsong, boolean inctype){
 		
 		String[] out=new String[n];
 		String sep=":";
@@ -236,6 +280,8 @@ public class ComparisonResults {
 		if (incind){ind=lookUpIndividual;}
 		int[] typ=null;
 		if (inctype){typ=getTypeListArray();}
+		int[] indday=null;
+		if (incday) {indday=lookUpIndividualDays;}
 		
 		
 		for (int i=0; i<n; i++){
@@ -259,6 +305,11 @@ public class ComparisonResults {
 				sb.append(individualNames[ind[i]]);
 				started=true;
 			}
+			if (incday) {
+				if (started) {sb.append(sep);}
+				sb.append(individualDayNames[indday[i]]);
+				started=true;
+			}
 			if (incsong){
 				if (started){sb.append(sep);}
 				sb.append(names[i]);
@@ -268,6 +319,55 @@ public class ComparisonResults {
 		}
 		return out;
 	}
+	
+	/**
+	 * gets the names array for the comparison.
+	 * @return String[] array of names
+	 */
+	public String[][] getNamesArray(boolean incspec, boolean incpop, boolean incind, boolean incsong, boolean inctype){
+		
+		int count=0;
+		
+		int[] spec=null;
+		if (incspec){spec=getSpeciesListArray(); count++;}
+		int[] pop=null;
+		if (incpop){pop=getPopulationListArray(); count++;}
+		int[] ind=null;
+		if (incind){ind=lookUpIndividual; count++;}
+		int[] typ=null;
+		if (inctype){typ=getTypeListArray(); count++;}
+		
+		
+		if (incsong){count++;}
+		
+		String[][] out=new String[n][count];	
+		
+		for (int i=0; i<n; i++){
+			count=0;
+			if (inctype){
+				out[i][count]=types[typ[i]];
+				count++;
+			}
+			if (incspec){
+				out[i][count]=species[spec[i]];
+				count++;
+			}
+			if (incpop){
+				out[i][count]=populations[pop[i]];
+				count++;
+			}
+			if (incind){
+				out[i][count]=individualNames[ind[i]];
+				count++;
+			}
+			if (incsong){
+				out[i][count]=songs[lookUps[i][0]].getName();
+				count++;
+			}
+		}
+		return out;
+	}
+	
 	
 	/**
 	 * gets the type for the comparison.
@@ -353,6 +453,10 @@ public class ComparisonResults {
 		return out;
 	}
 	
+	public long[] getTimes(){
+		return times;
+	}
+	
 	public void setKMedoids(KMedoids km){
 		this.km=km;
 	}
@@ -369,6 +473,34 @@ public class ComparisonResults {
 		this.ap=ap;
 	}
 	
+	public int getSylExemplar(int p) {
+		
+		int q=0;
+		int r=0;
+		for (int i=0; i<songs.length; i++) {
+			LinkedList<Syllable> sy=songs[i].getPhrases();
+			for (int j=0; j<sy.size(); j++) {
+				System.out.println(q+" "+r+" "+i+" "+j);
+				Syllable s=sy.get(j);
+				int t=s.getNumChildren();
+				if (t==0) {t=1;}
+				if (q==p) {
+					r+=t/2;
+					j=sy.size();
+					i=songs.length;
+				}
+				else {
+					q++;
+					r+=t;
+				}
+			}
+			
+		}
+		
+		System.out.println("CR: SYL EXEMPLAR: "+p+" "+r);
+		return r;
+	}
+	
 	public void makeLookUps(){
 		
 		lookUps=new int[n][2];
@@ -376,7 +508,7 @@ public class ComparisonResults {
 		if (type==ELEMENT_TYPE){
 			int count1=0;
 			for (int i=0; i<songs.length; i++){
-				int a1=songs[i].getNumElements();
+				int a1=songs[i].getNumElements2();
 				if (a1>0){
 					for (int j=0; j<a1; j++){
 						lookUps[count1][0]=i;
@@ -391,6 +523,27 @@ public class ComparisonResults {
 			lookUps=new int[n][3];
 			int count2=0;
 			for (int i=0; i<songs.length; i++){
+				
+				LinkedList<Syllable> phr=songs[i].getPhrases();
+				for (Syllable sy:phr){
+					int c=0;
+					int max=sy.getMaxSyllLength();
+					int p=sy.getNumSyllables()-1;
+					Syllable syl=sy.getSyllable(p);
+					while (syl.getNumEles()<max){
+						p--;
+						syl=sy.getSyllable(p);
+					}
+					int[] q=syl.getEleIds();
+					for (int j=0; j<syl.getNumEles(); j++){
+						lookUps[count2][0]=i;
+						lookUps[count2][1]=q[i];
+						lookUps[count2][2]=c;
+						count2++;
+						c++;
+					}	
+				}
+				/*
 				int a=songs[i].getNumPhrases();
 				if (a>0){
 					int c=0;
@@ -407,12 +560,45 @@ public class ComparisonResults {
 						}				
 					}	
 				}
+				*/
 			}			
 		}
 		else if (type==SYLLABLE_TYPE){
+			lookUps=new int[n][3];
 			int count3=0;
 			for (int i=0; i<songs.length; i++){
-				int a=songs[i].getNumPhrases();
+				LinkedList<Syllable>phr=songs[i].getPhrases();
+				int k=0;
+				int jj=0;
+				for (Syllable s: phr){
+					int a=s.getNumSyllables();
+					for (int j=0; j<a; j++){			
+						lookUps[count3][0]=i;
+						lookUps[count3][1]=jj;
+						lookUps[count3][2]=k;
+						count3++;
+						jj++;
+					}
+					k++;
+				}
+				/*
+				int a=songs[i].getNumSyllables(1);
+				if(a>0){
+					for (int j=0; j<a; j++){			
+						lookUps[count3][0]=i;
+						lookUps[count3][1]=j;
+						count3++;
+					}					
+				}
+				*/
+			}			
+		}
+		else if (type==PHRASE_TYPE){
+			int count3=0;
+			for (int i=0; i<songs.length; i++){
+				
+				int a=songs[i].getNumSyllables(2);
+
 				if (a>0){
 					for (int j=0; j<a; j++){			
 						lookUps[count3][0]=i;
@@ -427,7 +613,8 @@ public class ComparisonResults {
 			int count3=0;
 			int count4=0;
 			for (int i=0; i<songs.length; i++){
-				int a=songs[i].getNumPhrases();
+				int a=songs[i].getNumSyllables(2);
+				//int a=songs[i].getNumPhrases();
 				if (a>0){
 					for (int j=0; j<a; j++){			
 						if (j>0){
@@ -449,6 +636,34 @@ public class ComparisonResults {
 				lookUps[i][1]=1;
 				//eleNumber+=songs[i].getNumElements();
 			}
+		}
+		else if (type==INDIVIDUAL_DAY_TYPE) {
+			int[] ids=new int[n];
+			int count=0;
+			for (int i=0; i<songs.length; i++){
+				int p=songs[i].getIndividualDayID();
+				boolean found=false;
+				for (int j=0; j<count; j++){
+					if (ids[j]==p){
+						found=true;
+						j=count;
+					}
+				}
+				if (!found){
+					ids[count]=p;
+					lookUps[count][0]=i;
+					lookUps[count][1]=1;
+					count++;
+				}
+			}
+			
+			if (count!=n){
+				System.out.println("PARSING ERROR!");
+			}
+			
+			
+			
+			
 		}
 		else if (type==INDIVIDUAL_TYPE){
 			
@@ -479,6 +694,34 @@ public class ComparisonResults {
 		}
 	}
 	
+	
+	public void augmentScores(double[][] b) {
+		int newsize=b.length;
+		int counterswitch=0;
+		int counternoswitch=0;
+		if (newsize==n) {
+			
+			for (int i=0; i<n; i++) {
+				for (int j=0; j<i; j++) {
+					if (b[i][j]<diss[i][j]) {
+						diss[i][j]=b[i][j];
+						counterswitch++;
+						
+					}	
+					else {counternoswitch++;}
+				}
+			}	
+			
+			System.out.println("Augmentation switches: "+counterswitch+" "+counternoswitch);
+		}
+		else {
+			
+			System.out.println("ERROR ARRAY SIZES DON'T MATCH: "+newsize+" "+n);
+		}
+	}
+	
+	
+	
 	/**
 	 * This method calculates maximum lengths for some units
 	 */
@@ -495,9 +738,39 @@ public class ComparisonResults {
 					if (a>maxLength){maxLength=a;}
 				}
 			}
-		}	
+		}
 		else if (type==SYLLABLE_TYPE){
 			for (int i=0; i<songs.length; i++){
+				
+				for (Syllable sy: songs[i].getBaseLevelSyllables()){
+					int syllLength=sy.getLengthElements(false);
+					if (syllLength>maxLength){maxLength=syllLength;}
+				}
+				
+				/*
+				int sy=songs[i].getNumSyllables(false);
+				for (int j=0; j<sy; j++){
+					
+					int[] p=(int[])songs[i].getSyllable(j);
+					
+					Element ele1=(Element)songs[i].getElement(p[0]);
+					Element ele2=(Element)songs[i].getElement(p[p.length-1]);
+				
+					int syllLength=ele2.getBeginTime()+ele2.getLength()-ele1.getBeginTime();
+					if (syllLength>maxLength){maxLength=syllLength;}
+				}
+				*/
+			}
+		}
+		else if (type==PHRASE_TYPE){
+			for (int i=0; i<songs.length; i++){
+				for (Syllable sy: songs[i].getPhrases()){
+					for (Syllable s: sy.getSyllables()){
+						int syllLength=s.getLengthElements(false);
+						if (syllLength>maxLength){maxLength=syllLength;}
+					}
+				}		
+				/*
 				for (int j=0; j<songs[i].getNumPhrases(); j++){
 					int[][]p=(int[][])songs[i].getPhrase(j);
 					a=p.length-1;
@@ -509,11 +782,44 @@ public class ComparisonResults {
 					int syllLength=ele2.getBeginTime()+ele2.getLength()-ele1.getBeginTime();
 					if (syllLength>maxLength){maxLength=syllLength;}
 				}
+				*/
 			}
 		}
 		else if (type==TRANSITION_TYPE){
 			int syllLengthPrev=0;
 			for (int i=0; i<songs.length; i++){
+				LinkedList<Syllable> syls=songs[i].getPhrases();
+				
+				
+				for (int j=0; j<syls.size()-1; j++){
+					int maxl=0;
+					Syllable sy=syls.get(j);
+					for (Syllable s: sy.getSyllables()){
+						int syllLength=s.getLengthElements(false);
+						if (syllLength>maxl){maxl=syllLength;}
+					}
+					int maxl2=0;
+					sy=syls.get(j+1);
+					for (Syllable s: sy.getSyllables()){
+						int syllLength=s.getLengthElements(false);
+						if (syllLength>maxl2){maxl2=syllLength;}
+					}
+					maxl+=maxl2;
+					if (maxl>maxLength) {maxLength=maxl;}
+				}
+				
+				/*
+				for (int j=0; j<songs[i].getNumSyllables(2)-1; j++){
+					Syllable sy=syls.get(i);
+					Syllable s1=sy.getLastCompleteChild();
+					
+					sy=syls.get(i+1);
+					Syllable s2=sy.getLastCompleteChild();
+					
+					int transLength=s1.getLengthElements(true)+s2.getLengthElements(false);
+				}
+				*/
+				/*
 				for (int j=0; j<songs[i].getNumPhrases(); j++){
 					int[][]p=(int[][])songs[i].getPhrase(j);
 					a=p.length-1;
@@ -530,6 +836,7 @@ public class ComparisonResults {
 					syllLengthPrev=(int)Math.round(syllLength+(ele2.getTimeAfter()/ele2.getTimeStep()));
 					
 				}
+				*/
 			}
 		}
 		else if (type==SONG_TYPE){
@@ -560,7 +867,7 @@ public class ComparisonResults {
 					int length=n3.length();
 					n3=songs[i].getName().substring(0, length-4);
 				}
-				for (int j=0; j<songs[i].getNumElements(); j++){
+				for (int j=0; j<songs[i].getNumElements2(); j++){
 					Integer gr=new Integer(j+1);
 					//names[count]=songs[i].getIndividualName()+":"+n3+","+gr.toString();
 					names[count]=n3+","+gr.toString();
@@ -572,8 +879,8 @@ public class ComparisonResults {
 			int count=0;
 			int maxLength=0;
 			for (int i=0; i<songs.length; i++){
-				if (songs[i].getNumElements()>maxLength){
-					maxLength=songs[i].getNumElements();
+				if (songs[i].getNumElements2()>maxLength){
+					maxLength=songs[i].getNumElements2();
 				}
 			}
 			String[] numberString=new String[maxLength+1];
@@ -587,6 +894,24 @@ public class ComparisonResults {
 					int length=n3.length();
 					n3=songs[i].getName().substring(0, length-4);
 				}
+				LinkedList<Syllable> syl=songs[i].getPhrases();
+				for (Syllable sy: syl){
+					int p=sy.getMaxSyllLength();
+					for (int k=0; k<p; k++){
+						StringBuffer sb=new StringBuffer();
+						for (Syllable s: sy.getSyllables()){
+							int[] x=s.getEleIds();
+							if (x.length>k){
+								sb.append(numberString[x[k]+1]+",");
+							}
+						}
+						sb.deleteCharAt(sb.length()-1);
+						names[count]=n3+": "+sb.toString();	
+						count++;
+					}
+				}
+				
+				/*
 				for (int j=0; j<songs[i].getNumPhrases(); j++){
 					int[][] p=(int[][])songs[i].getPhrase(j);
 					
@@ -604,6 +929,7 @@ public class ComparisonResults {
 						count++;
 					}
 				}
+				*/
 			}
 		}
 		else if (type==SYLLABLE_TYPE){
@@ -614,7 +940,24 @@ public class ComparisonResults {
 					int length=n3.length();
 					n3=songs[i].getName().substring(0, length-4);
 				}
-				for (int j=0; j<songs[i].getNumPhrases(); j++){
+				int sy=songs[i].getNumSyllables(1);
+				for (int j=0; j<sy; j++){
+					Integer gr=new Integer(j+1);
+					//names[count]=songs[i].getIndividualName()+":"+n3+","+gr.toString();	
+					names[count]=n3+","+gr.toString();	
+					count++;
+				}
+			}
+		}
+		else if (type==PHRASE_TYPE){
+			int count=0;
+			for (int i=0; i<songs.length; i++){
+				String n3=songs[i].getName();
+				if (n3.endsWith(".wav")){
+					int length=n3.length();
+					n3=songs[i].getName().substring(0, length-4);
+				}
+				for (int j=0; j<songs[i].getNumSyllables(2); j++){
 					Integer gr=new Integer(j+1);
 					//names[count]=songs[i].getIndividualName()+":"+n3+","+gr.toString();	
 					names[count]=n3+","+gr.toString();	
@@ -644,6 +987,14 @@ public class ComparisonResults {
 				names[i]=n3;
 			}
 		}
+		else if (type==INDIVIDUAL_DAY_TYPE){
+			for (int i=0; i<n; i++){
+				
+				//System.out.println(i+" "+names.length+" "+individualDayNames.length+" "+lookUpIndividualDays.length+" "+lookUpIndividualDays[i]);
+				
+				names[i]=individualDayNames[lookUpIndividualDays[i]];
+			}
+		}
 		else if (type==INDIVIDUAL_TYPE){
 			for (int i=0; i<n; i++){
 				names[i]=individualNames[lookUpIndividual[i]];
@@ -659,7 +1010,9 @@ public class ComparisonResults {
 		
 		
 		individualNumber=0;
+		individualDayNumber=0;
 		int[][] indLocs=new int[songNumber][2];
+		int[][] indDayLocs=new int[songNumber][2];
 		for (int i=0; i<lookUps.length; i++){
 			boolean found=false;
 			for (int j=0; j<individualNumber; j++){
@@ -674,6 +1027,19 @@ public class ComparisonResults {
 				indLocs[individualNumber][1]=1;
 				individualNumber++;
 			}
+			found=false;
+			for (int j=0; j<individualDayNumber; j++){
+				if (songs[lookUps[i][0]].getIndividualDayID()==indDayLocs[j][0]){
+					indDayLocs[j][1]++;
+					found=true; 
+					j=individualDayNumber;
+				}
+			}
+			if(!found){
+				indDayLocs[individualDayNumber][0]=songs[lookUps[i][0]].getIndividualDayID();
+				indDayLocs[individualDayNumber][1]=1;
+				individualDayNumber++;
+			}
 		}
 		
 		lookUpIndividual=new int [lookUps.length];
@@ -686,8 +1052,21 @@ public class ComparisonResults {
 			}
 		}
 		
+		lookUpIndividualDays=new int [lookUps.length];
+		
+		for (int i=0; i<lookUps.length; i++){
+			for (int j=0; j<indDayLocs.length; j++){
+				if (songs[lookUps[i][0]].getIndividualDayID()==indDayLocs[j][0]){
+					lookUpIndividualDays[i]=j;
+					
+				}
+			}
+			//System.out.println("LOOKUP: "+i+" "+lookUpIndividualDays[i]+" "+songs[lookUps[i][0]].getIndividualDayID());
+		}
+		
 		individuals=new int[individualNumber][];
 		individualNames=new String[individualNumber];
+		
 		for (int i=0; i<individualNumber; i++){
 			individuals[i]=new int[indLocs[i][1]];
 			int count2=0;
@@ -700,7 +1079,29 @@ public class ComparisonResults {
 			}
 		}
 		
-		System.out.println("Comp res: "+type+" inds "+individualNumber);
+		individualDays=new int[individualDayNumber][];
+		individualDayNames=new String[individualDayNumber];
+		
+		//System.out.println("INDIVIDUAL DAYS");
+		
+		for (int i=0; i<individualDayNumber; i++){
+			individualDays[i]=new int[indDayLocs[i][1]];
+			int count2=0;
+			
+			
+			//System.out.print(i+" ");
+			for (int j=0; j<lookUps.length; j++){
+				if (songs[lookUps[j][0]].getIndividualDayID()==indDayLocs[i][0]){
+					individualDays[i][count2]=j; 
+					//System.out.print(j+" ");
+					individualDayNames[i]=songs[lookUps[j][0]].getIndividualName()+" "+songs[lookUps[j][0]].getIndividualDayID();
+					count2++;
+				}
+			}
+			//System.out.println();
+		}
+		
+		//System.out.println("Comp res: "+type+" inds "+individualNumber);
 		
 		
 	}
@@ -715,7 +1116,7 @@ public class ComparisonResults {
 		int count=0;
 		int[] songIds=new int[n];
 		int[] songCounts=new int[n];
-		System.out.println("1");
+		//System.out.println("1");
 		for (int i=0; i<n; i++){
 			boolean found=false;
 			for (int j=0; j<count; j++){
@@ -805,7 +1206,7 @@ public class ComparisonResults {
 				}
 			}
 			if (!matched){
-				System.out.println("NEW POPULATION: "+s);
+				//System.out.println("NEW POPULATION: "+s);
 				populationName.add(s);
 			}
 		}
@@ -831,7 +1232,7 @@ public class ComparisonResults {
 				}
 			}
 			if (!matched){
-				System.out.println("NEW Sex: "+s);
+				//System.out.println("NEW Sex: "+s);
 				sexName.add(s);
 			}
 		}
@@ -857,7 +1258,7 @@ public class ComparisonResults {
 				}
 			}
 			if (!matched){
-				System.out.println("NEW Age: "+s);
+				//System.out.println("NEW Age: "+s);
 				ageName.add(s);
 			}
 		}
@@ -883,7 +1284,7 @@ public class ComparisonResults {
 				}
 			}
 			if (!matched){
-				System.out.println("NEW Rank: "+s);
+				//System.out.println("NEW Rank: "+s);
 				rankName.add(s);
 			}
 		}
@@ -928,6 +1329,20 @@ public class ComparisonResults {
 			if (times[i]>maxTime){maxTime=times[i];}
 			if (times[i]<minTime){minTime=times[i];}
 			//System.out.println(times[i]+" "+maxTime+" "+minTime);
+			
+			if (type<2) {
+				Element ele=songs[lookUps[i][0]].getEleList2().get(lookUps[i][1]);
+				times[i]+=(int)Math.round(ele.getBeginTime()*ele.getTimeStep());	
+			}
+			else if (type==SYLLABLE_TYPE) {
+				Syllable syl=songs[lookUps[i][0]].getBaseLevelSyllables().get(lookUps[i][1]);
+				Element ele=syl.getElement2(0);
+				//System.out.println("INITIAL: "+times[i]+" "+ele.getBeginTime()+" "+ele.getTimeStep());
+				times[i]+=(int)Math.round(ele.getBeginTime()*ele.getTimeStep());
+				//System.out.println("AFTER: "+times[i]);
+			}
+			
+			
 		}	
 	}
 	
@@ -1382,7 +1797,116 @@ public class ComparisonResults {
 		return c;
 	}
 	
+	public void merge(int p, LinkedList<int[]> pos){
+		int[] y=pos.get(p);
+		
+		//System.out.println(p+" "+y[2]+" "+y[0]+" "+y[1]+" "+pos.size());
+		
+		pos.remove(p);
+		int minScore=Integer.MAX_VALUE;
+		int loc=-1;
+		for (int i=0; i<pos.size(); i++){
+			int[] x=pos.get(i);
+			int q=Math.abs(x[3]-y[3]);
+			if (q<minScore){
+				minScore=q;
+				loc=i;
+			}
+		}
+		
+		int[]x=pos.get(loc);
+		pos.remove(loc);
+		
+		int[]z=new int[4];
+		z[0]=Math.min(x[0], y[0]);
+		z[1]=Math.max(x[1], y[1]);
+		z[2]=z[1]-z[0];
+		z[3]=(int)Math.round(getAverageTime(z[0], z[1]));
+		pos.add(loc, z);
+		//System.out.println(loc+" "+z[2]+" "+z[0]+ " "+z[1]);
+	}
 	
+	public LinkedList<int[]> getSplits(){
+		LinkedList<int[]> output=new LinkedList<int[]>();
+		for (int i=0; i<individualDays.length; i++) {
+			int[] x=individualDays[i];
+			Arrays.sort(x);
+			int[] z=new int[4];
+			z[0]=lookUps[x[0]][0];
+			z[1]=lookUps[x[x.length-1]][0];
+			z[2]=z[1]-z[0];
+			z[3]=(int)Math.round(getAverageTime(z[0], z[1]));
+			output.add(z);
+			//System.out.println("SPLITS: "+i+" "+z[0]+" "+z[1]+" "+z[2]+" "+z[3]);
+		}
+		
+		
+		/*output=getSplits(40, 72);
+		for (int[] z: output) {
+			System.out.println(z[0]+" "+z[1]+" "+z[2]+" "+z[3]);
+		}
+	*/
+		
+		
+		return output;
+	}
+	
+	public LinkedList<int[]> getSplits (int minSongs, int numhrs){
+		LinkedList <int[]> pos=new LinkedList<int[]>();
+		
+		long period=3600000*numhrs;
+		
+		int loc=0;
+		
+		long[] xt=getSongDates();
+		
+		long p=xt[0];
+		
+		for (int i=0; i<=xt.length; i++){
+			if ((i==xt.length)||(xt[i]>p+period)){
+				int a=loc;
+				int b=i;
+				int c=i-loc;
+				int d=(int)Math.round(getAverageTime(a, b));
+								
+				int[] x={a,b,c,d};
+				pos.add(x);
+				loc=i;
+				if (i<xt.length){p=xt[i];}
+			}
+		}
+		
+		boolean found=false;
+		while (found==false){
+			found=true;
+			for (int i=0; i<pos.size(); i++){
+				int[] x=pos.get(i);
+				if (x[2]<minSongs){
+					//System.out.println("MERGE");
+					if (pos.size()>1){
+						merge(i, pos);
+						found=false;
+					}
+					i=pos.size();
+				}
+			}
+		}
+		
+		return pos;
+	}
+	
+	public double getAverageTime(int a, int b){
+		
+		long[] x=getSongDates();
+		
+		double p=0;
+		for (int i=a; i<b; i++){
+			p+=x[i]-x[0];
+		}
+		p/=(b-a-0.0);
+		p/=1000.0*3600;
+		return p;
+	}
 	
 
 }

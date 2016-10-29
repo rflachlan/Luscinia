@@ -158,8 +158,8 @@ public class ComplexAnalysisDownload extends JPanel implements PropertyChangeLis
 							else{
 								sd.writeDouble(scoresSong[j][i]);
 							}
-							sd.writeInt(songs[i].getNumPhrases());
-							sd.writeInt(songs[j].getNumPhrases());
+							sd.writeInt(songs[i].getNumSyllables(2));
+							sd.writeInt(songs[j].getNumSyllables(2));
 							
 							int sharedSylls=ag.getSharedSyllCount(i, j, threshold);
 							sd.writeInt(sharedSylls);

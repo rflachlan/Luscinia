@@ -21,9 +21,19 @@ import lusc.net.github.analysis.BasicStatistics;
 
 public class Element {
 
+	String[] measurementLevels={"Peak frequency", "Mean frequency", "Median frequency", "Fundamental frequency", "Peak frequency change", "Mean frequency change",
+			"Median frequency change", "Fundamental frequency change", "Harmonicity", "Wiener entropy", "Frequency bandwidth", "Amplitude", "Vibrato rate", "Vibrato amplitude"};
+
+	
+	String[] paramNames= {"Peak frequency", "Mean frequency", "Median frequency", "Fundamental frequency",
+			"Peak frequency change", "Mean frequency change", "Median frequency change", "Fundamental frequency change",
+			"Harmonicity", "Wiener entropy", "Bandwidth", "Amplitude", "Vibrato rate", "Vibrato amplitude", "Vibrato shape"
+	};
+	
+	
 	double timeStep=0;
 	double frameLength=0;
-	int maxf=0;
+	public int maxf=0;
 	int windowMethod=0;
 	double dynEqual=0;
 	double dynRange=0;
@@ -53,8 +63,14 @@ public class Element {
 	double minFreq=0;
 	double energyVariance=0;
 	
-	LinkedList<Syllable> syls=new LinkedList<Syllable>();
+	int songid=-1;
 	
+	LinkedList<Syllable> syls=new LinkedList<Syllable>();
+	Syllable syl;
+	
+	double [][] cdata,cdataTemp;
+	double[] cdataAmp;
+	int[] cdataLoc;
 	
 	/**
 	 * An empty constructor
@@ -86,7 +102,12 @@ public class Element {
 		this.signal=signal;
 		this.measurements=measurements;
 		this.powerSpectrum=powerSpectrum;
+		this.songid=song.songID;
 		length=signal.length;
+		begintime=signal[0][0];
+		
+		
+		
 	}
 	
 	/**
@@ -203,6 +224,34 @@ public class Element {
 	/**
 	 * A constructor that creates a new Element by merging an array of Elements.
 	 * @param eleArray an array of elements
+	 * e.g. the length of the new Element
+	 */
+	
+	public Element(Element[] eleArray){
+		mergeMeasurements(eleArray);
+		
+		timeBefore=eleArray[0].getTimeBefore();
+		timeAfter=eleArray[eleArray.length-1].getTimeAfter();
+		begintime=eleArray[0].begintime;
+		Element re=eleArray[0];
+		timeStep=re.timeStep;
+		frameLength=re.frameLength;
+		maxf=re.maxf;
+		windowMethod=re.windowMethod;
+		
+		dynEqual=re.dynEqual;
+		dynRange=re.dynRange;
+		
+		echoRange=re.echoRange;
+		echoComp=re.echoComp;
+		dy=re.dy;
+		
+		this.songid=re.songid;
+	}
+	
+	/**
+	 * A constructor that creates a new Element by merging an array of Elements.
+	 * @param eleArray an array of elements
 	 * @param average if true, various parameters are averaged, if false, they are not
 	 * e.g. the length of the new Element
 	 */
@@ -218,10 +267,11 @@ public class Element {
 		
 		
 		
-		timeMax=0;
-		timeMin=1000000;
+		timeMax=-100000000;
+		timeMin=100000000;
 		
 		if (!average){
+			
 			timeBefore=eleArray[0].timeBefore;
 			timeAfter=eleArray[eleArray.length-1].timeAfter;
 			begintime=eleArray[0].begintime;
@@ -255,7 +305,7 @@ public class Element {
 		
 		
 		for (int i=0; i<n; i++){
-	
+			
 			timeStep+=eleArray[i].timeStep;
 			frameLength+=eleArray[i].frameLength;
 			maxf+=eleArray[i].maxf;
@@ -283,9 +333,14 @@ public class Element {
 					tan++;
 				}
 			}
-			
-			if (eleArray[i].timeMax>timeMax){timeMax=eleArray[i].timeMax;}
-			if (eleArray[i].timeMin<timeMin){timeMin=eleArray[i].timeMin;}
+			System.out.println(i+" "+eleArray[i].timeMax+" "+eleArray[i].timeMin);
+			if (eleArray[i].timeMax>timeMax){
+				timeMax=eleArray[i].timeMax;
+				
+			}
+			if (eleArray[i].timeMin<timeMin){
+				timeMin=eleArray[i].timeMin;
+			}
 			
 			begintime+=eleArray[i].begintime;
 			for (int j=0; j<19; j++){
@@ -335,6 +390,7 @@ public class Element {
 		overallPeak2/=n;
 		if (!average){
 			timelength=timeMax-timeMin;
+			System.out.println("TIME LENGTH IS: "+timelength+" "+timeMax+" "+timeMin);
 		}
 		if (average){
 			if (tbn>0){
@@ -434,6 +490,24 @@ public class Element {
 	
 	public void setPowerSpectrum(double[] a){
 		powerSpectrum=a;
+		
+		
+		
+		
+		
+	}
+	
+	
+	public double checkDiff(double mf) {
+		double mindiff=0;
+		//System.out.println(measurements.length+" "+length+" "+measurements[0].length+" "+signal[0][0]+" "+signal[0][1]+" "+signal[0][2]);
+		for (int i=0; i<length; i++) {
+			double f1=mf-(dy*signal[i][1]);
+			f1=f1-measurements[i+5][0];
+			if (f1>mindiff) {mindiff=f1;}
+			//System.out.println(i+" "+length+" "+maxf+" "+f1+" "+measurements[i][0]+" "+signal[i][0]+" "+signal[i][1]+" "+signal[i][2]);
+		}
+		return mindiff;
 	}
 	
 	/** 
@@ -748,6 +822,10 @@ public class Element {
 	public int getLength(){
 		return length;
 	}
+	
+	public int getEndTime(){
+		return begintime+length;
+	}
 
 	/** 
 	 * This method sets the length of the element (in terms of measurement points)
@@ -1030,7 +1108,20 @@ public class Element {
 			statistics[i][2]=variance/n;			//variance
 			statistics[i][1]=bs.calculateMedian(t);	//median
 	
-		}	
+		}
+		
+		int tmax=-100;
+		int tmin=1000000;
+		
+		for (int j=0; j<length; j++){
+			if (signal[j][0]>tmax){tmax=signal[j][0];}
+			if (signal[j][0]<tmin){tmin=signal[j][0];}
+		}
+		
+		timelength=(float)((tmax-tmin)*timeStep);
+		timeMax=(float)(tmax*timeStep);
+		timeMin=(float)(tmin*timeStep);
+		begintime=signal[0][0];
 	}
 	
 	/**
@@ -1132,62 +1223,272 @@ public class Element {
 		upper95tile*=dy;
 	}
 	
-	/*
-	 //THIS WAS A SLIGHTLY MORE ELEGANT ATTEMPT TO COMPRESS ELEMENT MEASURES WITHIN THE ELEMENT OBJECT.
-	  //COULD BE RESURRECTED?
-	public void compressElements(int data){
-	
-		boolean p[]=new boolean[length];
-		boolean q[]=new boolean[length];
-		int length1=length-5;
-		double x, min, score;
-		int loc=0;
-		double minScore=100000000;
-		int scoreLoc=0;
-		for (int i=1; i<length1; i++){
-			min=10000000;
-			loc=0;
-			for (int j=1; j<length1; j++){
-				if (!p[j]){
-					p[j]=true;
-					x=calculateFit(p, data);
-					if (x<min){
-						min=x;
-						loc=j;
-					}
-					p[j]=false;
+	public double[] getAverages(double[][] m, boolean logFrequencies){
+		
+		int n1=m.length;
+		
+		double[] out=new double[4];
+		
+		int a=11;
+		
+		for (int i=0; i<4; i++){
+			double t=0;
+			double u=0;
+			for (int j=5; j<n1; j++){
+				if (logFrequencies){
+					//t+=Math.log(m[j][i])*m[j][a];
+					t+=Math.log(m[j][i]);
 				}
-			}
-			p[loc]=true;
-			score=Math.log(min+1000)+Math.log(length-i+10);
-			if (score<minScore){
-				minScore=score;
-				scoreLoc=i;
-				for (int j=0; j<length; j++){
-					q[j]=p[j];
+				else{
+					//t+=m[j][i]*m[j][a];
+					t+=m[j][i];
 				}
+				//u+=m[j][a];
+				u++;
 			}
-			//System.out.println(i+" "+min+" "+score);
+			t/=u;
+			out[i]=t;
+			
+			//System.out.println(i+" "+out[i]+" "+Math.log(m[4][i]));
+			
 		}
-		scoreLoc=length-scoreLoc;
-		int dems=measurements[0].length;
-		compressedMeasures=new double[scoreLoc][dems];
-		compressedPoints=new int[scoreLoc];
-		int count=0;
-		for (int i=0; i<length; i++){
-			if (!q[i]){
-				//System.out.println(i+" "+length+" "+scoreLoc+" "+count+" "+measurements.length);
-				for (int j=0; j<dems; j++){
-					compressedMeasures[count][j]=measurements[i+5][j];
-					
-				}
-				compressedPoints[count]=i;
-				count++;
-			}
-		}		
+		return out;
 	}
-	*/
 	
+	public void compressElements(double reductionFactor, int minPoints, boolean logFrequencies, double slopeATanTransform){
+		System.out.println("Started compression...");		
+		
+		
+		
+		//System.out.println("CAN I GET SYLS?"+syl.getID()+" "+syl.getNumSyllables());
+		
+		
+		double[] averages=syl.calculateElementMeasurementAverages(logFrequencies);
+		System.out.println(songid+" "+averages[3]);
+		
+		
+		
+		
+		double[][] measu=getMeasurements();
+		//double[] averages=getAverages(measu, logFrequencies);
+				
+		int s=getLength();
+				
+		int t=(int)Math.round(reductionFactor*s);
+								
+		if (t<minPoints){
+			t=minPoints;
+			reductionFactor=t/(s+0.0);
+			if (s<minPoints){
+				t=s;
+				reductionFactor=1;
+			}
+		}
+		double s2=s-1;
+		
+		cdata=new double[19][t];
+		cdataTemp=new double[2][t];
+		cdataLoc=new int[t];
+		cdataAmp=new double[t];
+		
+
+		double[] count=new double[t];
+		double diff=measu[0][11]-measu[1][11];
+		double diff2=measu[0][11];
+				
+				
+		for (int a=0; a<s; a++){
+			int c=(int)Math.floor(a*reductionFactor+0.0000000001);
+			if (c==t){c--;}		
+			count[c]++;
+			int ab=a+5;
+					
+			cdataTemp[0][c]+=getTimeStep()*a;
+			cdataTemp[1][c]+=a/s2;
+					
+			for (int q=0; q<4; q++){
+				if (logFrequencies){
+					cdata[q][c]+=Math.log(measu[ab][q]);
+				}
+				else{
+					cdata[q][c]+=measu[ab][q];
+				}
+			}
+			for (int q=4; q<8; q++){
+				double tt=Math.atan2(measu[ab][q], slopeATanTransform);
+				cdata[q][c]+=tt;
+			}
+			for (int q=8; q<13; q++){
+				cdata[q][c]+=measu[ab][q];
+			}
+			
+			double ta=measu[ab][13];
+			//ta=Math.log(Math.max(ta,1));
+			ta=Math.sqrt(ta);
+			cdata[13][c]+=ta;
+						 
+			if (getTimeAfter()!=-10000){
+				cdata[14][c]+=getTimeAfter();
+			}
+			else{
+				cdata[14][c]+=50;
+			}
+			for (int q=15; q<19; q++){
+				if (logFrequencies){
+					cdata[q][c]+=Math.log(measu[ab][q-15])-averages[q-15];
+				}
+				else{
+					cdata[q][c]+=measu[ab][q-15]-averages[q-15];
+				}
+			}
+			cdataAmp[c]+=(diff2-measu[ab][11])/diff;
+			cdataAmp[c]+=0.01;
+		}
+				
+		for (int a=0; a<t; a++){
+			for (int b=0; b<2; b++){
+				cdataTemp[b][a]/=count[a];
+			}
+			for (int b=0; b<19; b++){
+				cdata[b][a]/=count[a];
+			}
+			cdataAmp[a]/=count[a];
+			cdataLoc[a]=1;
+		}
+		//cdataLoc[t-1]=0;
+		//System.out.println("Finished compression");
+	}
+	
+	public void mergeMeasurements(Element[] ea){
+		int n=ea.length;
+		
+		int a=0;
+		
+		for (int i=0; i<n; i++){
+			if (ea[i]==null){System.out.println("ALERT2 "+i);}
+			if (ea[i].cdata==null){System.out.println("ALTERT3 "+i);}
+			a+=ea[i].cdata[0].length;
+		}
+		
+		cdata=new double[19][a];
+		cdataTemp=new double[2][a];
+		cdataAmp=new double[a];
+		cdataLoc=new int[a];
+		
+		double[][] xd=new double[19][a];
+		double[][] xdt=new double[2][a];
+		double[] xde=new double[a];
+		int[] xdl=new int[a];
+		
+		//put values together in one index...
+		a=0;
+		
+		double minstart=Double.MAX_VALUE;
+		
+		
+		for (int i=0; i<n; i++){
+			double startPos=ea[i].getBeginTime()*ea[i].getTimeStep();
+			if (startPos<minstart){minstart=startPos;}
+			
+			for (int j=0; j<ea[i].cdata[0].length; j++){
+				for (int k=0; k<19; k++){
+					xd[k][a]=ea[i].cdata[k][j];
+				}
+				xdt[0][a]=ea[i].cdataTemp[0][j]+startPos;
+				
+				xdl[a]=i;
+				//if (j==ea[i].cdata[0].length-1) {xdl[a]=-1;}
+				xde[a]=ea[i].cdataAmp[j];
+				a++;
+			}
+		}	
+		for (int i=0; i<a; i++){
+			xdt[0][i]-=minstart;
+		}
+		
+		
+		//sort values by time...
+		
+		for (int i=0; i<a; i++){
+			//System.out.print(i+" ");
+			double minxdt=Double.MAX_VALUE;
+			int minloc=-1;
+			for (int j=0; j<a; j++){
+				if (xdt[0][j]<minxdt){
+					minxdt=xdt[0][j];
+					minloc=j;
+				}
+			}
+			for (int k=0; k<19; k++){
+				cdata[k][i]=xd[k][minloc];
+				
+				//System.out.print(cdata[k][i]+" ");
+			}
+			cdataTemp[0][i]=xdt[0][minloc];
+			
+			
+			
+			//System.out.println(cdataTemp[0][i]);
+			cdataLoc[i]=xdl[minloc];
+			cdataAmp[i]=xde[minloc];
+			xdt[0][minloc]=Double.MAX_VALUE;
+		}
+		
+		//sets first index of cdataLoc to 'skip ahead' number...
+		/*
+		for (int i=0; i<a; i++){
+			double p=cdataLoc[i];
+			cdataLoc[i]=0;
+			for (int j=i+1; j<n; j++){
+				if (p==cdataLoc[j]){
+					cdataLoc[i]=j;
+					j=n;
+				}
+			}
+		}
+		*/
+		
+		//make relative time index...
+		double maxt=cdataTemp[0][a-1];
+		for (int i=0; i<a; i++){
+			cdataTemp[1][i]=cdataTemp[0][i]/maxt;
+			
+			//System.out.println(cdataTemp[0][i]+" ");
+			
+		}
+	
+	}
+	
+	
+	
+	public double[][] extractTempParams(int[] v){
+		double[][] out=new double[v.length][];
+		
+		for (int i=0; i<v.length; i++){
+			out[i]=cdataTemp[v[i]];
+		}
+		return out;
+	}
+	
+	public double[][] extractParams(int[] v){
+		double[][] out=new double[v.length][];
+		//System.out.println(v.length);
+		for (int i=0; i<v.length; i++){
+			//System.out.println(cdata.length+" "+paramNames[v[i]]);
+			out[i]=cdata[v[i]];
+		}
+		return out;
+	}
+	
+	public double[] extractAmpParams(){
+		return cdataAmp;
+	}
+	
+	public int[] extractLocParams(){
+		return cdataLoc;
+	}
+	
+
 	public double calculateFit(boolean [] p, int d){
 		double sum=0;
 		int a, b,c;
@@ -1282,6 +1583,16 @@ public class Element {
 		return results;
 	}
 	
+	public double[] getTimes() {
+		double[] results=new double[length];
+		for (int i=0; i<length; i++){
+			results[i]=(begintime+i)*timeStep;	
+		}
+			
+		return results;
+		
+	}
+	
 	
 	
 	public double[] getMeasurements(int id, int npoints){
@@ -1356,5 +1667,117 @@ public class Element {
 			measurements[4][i]=av;			
 		}	
 	}
+	
+	/*
+	public int checkValues(Song song){
+		int p=0;
+		for (int i=0; i<measurements[0].length; i++){
+			
+			for (int j=0; j<measurements.length; j++){
+				if (Double.isNaN(measurements[j][i])){
+					System.out.println(song.getName()+" "+i+" NaN");
+				}
+				if (Double.isInfinite(measurements[j][i])){
+					System.out.println(song.getName()+" "+i+" INF");
+				}
+			}
+			
+		}
+		return p;
+	}
+	*/
+	
+	
+	public String[] checkValues(Song song){
+		String s[]=null;
+		for (int i=0; i<measurements[0].length; i++){
+			
+			for (int j=0; j<measurements.length; j++){
+				if (Double.isNaN(measurements[j][i])){
+					
+					s=new String[2];
+					s[0]="NaN";
+					s[1]=measurementLevels[i];
+					//System.out.println(song.getName()+" "+i+" NaN");
+				}
+				if (Double.isInfinite(measurements[j][i])){
+					
+					s=new String[2];
+					s[0]="Infinite value";
+					s[1]=measurementLevels[i];
+				}
+			}
+			
+		}
+		
+		return s;
+		
+	}
+	
+	public int getMinLevel(){
+		int p=3;
+		if (syls!=null){
+			for (Syllable sy : syls){
+				if (sy.maxLevel<p){
+					p=sy.maxLevel;
+					//System.out.println(p+" "+syls.size());
+				}
+			
+			}
+		}
+		return p;
+	}
+	
+	public void setSyllable(Syllable syl){
+		this.syl=syl;
+	}
+	
+	public Syllable getSyllable() {
+		for (Syllable syl: syls) {
+			if (syl.getNumChildren()==0) {
+				return syl;
+			}
+		}
+		return null;
+	}
+	
+	public Syllable getPhrase() {
+		for (Syllable syl: syls) {
+			if (syl.getNumParents()==0) {
+				return syl;
+			}
+		}
+		return null;
+	}
+	
+	public boolean checkElement(int maxf2) {
+		boolean ok=true;
+		for (int i=0; i<signal.length; i++) {
+			double p=maxf2-signal[i][1]*dy;
+			if (p-500>measurements[i+5][0]) {
+				ok=false;
+			}	
+			//System.out.println(i+" "+p+" "+maxf+" "+measurements[i+5][0]+" "+signal.length+" "+measurements.length);
+		}
+		return ok;
+	}
+	
+	public void resetSignal(int oldmaxf) {
+		int d=maxf-oldmaxf;
+		
+		int steps=(int)Math.ceil(d/dy);
+	
+		for (int i=0; i<signal.length; i++) {
+			for (int j=1; j<signal[i].length; j++) {
+				signal[i][j]+=steps;
+			}
+		}
+		
+		maxf=oldmaxf;
+		
+		
+		
+	}
+	
 	
 }

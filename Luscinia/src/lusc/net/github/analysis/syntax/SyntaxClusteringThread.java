@@ -42,14 +42,27 @@ public class SyntaxClusteringThread extends Thread{
 	int[][]individuals;
 	int[][]songs;
 	
+	double[] mktrajectory, swtrajectory;
 	
 	int mode=2;
 	
-	public SyntaxClusteringThread(int kv, double[][] mat, int[][] individuals, int[][] songs, int mode){
+	boolean rolling=false;
+	boolean byIndividual=true;
+	int window=0;
+	
+	public SyntaxClusteringThread(int kv, double[][] mat, int[][] individuals, int[][] songs, int mode, boolean rolling, int window, boolean byIndividual){
 		this.kv=kv;
 		this.mode=mode;
 		this.individuals=individuals;
 		this.songs=songs;
+		this.rolling=rolling;
+		this.window=window;
+		this.byIndividual=byIndividual;
+		
+		if (!byIndividual){
+			individuals=calculateDummyIndividuals(songs.length);
+		}
+		
 		kv1=kv+1;
 		
 		n=mat.length;
@@ -94,7 +107,7 @@ public class SyntaxClusteringThread extends Thread{
 		if (mode>0){
 			try{
 				System.out.println("Starting SWML: "+kv);
-				swml=new SWMLEntropyEstimate(individuals, assignBySong, kv, n);
+				swml=new SWMLEntropyEstimate(individuals, assignBySong, kv, n, true);
 				System.out.println("Finished SWML: "+kv);
 			}
 			catch(Exception e){
@@ -104,13 +117,67 @@ public class SyntaxClusteringThread extends Thread{
 		if (mode!=1){
 			try{
 				System.out.println("Starting MKC: "+kv);
-				mkc=new MarkovChain(individuals, assignBySong, kv, n);
+				mkc=new MarkovChain(individuals, assignBySong, kv, n, true);
 				System.out.println("Finished MKC: "+kv);
 			}
 			catch(Exception e){
 				e.printStackTrace();
 			}
 		}
+		
+		
+		if (rolling){
+			
+			mktrajectory=new double[songs.length-window];
+			swtrajectory=new double[songs.length-window];
+			for (int i=window; i<songs.length; i++){	
+				int[][] subset=calculateSubset(assignBySong, i-window, i);
+				int n2=calculateN(subset);
+				int[][] ind2=calculateDummyIndividuals(subset.length);
+				if (mode>0){
+					SWMLEntropyEstimate swmlx=new SWMLEntropyEstimate(ind2, subset, kv, n2, false);
+					swtrajectory[i-window]=swmlx.rho;
+					System.out.println("SWML: "+(i-window)+" "+swtrajectory[i-window]);
+				}
+				if (mode!=1){
+					MarkovChain mkcx=new MarkovChain(ind2, subset, kv, n2, false);
+					mktrajectory[i-window]=mkcx.rho;
+					System.out.println("MK: "+(i-window)+" "+mktrajectory[i-window]+" "+mkcx.zero+" "+mkcx.ent+" "+kv+" "+n2+" "+subset.length);
+				}
+				
+			}
+		}
+		
+		
+	}
+	
+	public int[][] calculateDummyIndividuals(int n){
+		int[][] x=new int[n][1];
+		for (int i=0; i<n; i++){
+			x[i][0]=i;
+		}
+		return x;
+	}
+	
+	public int calculateN(int[][] x){
+		int n=0;
+		for (int i=0; i<x.length; i++){
+			n+=x[i].length;
+		}
+		return n;
+	}
+	
+	public int[][] calculateSubset(int[][] x, int a, int b){
+		int n=b-a;
+		int[][] out=new int[n][];
+		
+		for (int i=a; i<b; i++){
+			out[i-a]=new int[x[i].length];
+			for (int j=0; j<x[i].length; j++){
+				out[i-a][j]=x[i][j];
+			}
+		}
+		return out;	
 	}
 	
 	public int[] initiatePrototypes(){

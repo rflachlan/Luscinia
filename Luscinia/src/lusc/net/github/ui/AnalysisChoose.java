@@ -55,6 +55,7 @@ public class AnalysisChoose extends JPanel implements ActionListener, ChangeList
 	 */
 	private static final long serialVersionUID = 1L;
 	private static String EXPAND_COMMAND="expand";
+	private static String ANALYSE_ALL="show all";
 	private static String NEXTSTEP="next";
 	private static String STOPCOMMAND="stop";
 	private static String MDS_VIEW="mds view";
@@ -63,8 +64,11 @@ public class AnalysisChoose extends JPanel implements ActionListener, ChangeList
 	JRadioButton dtwAnalysis=new JRadioButton("Computer comparison by time warping");
 	JRadioButton parAnalysis=new JRadioButton("Comparison by parameter");
 	JRadioButton visAnalysis=new JRadioButton("Comparison by inspection");
-	JRadioButton discAnalysis=new JRadioButton("Auditory discrimination analysis");
+	JRadioButton discAnalysis=new JRadioButton("Discrimination analysis");
 	JRadioButton dParAnalysis=new JRadioButton("Export parameter statistics to spreadsheet");
+	JRadioButton dTestDB=new JRadioButton("Check database measurements");
+	JRadioButton dSplitSongs=new JRadioButton("Split songs into phrases");
+	JRadioButton dExportWavs=new JRadioButton("Export sound files");
 	
 	int analysisMode=0;
 	
@@ -78,9 +82,9 @@ public class AnalysisChoose extends JPanel implements ActionListener, ChangeList
 	LinkedList<Song> ustore=new LinkedList<Song>();
 	String query=null;
 	private int [] indq={1,2};
-	private int [] sonq={1,2,3};
+	//private int [] sonq={1,2,3};
 	JButton expandTree, nextButton, stopButton;
-	
+	JCheckBox showAllSongsButton;
 	JProgressBar progress=new JProgressBar(0, 100);
 	
 	int stepPosition=0;
@@ -105,6 +109,10 @@ public class AnalysisChoose extends JPanel implements ActionListener, ChangeList
 	ABXdiscrimination abx;
 	SimpleVisualComparison simpVisComp;
 	MeasurementSave measSave;
+	CheckDatabase testDB;
+	SplitSongs splitSongs;
+	ExportSongs exportSongs;
+	
 	StatOptionPanel sop;
 	AnalysisSwingWorker answ;
 	ComplexAnalysisDownload cad;
@@ -113,13 +121,16 @@ public class AnalysisChoose extends JPanel implements ActionListener, ChangeList
 	
 	SongLoaderSwingWorker clsw;
 	DTWSwingWorker dtwsw;
-	
+
 	boolean mdsProvided=false;
-	MultiDimensionalScaling mdsEle=null;
-	MultiDimensionalScaling mdsSyll=null;
-	MultiDimensionalScaling mdsSyTr=null;
-	MultiDimensionalScaling mdsSong=null;
-	MultiDimensionalScaling mdsInd=null;
+	
+	boolean showAllSongs=false;
+	//MultiDimensionalScaling mdsEle=null;
+	//MultiDimensionalScaling mdsSyllTrue=null;
+	//MultiDimensionalScaling mdsSyll=null;
+	//MultiDimensionalScaling mdsSyTr=null;
+	//MultiDimensionalScaling mdsSong=null;
+	//MultiDimensionalScaling mdsInd=null;
 	JFrame f;
 	
 	
@@ -163,12 +174,17 @@ public class AnalysisChoose extends JPanel implements ActionListener, ChangeList
 		 this.setLayout(new BorderLayout());
 		
         //Create the components.
-        treePanel = new DatabaseTree2(this, dbc);
+		treePanel = new DatabaseTree2(this, dbc);
         populateTree();
 
 		expandTree=new JButton("Expand Tree");
 		expandTree.setActionCommand(EXPAND_COMMAND);
 		expandTree.addActionListener(this);
+		
+		showAllSongsButton=new JCheckBox("Analyse all songs");
+		showAllSongsButton.setSelected(showAllSongs);
+		showAllSongsButton.setActionCommand(ANALYSE_ALL);	
+		showAllSongsButton.addActionListener(this);
         //Lay everything out.
         treePanel.setPreferredSize(new Dimension(300, 600));
 		Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
@@ -180,8 +196,10 @@ public class AnalysisChoose extends JPanel implements ActionListener, ChangeList
 		dbPane.add(treePanel, BorderLayout.CENTER);
 		
 		JPanel buttonPanel=new JPanel();
-		buttonPanel.setLayout(new BorderLayout());
-		buttonPanel.add(expandTree, BorderLayout.NORTH);
+		buttonPanel.setLayout(new GridLayout(0,1));
+		buttonPanel.setBorder(BorderFactory.createEmptyBorder(10,10,200, 10));
+		buttonPanel.add(expandTree);
+		buttonPanel.add(showAllSongsButton);
 		//panel.add(compareComputer);
 		//panel.add(syllablize);
 		//panel.add(visualComparison);
@@ -233,6 +251,9 @@ public class AnalysisChoose extends JPanel implements ActionListener, ChangeList
 		bg.add(visAnalysis);
 		bg.add(discAnalysis);
 		bg.add(dParAnalysis);
+		bg.add(dTestDB);
+		bg.add(dSplitSongs);
+		bg.add(dExportWavs);
 		
 		if (analysisMode==0){
 			dtwAnalysis.setSelected(true);
@@ -246,8 +267,17 @@ public class AnalysisChoose extends JPanel implements ActionListener, ChangeList
 		else if (analysisMode==3){
 			discAnalysis.setSelected(true);
 		}
-		else{
+		else if (analysisMode==4){
 			dParAnalysis.setSelected(true);
+		}
+		else if (analysisMode==5){
+			dTestDB.setSelected(true);
+		}
+		else if (analysisMode==6){
+			dSplitSongs.setSelected(true);
+		}
+		else {
+			dExportWavs.setSelected(true);
 		}
 		
 		JPanel rbgPanel=new JPanel(new GridLayout(0,1));
@@ -257,6 +287,10 @@ public class AnalysisChoose extends JPanel implements ActionListener, ChangeList
 		rbgPanel.add(visAnalysis);
 		rbgPanel.add(discAnalysis);
 		rbgPanel.add(dParAnalysis);
+		rbgPanel.add(dTestDB);
+		rbgPanel.add(dSplitSongs);
+		rbgPanel.add(dExportWavs);
+		
 		
 		comparisonType.add(rbgPanel, BorderLayout.WEST);
 		
@@ -293,7 +327,7 @@ public class AnalysisChoose extends JPanel implements ActionListener, ChangeList
 	 */
 	
     public void populateTree() {
-		
+    	treePanel.removeAllNodes();
 		extractFromDatabase();
 		myNode nullpar=new myNode("temp");
 		for (int i=0; i<tstore.size(); i++){
@@ -307,30 +341,35 @@ public class AnalysisChoose extends JPanel implements ActionListener, ChangeList
 		archIds=new int[ustore.size()];
 		archNams=new String[ustore.size()];
 		archIndNams=new String[ustore.size()];
+		System.out.println("INCLUDE ALL: "+showAllSongs+" "+ustore.size());
 		for (int i=0; i<ustore.size(); i++){
 			Song nam=ustore.get(i);
-			archIds[i]=nam.getSongID();
-			archNams[i]=nam.getName();
+			//nam=dbc.loadSongFromDatabase(nam.getSongID(), 0);
+			//System.out.println(nam.getIndividualName()+" "+nam.getNumSyllables()+" "+nam.getNumElements());
+			if (showAllSongs||(nam.getNumSylls()>0)){
+			////if (nam.getNumSyllables()>0){IGNORE THIS
+				archIds[i]=nam.getSongID();
+				archNams[i]=nam.getName();
 
-			int par=nam.getIndividualID();
-			boolean found=false;
-			for (int j=0; j<numind; j++){
-				myNode posspar=(myNode)treePanel.getRootNode().getChildAt(j);
-				if (posspar.getDex()==par){
-					found=true;
-					String [] nam2=tstore.get(j);
-					archIndNams[i]=nam2[0];
+				int par=nam.getIndividualID();
+				boolean found=false;
+				for (int j=0; j<numind; j++){
+					myNode posspar=(myNode)treePanel.getRootNode().getChildAt(j);
+					if (posspar.getDex()==par){
+						found=true;
+						String [] nam2=tstore.get(j);
+						archIndNams[i]=nam2[0];
 					
-					myNode chile=treePanel.addObject(posspar, nam.getName(), true);
+						myNode chile=treePanel.addObject(posspar, nam.getName(), true);
+						chile.setDex(nam.getSongID());
+						j=numind;
+					}
+				}
+				if (!found){
+					myNode chile=treePanel.addObject(nullpar, nam.getName(), true);
 					chile.setDex(nam.getSongID());
-					j=numind;
 				}
 			}
-			if (!found){
-				myNode chile=treePanel.addObject(nullpar, nam.getName(), true);
-				chile.setDex(nam.getSongID());
-			}
-			
 		}
     }
 	
@@ -371,7 +410,6 @@ public class AnalysisChoose extends JPanel implements ActionListener, ChangeList
 		ustore=null;
 		ustore=new LinkedList<Song>();
 		ustore=dbc.loadSongDetailsFromDatabase();
-		
 		Collections.sort(ustore, new ByDate());
 		Collections.sort(ustore, new HasSylls());
 	}
@@ -393,7 +431,7 @@ public class AnalysisChoose extends JPanel implements ActionListener, ChangeList
 			}
 			if (l1==0){
 				p=0;
-				System.out.println(a.getName()+" "+b.getName()+" "+p);
+				//System.out.println(a.getName()+" "+b.getName()+" "+p);
 			}
 			//System.out.println(a.getName()+" "+b.getName()+" "+p);
 		    return p;
@@ -429,6 +467,11 @@ public class AnalysisChoose extends JPanel implements ActionListener, ChangeList
 				collapsed=true;
 				expandTree.setText("Expand tree");
 			}
+		}
+		if (ANALYSE_ALL.equals(command)) {
+			showAllSongs=!showAllSongs;
+			populateTree();
+			this.revalidate();
 		}
 		if (NEXTSTEP.equals(command)) {moveToNextStep(mainPanel.getSelectedIndex());}
 		if(STOPCOMMAND.equals(command)){cancelTask(mainPanel.getSelectedIndex());}
@@ -596,6 +639,20 @@ public class AnalysisChoose extends JPanel implements ActionListener, ChangeList
 					measSave=new MeasurementSave(ag, defaults);
 					mainPanel.addTab("Parameter output", measSave);
 					analysisMode=3;
+				}
+				else if (dTestDB.isSelected()){
+					//measSave=new MeasurementSave(sg, defaults);
+					testDB=new CheckDatabase(ag, defaults);
+					mainPanel.addTab("Database test", testDB);
+				}
+				else if (dSplitSongs.isSelected()) {
+					splitSongs=new SplitSongs(ag, defaults);
+					mainPanel.addTab("Split songs", splitSongs);
+				}
+				else if (dExportWavs.isSelected()) {
+					exportSongs=new ExportSongs(ag, defaults);
+					mainPanel.addTab("Export songs", exportSongs);
+					
 				}
 				defaults.setIntProperty("analmod", analysisMode);
 				
@@ -778,5 +835,19 @@ public class AnalysisChoose extends JPanel implements ActionListener, ChangeList
 	public DTWSwingWorker getDTWSW(){
 		return dtwsw;
 	}
+	
+	public LinkedList<String[]> getAnalysisParameters(){
+		if (analysisMode==0) {
+			return dtw.getAnalysisParameters();
+		}
+		else {
+			
+			
+			
+			
+		}
+		return null;
+	}
+	
 	
 }

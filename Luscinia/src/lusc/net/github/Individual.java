@@ -10,6 +10,7 @@ package lusc.net.github;
 import java.util.*;
 
 import lusc.net.github.db.DataBaseController;
+import lusc.net.github.db.DbConnection;
 
 /**
  * Individual is the base unit for an individual. Individuals contain an array of metadata 
@@ -20,7 +21,8 @@ import lusc.net.github.db.DataBaseController;
  */
 public class Individual {
 	
-	DataBaseController dbc;
+	DataBaseController dbc=null;
+	DbConnection db=null;
 	String name;
 	String location;
 	String gridType;
@@ -45,6 +47,12 @@ public class Individual {
 		this.ID=ID;
 		getIndividual();
 	}
+	
+	public Individual( DbConnection db, int ID){
+		this.db=db;
+		this.ID=ID;
+		getIndividualDB();
+	}
 
 	/**
 	 * This method loads up an Individual from the database.
@@ -62,30 +70,25 @@ public class Individual {
 		rank=(String)list.get(8);
 		age=(String)list.get(9);
 		
+		list=null;
+	}
+	
+	/**
+	 * This method loads up an Individual from the database.
+	 */
+	void getIndividualDB(){
+		LinkedList<String> list=db.populateContentPane(ID);
+		name=(String)list.get(0);
+		location=(String)list.get(1);
+		gridType=(String)list.get(2);
+		xco=(String)list.get(3);
+		yco=(String)list.get(4);
+		species=(String)list.get(5);
+		population=(String)list.get(6);
+		sex=Integer.parseInt((String)list.get(7));
+		rank=(String)list.get(8);
+		age=(String)list.get(9);
 		
-		/*
-		if (!xco.equals("")){
-			if (population.equals("Adirondacks, NY")){
-				fixLatLong(18, "N");
-			}
-			else if (population.equals("Hudson Valley, NY")){
-				fixLatLong(18, "N");
-			}
-			else if (population.equals("Montezuma, NY")){
-				fixLatLong(18, "N");
-			}
-			else if (population.equals("Conneaut, PA")){
-				fixLatLong(17, "N");
-			}
-			else if (population.equals("Horicon, WI")){
-				fixLatLong(16, "N");
-			}
-			else if (population.equals("Waterloo, MI")){
-				fixLatLong(16, "N");
-			}
-			
-		}
-		*/
 		list=null;
 	}
 	

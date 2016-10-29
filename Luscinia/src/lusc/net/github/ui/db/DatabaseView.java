@@ -1,5 +1,4 @@
 package lusc.net.github.ui.db;
-//
 //  DatabaseView.java
 //  Luscinia
 //
@@ -22,6 +21,8 @@ import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.TreeNode;
+import javax.swing.tree.TreePath;
 
 import java.util.*;
 import java.io.*;
@@ -35,6 +36,7 @@ import lusc.net.github.Song;
 import lusc.net.github.db.DataBaseController;
 import lusc.net.github.ui.AnalysisChoose;
 import lusc.net.github.ui.IndividualEdit;
+import lusc.net.github.ui.IndividualReview;
 import lusc.net.github.ui.SaveSound;
 import lusc.net.github.ui.SongInformation;
 import lusc.net.github.ui.SpectrogramFileFilter;
@@ -46,35 +48,43 @@ public class DatabaseView extends TabType implements ActionListener {
 	
     private int newNodeSuffix = 1;
     private static String ADD_IND_COMMAND = "add individual";
+    private static String ADD_SPEC_COMMAND = "add species";
+    private static String ADD_POP_COMMAND = "add population";
 	private static String ADD_SONG_COMMAND = "add song";
 	private static String ADD_RECORDING_COMMAND = "add recording";
     private static String REMOVE_COMMAND = "remove";
     private static String INFORMATION_COMMAND = "information";
 	private static String SONO_COMMAND = "sonogram";
 	private static String SIMPLE_COMMAND = "simple";
+	private static String IND_REV_COMMAND = "ind rev";
 	private static String ANALYZE_COMMAND = "analyze";
 	private static String EXPAND_COMMAND="expand";
 	private static String COPY_COMMAND="copy";
 	private static String LOG_OUT_COMMAND = "logout";
 	private static String MANAGE_USERS_COMMAND = "users";
+	private static String BY_DAY_COMMAND = "by day";
+	private static String BY_WEEK_COMMAND = "by week";
+	private static String BY_NONE_COMMAND = "by none";
 	
 	boolean collapsed=true;
+	boolean dateLevel=false;
+	boolean weekLevel=true;
    
 	LinkedList tstore=new LinkedList();
 	LinkedList ustore=new LinkedList();
 	String query=null;
-	private int [] indq={1,2};
+	private int [] indq={1,2,3,4};
 	private int [] sonq={1,2,3};
 	private int [] eleq={1};
 	int addType=0;
-	JButton manageUsers, addIndButton, addSongButton, addRecordingButton, removeButton, expandTreeButton, analysisButton, sonogramButton, simpleButton, expandButton, logOutButton, copyButton;
+	JButton manageUsers, addIndButton, addSpecButton, addPopButton, addSongButton, addRecordingButton, removeButton, expandTreeButton, analysisButton, sonogramButton, simpleButton, indRevButton, expandButton, logOutButton, copyButton;
 	JCheckBox informationCheckBox;
 	
 	File file;
 	LinkedList spectrogramList=new LinkedList();
 	LinkedList analysisList=new LinkedList();
 	
-	protected DatabaseTree treePanel;
+	public DatabaseTree treePanel;
 	JPanel sidePanel, informationPanel;
 	
 	DataBaseController dbc;
@@ -117,19 +127,38 @@ public class DatabaseView extends TabType implements ActionListener {
     
     public void refreshTree(){
     	String expState=treePanel.getExpansionState();
+    	//myNode[] sn=treePanel.selnode;
+    	//TreePath tp=new TreePath(sn[0].getPath());
+    	
+    	int tr=treePanel.tree.getMinSelectionRow();
+    	if (tr>0){tr--;}
+    	//System.out.println("CURRENT ROW "+tr);
+    	
     	this.remove(treePanel);
     	treePanel = new DatabaseTree(this, dbc.getDBName());
     	populateTree(treePanel);
     	treePanel.restoreExpansionState(expState);
+    	treePanel.tree.scrollRowToVisible(tr);
     	this.add(treePanel, BorderLayout.CENTER);
+    	
     	this.revalidate();
     }
 		
 	public void buildButtonSideBar(){
+		addSpecButton = new JButton("Add Species");
+        addSpecButton.setActionCommand(ADD_SPEC_COMMAND);
+        addSpecButton.addActionListener(this);
+		addSpecButton.setEnabled(true);
+		
+		addPopButton = new JButton("Add Population");
+        addPopButton.setActionCommand(ADD_IND_COMMAND);
+        addPopButton.addActionListener(this);
+		addPopButton.setEnabled(false);
+		
         addIndButton = new JButton("Add Individual");
         addIndButton.setActionCommand(ADD_IND_COMMAND);
         addIndButton.addActionListener(this);
-		addIndButton.setEnabled(true);
+		addIndButton.setEnabled(false);
 		
 		addSongButton = new JButton("Add Song");
         addSongButton.setActionCommand(ADD_SONG_COMMAND);
@@ -161,6 +190,11 @@ public class DatabaseView extends TabType implements ActionListener {
 		simpleButton.addActionListener(this);
 		simpleButton.setEnabled(false);
 		
+		indRevButton = new JButton("Individual Review");
+		indRevButton.setActionCommand(IND_REV_COMMAND);
+		indRevButton.addActionListener(this);
+		//indRevButton.setEnabled(false);
+		
 		analysisButton = new JButton("Analyze");
 		analysisButton.setActionCommand(ANALYZE_COMMAND);
 		analysisButton.addActionListener(this);
@@ -181,9 +215,30 @@ public class DatabaseView extends TabType implements ActionListener {
 		manageUsers.setActionCommand(MANAGE_USERS_COMMAND);
 		manageUsers.addActionListener(this);
 		
+		
+		JRadioButton byWeek=new JRadioButton("Show week");
+		byWeek.setActionCommand(BY_WEEK_COMMAND);
+		byWeek.setSelected(weekLevel);
+		byWeek.addActionListener(this);
+		JRadioButton byDay=new JRadioButton("Show day");
+		byDay.setActionCommand(BY_DAY_COMMAND);
+		byDay.setSelected(dateLevel);
+		byDay.addActionListener(this);
+		JRadioButton byNone=new JRadioButton("Show none");
+		byNone.setActionCommand(BY_NONE_COMMAND);
+		byNone.setSelected(!(weekLevel&dateLevel));
+		byNone.addActionListener(this);
+		
+		ButtonGroup g=new ButtonGroup();
+		g.add(byWeek);
+		g.add(byDay);
+		g.add(byNone);
+		
 		sidePanel=new JPanel();
 		sidePanel.setLayout(new BoxLayout(sidePanel, BoxLayout.PAGE_AXIS));
 		
+		sidePanel.add(addSpecButton);
+		sidePanel.add(addPopButton);
 		sidePanel.add(addIndButton);
 		sidePanel.add(addSongButton);
 		sidePanel.add(addRecordingButton);
@@ -191,11 +246,16 @@ public class DatabaseView extends TabType implements ActionListener {
 		sidePanel.add(informationCheckBox);
 		sidePanel.add(sonogramButton);
 		sidePanel.add(simpleButton);
+		sidePanel.add(indRevButton);
 		sidePanel.add(analysisButton);
 		sidePanel.add(expandButton);
 		sidePanel.add(copyButton);
 		sidePanel.add(manageUsers);
 		sidePanel.add(logOutButton);
+		sidePanel.add(byWeek);
+		sidePanel.add(byDay);
+		sidePanel.add(byNone);
+		
     }
 	
 	public void clearUp(){
@@ -211,13 +271,162 @@ public class DatabaseView extends TabType implements ActionListener {
 	}
 	
 	
+	
+	public void addToTree(DatabaseTree treePanel, LinkedList<String[]> t, String[] types) {
+		
+		//long t1=0;
+		//long t2=0;
+		//long t3=0;
+		
+		int[] ids=getSongIndividualIDs();
+		
+		int numind=treePanel.rootNode.getChildCount();
+		System.out.println(t.size());
+		if (t.size()>0) {
+			String[] x=t.get(0);
+			System.out.println("adding data "+x.length);
+			int p=x.length-1;
+			
+			
+			for (int i=0; i<t.size(); i++) {
+				
+				long t0=System.currentTimeMillis();
+				
+				System.out.println("adding data individual: "+i);
+				x=t.get(i);
+				myNode refNode=treePanel.rootNode;
+				for (int j=0; j<p; j++) {
+					System.out.println("adding data level: "+types[j]+" "+x[j]);
+					
+					//t1=System.currentTimeMillis();
+					
+					refNode=checkAndAdd(refNode, x[j], treePanel, types[j]);
+					//t2+=System.currentTimeMillis()-t1;
+					//t1=System.currentTimeMillis();
+					if (j==p-1) {
+						System.out.println("adding song");
+						refNode.dex=myIntV(x[x.length-1]);
+						addSongToTree(refNode, ids);
+						
+						//t3+=System.currentTimeMillis()-t1;
+						
+					}
+					
+					
+				}
+				
+			}
+
+		}
+		
+		//System.out.println("TIME TAKEN: "+t2+" "+t3);		
+		
+	}
+	
+	public myNode checkAndAdd(myNode refNode, String name, DatabaseTree treePanel, String type) {
+		
+		int numNodes=refNode.getChildCount();
+		boolean found=false;
+		for (int i=0; i<numNodes; i++) {
+			myNode posspar=(myNode)refNode.getChildAt(i);
+			String nam=(String)posspar.getUserObject();
+			//System.out.println(nam+" "+name);
+			if (nam.compareTo(name)==0) {
+				//System.out.println("Matched");
+				return posspar;
+			}
+		}
+		System.out.println("Not matched");	
+		myNode node=treePanel.addObject(refNode, name, true, type);
+		return node;
+	}
+	
+	
+	public int[] getSongIndividualIDs() {
+		int[] out=new int[ustore.size()];
+		
+		for (int i=0; i<out.length; i++) {
+			Song nam=(Song)ustore.get(i);
+			int par=nam.getIndividualID();
+			out[i]=par;
+		}
+		
+		return out;
+	}
+	
+	
+	public void addSongToTree(myNode refNode, int[] ids) {
+		
+		int q=refNode.dex;
+		
+		for (int i=0; i<ids.length; i++) {
+			if (ids[i]==q) {
+				Song nam=(Song)ustore.get(i);
+				String nam0=nam.getName();
+				int nam1=nam.getSongID();
+				
+				
+				if ((dateLevel)||(weekLevel)) {
+					long daySong=0l;
+					if (weekLevel) {
+						daySong=nam.getWeek();
+					}
+					else {
+						daySong=nam.getDay();
+					}
+					int nd=refNode.getChildCount();
+					boolean found2=false;
+					for (int jj=0; jj<nd; jj++) {
+						myNode possday=(myNode)refNode.getChildAt(jj);
+						if (possday.day==daySong) {
+							found2=true;
+							myNode chile=treePanel.addObject(possday, nam0, true, "Song");
+							chile.dex=nam1;
+							if (nam.getNumSylls()>0){
+								chile.isMeasured=true;
+							
+							}
+							jj=nd;
+						}
+					}
+					if (!found2){
+						myNode newDay=treePanel.addObject(refNode, daySong, true, "Week");
+						myNode chile=treePanel.addObject(newDay, nam0, true, "Song");
+						chile.dex=nam1;
+						if (nam.getNumSylls()>0){
+							chile.isMeasured=true;
+						}
+					}	
+				}
+
+				else {
+				
+					myNode chile=treePanel.addObject(refNode, nam0, true, "Song");
+					chile.dex=nam1;
+					if (nam.getNumSylls()>0){
+						chile.isMeasured=true;
+					
+					}
+				}
+			}
+		}
+		
+	}
+	
     public void populateTree(DatabaseTree treePanel) {
 		
 		extractFromDatabase();
 		
-		System.out.println("POPULATING TREE: "+tstore.size()+" "+ustore.size());
+		//System.out.println("POPULATING TREE: "+tstore.size()+" "+ustore.size());
 		
 		myNode nullpar=new myNode("temp");
+		
+		
+		String[] types= {"Species", "Population", "Individual"};
+		addToTree(treePanel, tstore, types);
+	
+		/*
+		
 		for (int i=0; i<tstore.size(); i++){
 			String []nam=(String[])tstore.get(i);
 			myNode chile=treePanel.addObject(null, nam[0], true);
@@ -237,16 +446,51 @@ public class DatabaseView extends TabType implements ActionListener {
 			int nam1=nam.getSongID();
 			boolean found=false;
 			for (int j=0; j<numind; j++){
+				
+				
 				myNode posspar=(myNode)treePanel.rootNode.getChildAt(j);
 				if (posspar.dex==par){
 					found=true;
-					myNode chile=treePanel.addObject(posspar, nam0, true);
-					chile.dex=nam1;
-					if (nam.getNumSylls()>0){
-						chile.isMeasured=true;
-						
+					
+					if (dateLevel) {
+						long daySong=nam.getDay();
+						int nd=posspar.getChildCount();
+						boolean found2=false;
+						for (int jj=0; jj<nd; jj++) {
+							myNode possday=(myNode)posspar.getChildAt(jj);
+							if (possday.day==daySong) {
+								found2=true;
+								myNode chile=treePanel.addObject(possday, nam0, true);
+								chile.dex=nam1;
+								if (nam.getNumSylls()>0){
+									chile.isMeasured=true;
+								
+								}
+								j=numind;
+								jj=nd;
+							}
+						}
+						if (!found2){
+							myNode newDay=treePanel.addObject(posspar, daySong, true);
+							myNode chile=treePanel.addObject(newDay, nam0, true);
+							chile.dex=nam1;
+							if (nam.getNumSylls()>0){
+								chile.isMeasured=true;
+							
+							}
+							j=numind;
+						}	
 					}
-					j=numind;
+					else {
+					
+						myNode chile=treePanel.addObject(posspar, nam0, true);
+						chile.dex=nam1;
+						if (nam.getNumSylls()>0){
+							chile.isMeasured=true;
+						
+						}
+						j=numind;
+					}
 				}
 			}
 			if (!found){
@@ -258,6 +502,7 @@ public class DatabaseView extends TabType implements ActionListener {
 			}
 			
 		}
+		*/
     }
 	
 	public int myIntV(String s){
@@ -269,12 +514,15 @@ public class DatabaseView extends TabType implements ActionListener {
 	
 	public void extractFromDatabase(){
 		
-		System.out.println("EXTRACTING FROM DB");
+		//System.out.println("EXTRACTING FROM DB");
 		
 		tstore=null;
 		tstore=new LinkedList();
-		query="SELECT name, id FROM individual";
+		query="SELECT SpecID, PopID, name, id FROM individual";
 		tstore.addAll(dbc.readFromDataBase(query, indq));
+		
+		
+		
 		String[] s;
 		String seg;
 		int loc=0;
@@ -294,13 +542,13 @@ public class DatabaseView extends TabType implements ActionListener {
 			tstore.add(0, s);
 		}
 		
-		System.out.println("LOADING SONG DETAILS");
+		//System.out.println("LOADING SONG DETAILS");
 		
 		ustore=null;
 		ustore=new LinkedList();
 		ustore=dbc.loadSongDetailsFromDatabase();
 		
-		System.out.println("SORTING SONGS");
+		//System.out.println("SORTING SONGS");
 		
 		try{
 			Collections.sort(ustore, new ByDate());
@@ -311,7 +559,7 @@ public class DatabaseView extends TabType implements ActionListener {
 		}
 		
 		
-		System.out.println("NUM SONGS: "+ustore.size());
+		//System.out.println("NUM SONGS: "+ustore.size());
 		
 	}
 	
@@ -332,7 +580,7 @@ public class DatabaseView extends TabType implements ActionListener {
 			}
 			if (l1==0){
 				p=0;
-				System.out.println(a.getName()+" "+b.getName()+" "+p);
+				//System.out.println(a.getName()+" "+b.getName()+" "+p);
 			}
 			//System.out.println(a.getName()+" "+b.getName()+" "+p);
 		    return p;
@@ -354,9 +602,16 @@ public class DatabaseView extends TabType implements ActionListener {
 	}
 	
 	public void renameNode (myNode temp){
-		if (temp.getLevel()>1){renameSong(temp);}
-		else{renameIndividual(temp);}
-		extractFromDatabase();
+		if (temp.song) {renameSong(temp);}
+		else if (temp.individual) {renameIndividual(temp);}
+		else if (temp.population) {renamePopulation(temp);}
+		else if (temp.species) {renameSpecies(temp);}
+		
+		
+		//if (temp.getLevel()>1){renameSong(temp);}
+		//else{renameIndividual(temp);}
+		refreshTree();
+		//extractFromDatabase();
 	}
 	
 	public void renameSong (myNode temp){
@@ -369,6 +624,40 @@ public class DatabaseView extends TabType implements ActionListener {
 		dbc.writeToDataBase("UPDATE individual SET name='"+t+"' WHERE id="+temp.dex);
 	}
 	
+	public void renamePopulation(myNode temp) {
+		String t=temp.toString();
+		Enumeration<TreeNode> ch=temp.children();
+		while (ch.hasMoreElements()) {
+		    myNode child = (myNode)ch.nextElement();
+		    dbc.writeToDataBase("UPDATE individual SET PopID='"+t+"' WHERE id="+child.dex);
+		}
+	}
+	
+	public void renameSpecies(myNode temp) {
+		String t=temp.toString();
+		Enumeration<TreeNode> ch=temp.children();
+		while (ch.hasMoreElements()) {
+		    myNode child = (myNode)ch.nextElement();
+		    Enumeration<TreeNode> gch=child.children();
+		    while (gch.hasMoreElements()) {
+		    	myNode gchild = (myNode)gch.nextElement();
+		    	dbc.writeToDataBase("UPDATE individual SET SpecID='"+t+"' WHERE id="+gchild.dex);
+		    }
+		}
+	}
+	
+	public void removeFromDataBase(myNode temp){
+		int p=temp.getChildCount();
+		for (int j=0; j<temp.getChildCount(); j++){
+			myNode temp2=(myNode)temp.getChildAt(j);
+			removeFromDataBase(temp2);
+		}
+		if (temp.getType().equals("Song")){removeSong(temp);}
+		else if(temp.getType().equals("Individual")) {removeIndividual(temp);}	
+		extractFromDatabase();	
+	}
+	
+	/*
 	public void removeFromDataBase(myNode temp){
 		for (int j=0; j<temp.getChildCount(); j++){
 			myNode temp2=(myNode)temp.getChildAt(j);
@@ -378,9 +667,10 @@ public class DatabaseView extends TabType implements ActionListener {
 		else{removeIndividual(temp);}	
 		extractFromDatabase();	
 	}
+	*/
 	
 	public void removeSong (myNode temp){
-		System.out.println(spectrogramList.size());
+		//System.out.println(spectrogramList.size());
 		for (int i=0; i<spectrogramList.size(); i++){
 			MainPanel mp=(MainPanel)spectrogramList.get(i);
 			if (temp.dex==mp.getSong().getSongID()){
@@ -416,12 +706,16 @@ public class DatabaseView extends TabType implements ActionListener {
 	
 	public void addNewIndividual(myNode chile){
 		String nam=chile.toString();
-		dbc.writeToDataBase("INSERT INTO individual (name) VALUES ('"+nam+"')");
+		myNode pop=(myNode)chile.getParent();
+		String population=pop.toString();
+		myNode spec=(myNode)pop.getParent();
+		String species=spec.toString();
+		dbc.writeToDataBase("INSERT INTO individual (name, SpecID, PopID) VALUES ('"+nam+"' , '"+species+"' , '"+population+"')");
 		extractFromDatabase();
 		int maxind=-1;
 		for (int i=0; i<tstore.size(); i++){
 			String[]nam2=(String[])tstore.get(i);
-			int p=myIntV(nam2[1]);
+			int p=myIntV(nam2[nam2.length-1]);
 			if (p>maxind){maxind=p;}
 		}
 		chile.dex=maxind;
@@ -441,13 +735,12 @@ public class DatabaseView extends TabType implements ActionListener {
 	}
 
 	public void showInformationIndividual(){
-		IndividualEdit i=new IndividualEdit(treePanel, dbc, treePanel.selnode[0].dex, defaults);
+		IndividualEdit i=new IndividualEdit(this, dbc, treePanel.selnode[0].dex, defaults);
 		informationPanel.removeAll();
 		informationPanel.add(i);
 		informationPanel.validate();
 		informationPanel.revalidate();
 		this.repaint();
-		System.out.println("HERE1");
 	}
 	
 	public void showInformationSong(){
@@ -457,7 +750,6 @@ public class DatabaseView extends TabType implements ActionListener {
 		informationPanel.validate();
 		informationPanel.revalidate();
 		this.repaint();
-		System.out.println("HERE2");
 	}
 	
 	public void hideInformationPanel(){
@@ -465,7 +757,6 @@ public class DatabaseView extends TabType implements ActionListener {
 		informationPanel.validate();
 		informationPanel.revalidate();
 		this.repaint();
-		System.out.println("HERE3");
 	}
 	
 	public int getSongLocation(String s){
@@ -502,6 +793,12 @@ public class DatabaseView extends TabType implements ActionListener {
 			else if (ADD_IND_COMMAND.equals(command)) {
 				treePanel.addAbject(1);
 			}
+			else if (ADD_SPEC_COMMAND.equals(command)) {
+				treePanel.addAbject(3);
+			}
+			else if (ADD_POP_COMMAND.equals(command)) {
+				treePanel.addAbject(4);
+			}
 			else if (ADD_RECORDING_COMMAND.equals(command)) {
 				treePanel.addAbject(2);
 			}
@@ -534,6 +831,9 @@ public class DatabaseView extends TabType implements ActionListener {
 			else if (SIMPLE_COMMAND.equals(command)) {
 				openSimpleSpectrogram();
 			}
+			else if (IND_REV_COMMAND.equals(command)) {
+				openIndividualReview();
+			}
 			else if (ANALYZE_COMMAND.equals(command)) {
 				AnalysisChoose ac=new AnalysisChoose(dbc, defaults);
 				analysisList.add(ac);
@@ -558,6 +858,21 @@ public class DatabaseView extends TabType implements ActionListener {
 			else if (LOG_OUT_COMMAND.equals(command)) {
 				//luscinia.removeConnection(this);
 				luscinia.loggedOut(this);
+			}
+			else if (BY_WEEK_COMMAND.equals(command)) {
+				weekLevel=true;
+				dateLevel=false;
+				refreshTree();
+			}
+			else if (BY_DAY_COMMAND.equals(command)) {
+				weekLevel=false;
+				dateLevel=true;
+				refreshTree();
+			}
+			else if (BY_NONE_COMMAND.equals(command)) {
+				weekLevel=false;
+				dateLevel=false;
+				refreshTree();
 			}
 		}
 		catch(Exception error){
@@ -644,19 +959,24 @@ public class DatabaseView extends TabType implements ActionListener {
 			}
 			else{
 				extractFromDatabase();
-				System.out.println(tstore.size()+" "+ustore.size());
+				//System.out.println(tstore.size()+" "+ustore.size());
 			
 				int[][] idTranslater=new int[tstore.size()][2];
 			
 				for (int i=0; i<tstore.size(); i++){
 					String []nam=(String[])tstore.get(i);
-					int p=myIntV(nam[1]);
+					for (int j=0; j<nam.length; j++) {
+						System.out.print(nam[j]+" ");
+					}
+					System.out.println();
+					int p=myIntV(nam[3]);
 					idTranslater[i][0]=p;
 					Individual individual=new Individual(dbc, p);
+					//individual.setPopulation(individual.getName().substring(0, 3));
 					individual.setDBC(dbc2);
 					individual.insertIntoDB();
 					idTranslater[i][1]=dbc2.readIndividualNameFromDB(individual.getName());
-					System.out.println(idTranslater[i][0]+" "+idTranslater[i][1]);
+					//System.out.println(idTranslater[i][0]+" "+idTranslater[i][1]);
 				}
 			
 				int[][] songTranslater=new int[ustore.size()][2];
@@ -681,13 +1001,13 @@ public class DatabaseView extends TabType implements ActionListener {
 								j=idTranslater.length;
 							}
 						}
-						System.out.println("MATCH: "+song.getIndividualID()+" "+newid);
+						//System.out.println("MATCH: "+song.getIndividualID()+" "+newid);
 						File f=File.createTempFile("ltmp", "wav");
 						song.setIndividualID(newid);
 						SaveSound ss=new SaveSound(song, song.getAf(), 0, song.getRDLength(), f); 
-						System.out.println("Written song");
+						//System.out.println("Written song");
 						dbc2.writeWholeSong(song, newid);
-						System.out.println("Written song "+song.getName()+" "+i+" "+ustore.size());
+						//System.out.println("Written song "+song.getName()+" "+i+" "+ustore.size());
 						f.delete();
 					}
 					catch(Exception e){
@@ -884,7 +1204,7 @@ public class DatabaseView extends TabType implements ActionListener {
 					
 					Song song=new Song(file2, parentNode.dex);
 					MainPanel mp=new MainPanel(dbc, song, defaults, spectrogramList, this, false);
-					mp.startDrawing();
+					mp.startDrawing(true);
 					spectrogramList.add(mp);
 					//dbc.writeSongIntoDatabase(defName, treePanel.selnode[i].dex, file[i]);
 				//}
@@ -906,8 +1226,7 @@ public class DatabaseView extends TabType implements ActionListener {
 	
 	public void openSimpleSpectrogram(){
 		if (treePanel.selnode!=null){
-			for (int i=0; i<treePanel.selnode.length; i++){
-				
+			for (int i=0; i<treePanel.selnode.length; i++){		
 				makeMainPanel(treePanel.selnode[i].dex, true);
 			}
 		}
@@ -915,9 +1234,27 @@ public class DatabaseView extends TabType implements ActionListener {
 	}
 	
 	
+	public void openIndividualReview(){
+		if (treePanel.selnode!=null){
+			
+			
+			myNode[] daughters=new myNode[treePanel.selnode[0].getChildCount()];
+			int[] dexes=new int[daughters.length];
+			for (int i=0; i<daughters.length; i++){
+				daughters[i]=(myNode)treePanel.selnode[0].getChildAt(i);
+				dexes[i]=daughters[i].getDex();
+			}
+			
+			IndividualReview ir=new IndividualReview(dexes, defaults, dbc);
+			
+		}
+		
+	}
+	
+	
 	public void makeMainPanel(int id, boolean justGuide){
 		MainPanel mp=new MainPanel(dbc, id, defaults, spectrogramList, this, justGuide);
-		mp.startDrawing();
+		mp.startDrawing(true);
 		spectrogramList.add(mp);
 	}
 	

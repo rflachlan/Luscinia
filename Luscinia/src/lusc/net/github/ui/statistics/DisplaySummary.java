@@ -9,12 +9,15 @@ package lusc.net.github.ui.statistics;
 
 
 import javax.swing.*;
+
 import java.awt.*;
 import java.util.*;
 import java.text.*;
 
 import lusc.net.github.Defaults;
+import lusc.net.github.analysis.Consistency;
 import lusc.net.github.analysis.DistanceNeighborFunctions;
+import lusc.net.github.analysis.Rhythm;
 import lusc.net.github.analysis.clustering.KMedoids;
 import lusc.net.github.analysis.clustering.SNNDensity;
 import lusc.net.github.analysis.multivariate.CalculateHopkinsStatistic;
@@ -23,6 +26,7 @@ import lusc.net.github.analysis.multivariate.MultivariateDispersionTest;
 import lusc.net.github.analysis.syntax.EntropyAnalysis;
 import lusc.net.github.analysis.syntax.MarkovChain;
 import lusc.net.github.analysis.syntax.SWMLEntropyEstimate;
+import lusc.net.github.analysis.syntax.SWMLNoCategories;
 import lusc.net.github.ui.SaveDocument;
 
 
@@ -50,7 +54,8 @@ public class DisplaySummary  extends DisplayPane {
 	LinkedList<MultivariateDispersionTest> anderson=new LinkedList<MultivariateDispersionTest>();
 	LinkedList<DistanceNeighborFunctions> distfunc=new LinkedList<DistanceNeighborFunctions>();
 	LinkedList<MRPP> mrppl=new LinkedList<MRPP>();
-	
+	Consistency cons=null;
+	Rhythm rhy=null;
 	Defaults defaults;
 	
 	public DisplaySummary (Defaults defaults){
@@ -98,6 +103,18 @@ public class DisplaySummary  extends DisplayPane {
 		String resultString=chs.getResultString();
 		texter.append(resultString);
 		texter.append(returner);
+		
+		LinkedList<double[]> tr=chs.getTimeResults();
+		
+		texter.append("Time"+tabc+"Mean"+tabc+"SD"+tabc+"lower percentile"+tabc+"upper percentile");
+		texter.append(returner);
+		for (double[] x : tr){
+			for (int i=0; i<x.length; i++){
+				texter.append(x[i]+tabc);
+			}
+			texter.append(returner);
+		}
+		
 		//for (int i=0; i<resultString.length; i++){
 			//texter.append(resultString[i]);
 			//texter.append(returner);
@@ -198,7 +215,7 @@ public class DisplaySummary  extends DisplayPane {
 			texter.append("Syntax statistics for syllables");
 		}
 		texter.append(returner);
-		if (mode>0){
+		if (mode==1){
 			texter.append("Match length entropy estimates: ");
 			texter.append(returner);
 			texter.append("(Jackknife Confidence Intervals)");
@@ -211,20 +228,22 @@ public class DisplaySummary  extends DisplayPane {
 			texter.append(returner);
 			SWMLEntropyEstimate[] swml=ent.getSWMLEntropyEstimate();
 			for (int i=0; i<swml.length; i++){
-				texter.append(swml[i].getKv()+tabc);
-				texter.append(df.format(swml[i].getRho())+tabc);
-				double[] jackknifeScores=swml[i].getJackknifeScores();
-				for (int j=0; j<jackknifeScores.length; j++){
-					texter.append(df.format(jackknifeScores[j])+tabc);
+				if (swml[i]!=null){
+					texter.append(swml[i].getKv()+tabc);
+					texter.append(df.format(swml[i].getRho())+tabc);
+					double[] jackknifeScores=swml[i].getJackknifeScores();
+					for (int j=0; j<jackknifeScores.length; j++){
+						texter.append(df.format(jackknifeScores[j])+tabc);
+					}
+					double jackknifeSD=swml[i].getJackknifeSD();
+					texter.append(df2.format(jackknifeSD)+tabc);
+					texter.append(returner);
 				}
-				double jackknifeSD=swml[i].getJackknifeSD();
-				texter.append(df2.format(jackknifeSD)+tabc);
-				texter.append(returner);
 			}	
 			
 			texter.append(returner);				  
 		}
-		if (mode!=1){
+		if (mode==0){
 			texter.append("Markov chain redundancy estimates: ");
 			texter.append(returner);
 			String[] s={"k","0.0005", "0.005", "0.025", "0.5", "0.975", "0.995", "0.9995"};
@@ -234,12 +253,14 @@ public class DisplaySummary  extends DisplayPane {
 			texter.append(returner);
 			MarkovChain[] mkc=ent.getMarkovChains();
 			for (int i=0; i<mkc.length; i++){
-				texter.append((i+2)+tabc);
-				double[] redundancy=mkc[i].getRedundancy();
-				for (int j=0; j<redundancy.length; j++){
-					texter.append(df.format(redundancy[j])+tabc);
+				if (mkc[i]!=null){
+					texter.append((i+2)+tabc);
+					double[] redundancy=mkc[i].getRedundancy();
+					for (int j=0; j<redundancy.length; j++){
+						texter.append(df.format(redundancy[j])+tabc);
+					}	
+					texter.append(returner);
 				}
-				texter.append(returner);
 			}
 			texter.append("Markov chain entropy estimates: ");
 			texter.append(returner);
@@ -248,12 +269,14 @@ public class DisplaySummary  extends DisplayPane {
 			}
 			texter.append(returner);
 			for (int i=0; i<mkc.length; i++){
-				texter.append((i+2)+tabc);
-				double[] entropy=mkc[i].getEntropy();
-				for (int j=0; j<entropy.length; j++){
-					texter.append(df.format(entropy[j])+tabc);
+				if (mkc[i]!=null){
+					texter.append((i+2)+tabc);
+					double[] entropy=mkc[i].getEntropy();
+					for (int j=0; j<entropy.length; j++){
+						texter.append(df.format(entropy[j])+tabc);
+					}
+					texter.append(returner);
 				}
-				texter.append(returner);
 			}
 			texter.append("Markov chain Zero-Order entropy estimates: ");
 			texter.append(returner);
@@ -262,13 +285,16 @@ public class DisplaySummary  extends DisplayPane {
 			}
 			texter.append(returner);
 			for (int i=0; i<mkc.length; i++){
-				texter.append((i+2)+tabc);
-				double[] zeroOrder=mkc[i].getZeroOrder();
-				for (int j=0; j<zeroOrder.length; j++){
-					texter.append(df.format(zeroOrder[j])+tabc);
+				if (mkc[i]!=null){
+					texter.append((i+2)+tabc);
+					double[] zeroOrder=mkc[i].getZeroOrder();
+					for (int j=0; j<zeroOrder.length; j++){
+						texter.append(df.format(zeroOrder[j])+tabc);
+					}
+					texter.append(returner);
 				}
-				texter.append(returner);
 			}
+			/*
 			texter.append("Positional entropy estimates: ");
 			texter.append(returner);
 			for (int i=0; i<s.length; i++){
@@ -280,6 +306,24 @@ public class DisplaySummary  extends DisplayPane {
 				double[] resultArrayP=mkc[i].getResultArrayP();
 				for (int j=0; j<resultArrayP.length; j++){
 					texter.append(df.format(resultArrayP[j])+tabc);
+				}
+				texter.append(returner);
+			}
+			*/
+		}
+		if (mode==2){
+			texter.append("Category-less match length estimate: ");
+			texter.append(returner);
+			String[] s={"epoch","Time", "Songs", "Redundancy", "Entropy", "ZeroOrder"};
+			for (int i=0; i<s.length; i++){
+				texter.append(s[i]+tabc);
+			}
+			texter.append(returner);
+			SWMLNoCategories snc=ent.getSWMLNC();
+			LinkedList<double[]> results=snc.getResults();
+			for (double[] x : results){
+				for (int i=0; i<x.length; i++){
+					texter.append(x[i]+tabc);
 				}
 				texter.append(returner);
 			}
@@ -358,6 +402,23 @@ public class DisplaySummary  extends DisplayPane {
 				texter.append(returner);
 			}	
 		}		
+	}
+	
+	public void addConsistency(Consistency cons){
+		this.cons=cons;
+		
+		double meanscore=cons.getMeanScore();
+		texter.append("Mean within-phrase consistency: "+meanscore);
+		texter.append(returner);
+	}
+	
+	public void addRhythm(Rhythm rhy) {
+		this.rhy=rhy;
+		
+		double npvi=rhy.nPVI;
+		texter.append("Mean nPVI: "+npvi);
+		texter.append(returner);
+		
 	}
 	
 	
@@ -551,7 +612,7 @@ public class DisplaySummary  extends DisplayPane {
 					}
 					sd.writeLine();
 					
-					if (mode>0){
+					if (mode==1){
 						sd.writeString("Match length entropy estimates: ");
 						sd.writeLine();
 						
@@ -565,18 +626,36 @@ public class DisplaySummary  extends DisplayPane {
 						sd.writeLine();
 						SWMLEntropyEstimate[] swml=ent.getSWMLEntropyEstimate();
 						for (int j=0; j<swml.length; j++){
-							sd.writeInt(swml[j].getKv());
-							sd.writeDouble(swml[j].getRho());
-							double[] jackknifeScores=swml[j].getJackknifeScores();
-							for (int k=0; k<jackknifeScores.length; k++){
-								sd.writeDouble(jackknifeScores[k]);
+							if (swml[j]!=null){
+								sd.writeInt(swml[j].getKv());
+								sd.writeDouble(swml[j].getRho());
+								double[] jackknifeScores=swml[j].getJackknifeScores();
+								for (int k=0; k<jackknifeScores.length; k++){
+									sd.writeDouble(jackknifeScores[k]);
+								}
+								sd.writeDouble(swml[j].getJackknifeSD());
+								sd.writeLine();
+							}	
+						}
+						
+						sd.writeLine();
+						
+						long[] xx=ent.getTimes();
+						double[][] st=ent.getSWMLTrajectory();
+												
+						for (int tt=0; tt<xx.length; tt++){
+							sd.writeLong(xx[tt]);
+							for (int j=0; j<st.length; j++){
+								
+								sd.writeDouble(st[j][tt]);
 							}
-							sd.writeDouble(swml[j].getJackknifeSD());
-							sd.writeLine();
-						}	
+							sd.writeLine();	
+						}
+						sd.writeLine();
+						
 						
 					}
-					if (mode!=1){
+					if (mode==0){
 						String[] s={"k","0.005", "0.005", "0.025", "0.5", "0.975", "0.995", "0.9995"};
 						
 						sd.writeString("Markov chain redundancy estimates: ");
@@ -588,10 +667,12 @@ public class DisplaySummary  extends DisplayPane {
 						sd.writeLine();
 						MarkovChain[] mkc=ent.getMarkovChains();
 						for (int j=0; j<mkc.length; j++){
-							sd.writeInt(j+2);
-							double[] redundancy=mkc[j].getRedundancy();
-							for (int k=0; k<redundancy.length; k++){
-								sd.writeDouble(redundancy[k]);
+							if (mkc[j]!=null){
+								sd.writeInt(j+2);
+								double[] redundancy=mkc[j].getRedundancy();
+								for (int k=0; k<redundancy.length; k++){
+									sd.writeDouble(redundancy[k]);
+								}
 							}
 							sd.writeLine();
 						}
@@ -605,10 +686,12 @@ public class DisplaySummary  extends DisplayPane {
 						sd.writeLine();
 						
 						for (int j=0; j<mkc.length; j++){
-							sd.writeInt(j+2);
-							double[] entropy=mkc[j].getEntropy();
-							for (int k=0; k<entropy.length; k++){
-								sd.writeDouble(entropy[k]);
+							if (mkc[j]!=null){
+								sd.writeInt(j+2);
+								double[] entropy=mkc[j].getEntropy();
+								for (int k=0; k<entropy.length; k++){
+									sd.writeDouble(entropy[k]);
+								}
 							}
 							sd.writeLine();
 						}
@@ -622,14 +705,17 @@ public class DisplaySummary  extends DisplayPane {
 						sd.writeLine();
 						
 						for (int j=0; j<mkc.length; j++){
-							sd.writeInt(j+2);
-							double[] zeroOrder=mkc[j].getZeroOrder();
-							for (int k=0; k<zeroOrder.length; k++){
-								sd.writeDouble(zeroOrder[k]);
+							if (mkc[j]!=null){
+								sd.writeInt(j+2);
+								double[] zeroOrder=mkc[j].getZeroOrder();
+								for (int k=0; k<zeroOrder.length; k++){
+									sd.writeDouble(zeroOrder[k]);
+								}
 							}
 							sd.writeLine();
 						}
 						
+						/*
 						sd.writeString("Positional entropy estimates: ");
 						sd.writeLine();
 						for (int j=0; j<s.length; j++){
@@ -645,6 +731,44 @@ public class DisplaySummary  extends DisplayPane {
 							}
 							sd.writeLine();
 						}
+						*/
+						
+						sd.writeLine();
+						
+						long[] xx=ent.getTimes();
+						double[][] st=ent.getMKCTrajectory();
+												
+						for (int tt=0; tt<xx.length; tt++){
+							sd.writeLong(xx[i]);
+							for (int j=0; j<st.length; j++){
+								
+								sd.writeDouble(st[j][tt]);
+							}
+							sd.writeLine();	
+						}
+						sd.writeLine();
+						
+						
+						
+						
+					}
+					if (mode==2){
+						sd.writeString("Category-less match length estimate: ");
+						sd.writeLine();
+						String[] s={"epoch","Time", "Songs", "Redundancy", "Entropy", "ZeroOrder"};
+						for (int j=0; j<s.length; j++){
+							sd.writeString(s[j]);
+						}
+						sd.writeLine();
+						SWMLNoCategories snc=ent.getSWMLNC();
+						LinkedList<double[]> results=snc.getResults();
+						for (double[] x : results){
+							for (int j=0; j<x.length; j++){
+								sd.writeDouble(x[j]);
+							}
+							sd.writeLine();
+						}
+						
 					}
 				}
 			}
@@ -746,6 +870,25 @@ public class DisplaySummary  extends DisplayPane {
 						sd.writeLine();
 					}	
 					
+				}				
+			}
+			if (cons!=null){
+				sd.writeSheet("Within-Phrase Consistency");
+				
+				String[][] names=cons.getNames();
+				int[] phrase=cons.getPhraseIds();
+				double[] meanscores=cons.getMeanScores();
+				double[] medianscores=cons.getMedianScores();
+				long[] times=cons.getTimes();
+				
+				for (int i=0; i<meanscores.length; i++){
+					sd.writeString(names[i][0]);
+					sd.writeString(names[i][1]);
+					sd.writeInt(phrase[i]);
+					sd.writeLong(times[i]);
+					sd.writeDouble(meanscores[i]);
+					sd.writeDouble(medianscores[i]);
+					sd.writeLine();
 				}
 			}
 		}

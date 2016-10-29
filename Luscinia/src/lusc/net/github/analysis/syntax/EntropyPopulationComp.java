@@ -10,7 +10,7 @@ public class EntropyPopulationComp {
 
 	
 	//public EntropyPopulationComp(ComparisonResults cr, int h, int maxSyntaxK){
-	public EntropyPopulationComp(ComparisonResults cr, int maxSyntaxK){
+	public EntropyPopulationComp(ComparisonResults cr, int minSyntaxK, int maxSyntaxK){
 		
 		
 		int[] popId=cr.getPopulationListArray();
@@ -29,7 +29,7 @@ public class EntropyPopulationComp {
 			ComparisonResults crn=cr.splitCompResults(i);
 			
 
-			ea[i]=new EntropyAnalysis(crn, maxSyntaxK, 0);	
+			//ea[i]=new EntropyAnalysis(crn, minSyntaxK, maxSyntaxK, 0, false, 50, false);	
 		}
 		
 		//medianComp

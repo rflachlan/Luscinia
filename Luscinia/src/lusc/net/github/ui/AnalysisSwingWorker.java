@@ -22,12 +22,16 @@ import lusc.net.github.analysis.multivariate.MultiDimensionalScaling;
 import lusc.net.github.analysis.multivariate.MultivariateDispersionTest;
 import lusc.net.github.analysis.syntax.EntropyAnalysis;
 import lusc.net.github.analysis.syntax.EntropyPopulationComp;
+import lusc.net.github.analysis.syntax.SWMLNoCategories;
 import lusc.net.github.analysis.syntax.SyntaxAnalysis;
 import lusc.net.github.db.DataBaseController;
 import lusc.net.github.ui.statistics.DendrogramPanel;
+import lusc.net.github.ui.statistics.DisplayAnalysisSettings;
+import lusc.net.github.ui.statistics.DisplayDevelopment;
 import lusc.net.github.ui.statistics.DisplayGeographicComparison;
 import lusc.net.github.ui.statistics.DisplayPC;
 import lusc.net.github.ui.statistics.DisplayPane;
+import lusc.net.github.ui.statistics.DisplayRhythm;
 import lusc.net.github.ui.statistics.DisplaySimilarity;
 import lusc.net.github.ui.statistics.DisplaySimilarityProportions;
 import lusc.net.github.ui.statistics.DisplaySummary;
@@ -37,22 +41,28 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 	
 	Defaults defaults;
 	
-	String[] s={"Element", "Element", "Syllable", "Syllable Transition", "Song", "Individual"};
+	String[] s={"Element", "Element", "Syllable", "Phrase", "Phrase Transition", "Song", "Individual/Time", "Individual"};
 	
-	ComparisonResults[] comps=new ComparisonResults[6];
-	boolean[] levels=new boolean[6];
+	ComparisonResults[] comps=new ComparisonResults[8];
+	boolean[] levels=new boolean[8];
 	
-	GeographicComparison[] geo=new GeographicComparison[6];
-	DisplayPane[] dp=new DisplayPane[6];
-	DisplayGeographicComparison[] dgc=new DisplayGeographicComparison[6];
-	DisplayUPGMA dup[]=new DisplayUPGMA[6];
-	DendrogramPanel denp[]=new DendrogramPanel[6];
-	KMedoids km[]=new KMedoids[6];
-	DisplaySimilarityProportions[] dsp=new DisplaySimilarityProportions[6];
-	SNNDensity[] snn=new SNNDensity[6];
-	AffinityPropagation[] ap=new AffinityPropagation[6];
-	EntropyAnalysis[] ent=new EntropyAnalysis[6];
-	DisplayPC[] dpc=new DisplayPC[6];
+	
+	DisplayAnalysisSettings das;
+	GeographicComparison[] geo=new GeographicComparison[8];
+	DisplayPane[] dp=new DisplayPane[8];
+	DisplayGeographicComparison[] dgc=new DisplayGeographicComparison[8];
+	DisplayUPGMA dup[]=new DisplayUPGMA[8];
+	DendrogramPanel denp[]=new DendrogramPanel[8];
+	KMedoids km[]=new KMedoids[8];
+	DisplaySimilarityProportions[] dsp=new DisplaySimilarityProportions[8];
+	SNNDensity[] snn=new SNNDensity[8];
+	AffinityPropagation[] ap=new AffinityPropagation[8];
+	EntropyAnalysis[] ent=new EntropyAnalysis[8];
+	DisplayPC[] dpc=new DisplayPC[8];
+	Rhythm[] rhy=new Rhythm[8];
+	DisplayRhythm[] drhy=new DisplayRhythm[8];
+	DisplayDevelopment[] ddev=new DisplayDevelopment[8];
+	Consistency cons;
 	
 	DisplaySummary ds;
 	
@@ -73,7 +83,7 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 	int xd, yd;
 	boolean mdsNeeded;
 	
-	boolean matrixcomp, distcomp, treecomp, geogcomp, clustcomp, syntcomp, hopcomp, mdscomp, mrppcomp, andcomp, distfunc, snncomp, affprop;
+	boolean matrixcomp, distcomp, treecomp, geogcomp, clustcomp, syntcomp, hopcomp, mdscomp, mrppcomp, andcomp, distfunc, snncomp, rhythmcomp, devcomp, affprop;
 	
 	//boolean popcomp=true;
 	
@@ -114,16 +124,18 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 		xd=(int)(dim.getWidth()-200);
 		yd=(int)(dim.getHeight()-200);
 		
-		
+		das=new DisplayAnalysisSettings(defaults, ac, ac.dtwsw.getPDTW());
 		
 		
 		levels[0]=sop.element.isSelected();
 		levels[1]=sop.elementCompression.isSelected();
 		if (levels[1]&&levels[0]){levels[0]=false;}
 		levels[2]=sop.syllable.isSelected();
-		levels[3]=sop.syllableTransition.isSelected();
-		levels[4]=sop.song.isSelected();
-		levels[5]=sop.individual.isSelected();
+		levels[3]=sop.phrase.isSelected();
+		levels[4]=sop.syllableTransition.isSelected();
+		levels[5]=sop.song.isSelected();
+		levels[6]=sop.individualDay.isSelected();
+		levels[7]=sop.individual.isSelected();
 		
 		analysisLevels=0;
 		for (int i=0; i<6; i++){
@@ -151,6 +163,8 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 		mrppcomp=sop.mrpp.isSelected();
 		distfunc=sop.distfunc.isSelected();
 		affprop=sop.affprop.isSelected();
+		rhythmcomp=sop.rhythm.isSelected();
+		devcomp=sop.dev.isSelected();
 		
 		songUpperLimit=sop.songUpperLimit;
 		songLowerLimit=sop.songLowerLimit;
@@ -176,8 +190,8 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 		
 		analysisSteps*=analysisLevels;
 		if (syntcomp){
-			if (levels[4]){analysisSteps--;}
 			if (levels[5]){analysisSteps--;}
+			if (levels[6]){analysisSteps--;}
 		}
 		analysisSteps+=2;
 		progress();
@@ -222,7 +236,12 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 	}
 	
 	public void compressResults(){
-
+		System.out.println("LEV: "+levels[6]);
+		//if (levels[6]) {
+		
+	
+		//}
+		
 		if (levels[0]){
 			comps[0]=sg.getScores(0);
 		}
@@ -233,18 +252,24 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 		if (levels[2]){
 			comps[2]=sg.getScores(2);
 		}
-		if ((levels[3])||(levels[4])||(levels[5])){	
-			sg.compressSyllableTransitions();
+		if (levels[3]){
 			comps[3]=sg.getScores(3);
 		}
-		if ((levels[4])||(levels[5])){
-			sg.compressSongs(dtwComp, useTransForSong, cycle, logTransform, linearity, songUpperLimit, songLowerLimit);
+		if ((levels[4])||(useTransForSong && ((levels[5])||(levels[6])||(levels[7])))){	
+			sg.compressSyllableTransitions();
 			comps[4]=sg.getScores(4);
 		}
-		System.out.println("levels5: "+ levels[5]);
-		if (levels[5]){
-			sg.compressIndividuals(sop.bestSongIndiv.isSelected());
+		if ((levels[5])||(levels[6])||(levels[7])){
+			sg.compressSongs(dtwComp, useTransForSong, cycle, logTransform, linearity, songUpperLimit, songLowerLimit);
 			comps[5]=sg.getScores(5);
+		}
+		if (levels[6]) {
+			sg.compressIndividualDays(sop.bestSongIndiv.isSelected());
+			comps[6]=sg.getScores(6);
+		}
+		if (levels[7]){
+			sg.compressIndividuals(sop.bestSongIndiv.isSelected());
+			comps[7]=sg.getScores(7);
 		}
 		
 		currentLevel=1;
@@ -254,10 +279,10 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 	
 	public void analyze(){
 				
-		if ((clustcomp)||(snncomp)||(syntcomp)||(hopcomp)||(andcomp)||(distfunc)||(mrppcomp)){ds=new DisplaySummary(defaults);}
+		if (((matrixcomp)&&levels[2])||(clustcomp)||(snncomp)||(syntcomp)||(hopcomp)||(andcomp)||(distfunc)||(mrppcomp)){ds=new DisplaySummary(defaults);}
 		
 		if (mdsNeeded){
-			for (int i=0; i<6; i++){
+			for (int i=0; i<8; i++){
 				if (levels[i]){
 					comps[i].checkMakeMDS(sop.mdsOptions.numDims, this);
 				}
@@ -271,6 +296,10 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 					//dp[i]=new DisplaySimilarity(comps[i].getDiss(), i, sg, dbc, xd, yd, defaults);
 					dp[i]=new DisplaySimilarity(comps[i], this, sg.getSSB(), dbc, xd, yd, defaults);
 					//MRPP mrpp=new MRPP(sg.scoresSyll, popId);
+					if (i==2){
+						cons=new Consistency(comps[i]);
+						ds.addConsistency(cons);
+					}
 				}
 			}
 			
@@ -293,6 +322,7 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 			for (int i=0; i<levels.length; i++){
 				if (levels[i]){
 					geo[i]=new GeographicComparison(sg, i, dup[i], sop.geogOptions);
+					geo[i]=new GeographicComparison(sg, i, sop.geogOptions);
 					progress();
 					dgc[i]=new DisplayGeographicComparison(geo[i], (int)dim.getWidth(), (int)dim.getHeight(), sg, defaults);
 				}
@@ -303,7 +333,7 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 			updateProgressLabel("calculating Hopkins:");
 			for (int i=0; i<levels.length; i++){
 				if (levels[i]){
-					CalculateHopkinsStatistic chs=new CalculateHopkinsStatistic(comps[i].getMDS().getConfiguration(), sop.hopkinsOptions.numRepeats, sop.hopkinsOptions.maxPicks, sop.hopkinsOptions.distSel, i);
+					CalculateHopkinsStatistic chs=new CalculateHopkinsStatistic(comps[i], sop.hopkinsOptions.numRepeats, sop.hopkinsOptions.maxPicks, sop.hopkinsOptions.distSel, i);
 					progress();
 					ds.addHopkins(chs);
 				}
@@ -401,10 +431,16 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 		}	
 		
 		if (syntcomp){
-			for (int i=0; i<4; i++){
+			for (int i=0; i<5; i++){
 				if (levels[i]){
+					boolean rolling=true;
+					int window=50;
+					boolean byIndividual=true;
 					//ent[i]=new EntropyAnalysis(comps[i].getDissT(), maxSyntaxK, sg.getIndivData(4), comps[i].getLookUp(), i, syntaxMode);	
-					ent[i]=new EntropyAnalysis(comps[i], sop.syntOptions.maxSyntaxK, sop.syntOptions.syntaxMode);	
+					
+					//SWMLNoCategories snc=new SWMLNoCategories(comps[i], 0.1);
+					
+					ent[i]=new EntropyAnalysis(comps[i], sop.syntOptions, rolling, window, byIndividual);	
 					progress();
 					ds.addSyntax(ent[i]);
 					comps[i].setSyntaxCluster(ent[i]);
@@ -412,6 +448,22 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 				}
 			}
 		}	
+		if (rhythmcomp) {
+			for (int i=0; i<3; i++) {
+				if (levels[i]) {
+					rhy[i]=new Rhythm(comps[i]);
+					drhy[i]=new DisplayRhythm(rhy[i], defaults);
+					ds.addRhythm(rhy[i]);
+				}
+			}
+		}
+		if (devcomp) {
+			for (int i=0; i<levels.length; i++) {
+				if (levels[i]) {
+					ddev[i]=new DisplayDevelopment(dup[i], comps[i],(int)dim.getWidth(), (int)dim.getHeight(),  defaults);
+				}
+			}
+		}
 		
 		if (distcomp){
 			updateProgressLabel("drawing distance distributions");
@@ -434,8 +486,8 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 	
 	public void displayComparisons(){
 		tabPane=new JTabbedPane();
-		
-		if ((syntcomp)||(clustcomp)||(hopcomp)||(andcomp)||(distfunc)||(mrppcomp)){
+		tabPane.addTab("Analysis parameters", das);
+		if (((matrixcomp)&&levels[2])||(syntcomp)||(clustcomp)||(hopcomp)||(andcomp)||(distfunc)||(mrppcomp)){
 			tabPane.addTab("Statistics", ds);
 		}
 		
@@ -486,6 +538,24 @@ public class AnalysisSwingWorker extends SwingWorker<String, Object> implements 
 				if (levels[i]){
 					String t=s[i]+" Geog. Anal.";
 					tabPane.addTab(t, dgc[i]);
+				}
+			}
+		}
+		
+		if (rhythmcomp) {
+			for (int i=0; i<3; i++) {
+				if (levels[i]) {
+					String t=s[i]+" Rhythm";
+					tabPane.addTab(t,  drhy[i]);
+				}
+			}
+		}
+		
+		if (devcomp) {
+			for (int i=0; i<levels.length; i++) {
+				if (levels[i]) {
+					String t=s[i]+" Development";
+					tabPane.addTab(t,  ddev[i]);
 				}
 			}
 		}

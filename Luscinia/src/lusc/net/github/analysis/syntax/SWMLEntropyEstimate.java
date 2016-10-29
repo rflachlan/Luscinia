@@ -30,11 +30,13 @@ public class SWMLEntropyEstimate {
 	double[] G;
 	double eval=1/Math.log(2);
 	Random random=new Random(System.currentTimeMillis()+kv);
+	boolean jk=true;
 	
-	public SWMLEntropyEstimate(int[][] individualLabel, int[][] dat, int kv, int n){
+	public SWMLEntropyEstimate(int[][] individualLabel, int[][] dat, int kv, int n, boolean jk){
 		this.kv=kv;
 		this.n=n;
 		this.dat=dat;
+		this.jk=jk;
 		numInds=individualLabel.length;
 		numSongs=dat.length;
 		
@@ -48,9 +50,10 @@ public class SWMLEntropyEstimate {
 		calculateG(n*2);	
 		zero=calculateZeroOrderEntropy();
 		rho=calculateEWMLEntropy();
-		System.out.println("SWML "+kv+" "+zero+" "+rho+" "+n);
-		jackknife();
-		
+		//System.out.println("SWML "+kv+" "+zero+" "+rho+" "+n);
+		if (jk){
+			jackknife();
+		}
 	}
 	
 	public int getKv(){

@@ -28,12 +28,14 @@ import lusc.net.github.Defaults;
 import lusc.net.github.Individual;
 import lusc.net.github.db.DataBaseController;
 import lusc.net.github.ui.db.DatabaseTree;
+import lusc.net.github.ui.db.DatabaseView;
 
 public class IndividualEdit extends JPanel{
 	
 	Defaults defaults;
 	DataBaseController dbc;
 	DatabaseTree treePanel;
+	DatabaseView treeView;
 	Dimension dim=new Dimension(400, 300);
 	JButton save=new JButton("save");
 	JButton useLast=new JButton("use last saved details");
@@ -67,6 +69,19 @@ public class IndividualEdit extends JPanel{
 
 	public IndividualEdit(DatabaseTree treePanel, DataBaseController dbc, int ID, Defaults defaults){
 		this.treePanel=treePanel;
+		this.dbc=dbc;
+		this.ID=ID;
+		this.defaults=defaults;
+		individual=new Individual(dbc, ID);
+		populateContentPane();
+		
+		//updatePopulation();
+		
+	}
+	
+	public IndividualEdit(DatabaseView treeView, DataBaseController dbc, int ID, Defaults defaults){
+		this.treeView=treeView;
+		this.treePanel=treeView.treePanel;
 		this.dbc=dbc;
 		this.ID=ID;
 		this.defaults=defaults;
@@ -223,6 +238,8 @@ public class IndividualEdit extends JPanel{
 		individual.writeIndividual();
 		
 		defaults.setIndividualDetails(individual);
+		
+		treeView.refreshTree();
 		
 	}
 	

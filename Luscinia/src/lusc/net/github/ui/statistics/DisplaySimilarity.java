@@ -21,6 +21,7 @@ import lusc.net.github.Song;
 //import lusc.net.github.analysis.SongGroup;
 import lusc.net.github.analysis.AnalysisGroup;
 import lusc.net.github.analysis.CompareThread;
+import lusc.net.github.analysis.CompareThread2;
 import lusc.net.github.analysis.ComparisonResults;
 import lusc.net.github.analysis.PrepareDTW;
 import lusc.net.github.db.DataBaseController;
@@ -44,6 +45,10 @@ public class DisplaySimilarity extends DisplayPane implements MouseInputListener
 	SpectrogramSideBar ssb;
 	JPanel mainPanel=new JPanel(new BorderLayout());
 	int height, width, dataType;
+	
+	boolean highlight=false;
+	int xchoice=0;
+	int ychoice=0;
 	
 	AnalysisSwingWorker asw;
 	
@@ -116,6 +121,15 @@ public class DisplaySimilarity extends DisplayPane implements MouseInputListener
 			}
 			
 		}
+		if (highlight) {
+			
+			x=(int)(5+xchoice*unit);
+			y=(int)(unit*le1+5-unit*ychoice);
+			g.setColor(Color.RED);
+			g.fillRect(x, y, unit2, unit2);
+			
+		}
+		
 		System.out.println("SCORE: "+score);
 		if (score>-1){
 			g.setColor(Color.BLACK);
@@ -130,21 +144,36 @@ public class DisplaySimilarity extends DisplayPane implements MouseInputListener
 			int x=e.getX();
 			int y=e.getY();
 			
-			int ychoice=(int)Math.ceil((unit*scores.length+5-y)/unit);
-			int xchoice=(int)Math.floor((x-5)/unit);
+			highlight=true;
+				
+			double xch=(x-5)/unit;
+			double ych=(unit*scores.length+5-y)/unit;
+			
+			
+			ychoice=(int)Math.ceil((unit*scores.length+5-y)/unit);
+			xchoice=(int)Math.floor((x-5)/unit);
 			if (ychoice<0){ychoice=0;}
 			if (xchoice<0){xchoice=0;}
 			int []wrap={xchoice, ychoice};
+			repaint();
 			ssb.draw(dataType, wrap);
 			try{
+				int[] wrap2=wrap;
+				if (dataType==3) {
+					
+					wrap2[0]=cr.getSylExemplar(wrap[0]);
+					wrap2[1]=cr.getSylExemplar(wrap[1]);
+				}
+				
+				
 				PrepareDTW pdtw=asw.getAC().getDTWSW().getPDTW();
 				int st=pdtw.getStitchSyllables();
 				boolean stitch=false;
 				if (st>0){
 					stitch=true;
 				}
-				if ((dataType==0)||((dataType==2)&&stitch)){
-					CompareThread ct=pdtw.runDTWpair(null, stitch, wrap[0], wrap[1]);
+				if ((dataType==0)||((dataType==3)&&stitch)){
+					CompareThread2 ct=pdtw.runDTWpair(null, stitch, wrap2[0], wrap2[1]);
 					DisplayDTW ddtw=new DisplayDTW(wrap, pdtw, ct);
 					JOptionPane.showMessageDialog(this, ddtw);
 				}
@@ -223,11 +252,11 @@ public BufferedImage resizeImage(double ratio){
 		if (readyToWrite){
 			sd.writeString("IndividualName1");
 			sd.writeString("IndividualName2");
-			if (dataType<5){
+			if (dataType<6){
 				sd.writeString("Sound1");
 				sd.writeString("Sound2");
 			}
-			if (dataType<4){
+			if (dataType<5){
 				sd.writeString("Unit1");
 				sd.writeString("Unit2");
 			}
@@ -288,14 +317,14 @@ public BufferedImage resizeImage(double ratio){
 			int[][] lookUps=cr.getLookUp();
 			
 			for (int i=0; i<scores.length; i++){
-				for (int j=0; j<i; j++){
+				for (int j=0; j<=i; j++){
 					sd.writeString(songs[lookUps[i][0]].getIndividualName());
 					sd.writeString(songs[lookUps[j][0]].getIndividualName());
-					if (dataType<5){
+					if (dataType<6){
 						sd.writeString(songs[lookUps[i][0]].getName());
 						sd.writeString(songs[lookUps[j][0]].getName());
 					}
-					if (dataType<4){
+					if (dataType<5){
 						sd.writeInt((lookUps[i][1]+1));
 						sd.writeInt((lookUps[j][1]+1));
 					}

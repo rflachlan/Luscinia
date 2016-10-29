@@ -16,7 +16,7 @@ import lusc.net.github.ui.statistics.DisplayUPGMA;
 public class GeographicComparison {
 	
 	
-	double[] meanScore;
+	double[] meanScore, withinCatMeanScore;
 	double[][] meanScoreByGroup;
 	double[][] confidenceIntervals;
 	
@@ -24,6 +24,10 @@ public class GeographicComparison {
 	double[][] distanceCategories;
 	double[][] repertoireComparison;
 	double[][] coordinates;
+	
+	double[][][] withinTypeDists;
+	
+	
 	int[][] repertoires, repertoires2;
 	int dataType;
 	int numCategories=0;
@@ -31,7 +35,7 @@ public class GeographicComparison {
 	int numComps=0;
 	int numInds=0;
 	
-	int defaultCategoryNumber=20;
+	int defaultCategoryNumber=10;
 	double thresholdProportion1=0.0;
 	double thresholdProportion2=1.0;
 	double maxDist=0;
@@ -48,34 +52,81 @@ public class GeographicComparison {
 	ComparisonResults cr;
 	
 	int[] groupids;
-	String[] levelNames;
+	String[] levelNames, levelNames2;
+	String[] populationNames;
+	
+	double thresholdDissimilarity=0.1;
+	
 	
 	GeographicAnalysisPreferences gap;
 	
 	
 	//public GeographicComparison(SongGroup sg, int dataType, doublse thresholdProp){
-	public GeographicComparison(AnalysisGroup sg, int dataType, double thresholdProp){
+	public GeographicComparison(AnalysisGroup sg, int dataType, GeographicAnalysisPreferences gap){
 		this.sg=sg;
 		this.dataType=dataType;
+		this.gap=gap;
+		
+		
+		
 		cr=sg.getScores(dataType);
 		if ((cr.individuals==null)||(cr.individualNumber==0)){
 			cr.calculateIndividuals();
 		}
-				
-		numCategories=defaultCategoryNumber;
-		if (numCategories>numInds){numCategories=numInds;}
-		numComps=(cr.individualNumber*(cr.individualNumber-1))/2;
-		//if (numCategories>numComps){numCategories=numComps;}
-		
-		double[][] songData=cr.getDiss();
 		
 		int[] lookUps=cr.lookUpIndividual;
-		threshold=calculateThreshold(songData, thresholdProp);
-		//repertoireComparison=calculateRepertoireSimilarity(songData, lookUps);
-		repertoireComparison=calculateJaccardIndex(songData, lookUps, threshold);
+		
+		int[] partition=null;
+		int s=gap.levelSel;
+		levelNames=null;
+		if (s==0){
+			partition=cr.getLookUpTypes();
+			levelNames=cr.getTypeNames();
+		}
+		if (s==1){
+			partition=cr.getSpeciesListArray();
+			levelNames=cr.getSpeciesNames();
+		}
+		else if (s==2){
+			partition=cr.getPopulationListArray();
+			levelNames=cr.getPopulationNames();
+		}
+		else if (s==3){
+			partition=cr.getLookUpIndividuals();
+			levelNames=cr.getIndividualNames();
+		}		
+		
+		if (levelNames.length>1){
+			
+			int[] ind=cr.getLookUpIndividuals();
+			
+			int ni=cr.getIndividualNames().length;
+			
+			groupids=new int[ni];
+			
+			for (int i=0; i<ind.length; i++){
+				groupids[ind[i]]=partition[i];
+			}
+			
+		}
+		
+		for (int i=0; i<partition.length; i++) {
+			System.out.println(levelNames[partition[i]]);
+		}
+		
+		
+		numCategories=defaultCategoryNumber;
 		geographicalDistances=calculateGeographicalDistances();
+		
+		doRepComparison(numCategories, thresholdDissimilarity);
+		
+		doWithinCatRepComparison(numCategories, thresholdDissimilarity);
+		
+		//doWithinTypeComparison(geographicalDistances, numTypes);
+		
+		
 
-		doComparison(numCategories);
+		//doComparison(numCategories);
 		
 		
 		
@@ -153,6 +204,15 @@ public class GeographicComparison {
 		//System.out.println(levelNames.length);
 		geographicalDistances=calculateGeographicalDistances();
 		doComparison(numCategories, numTypes);
+		
+		doWithinCatComparison(numCategories, numTypes);
+		
+		doWithinTypeComparison(geographicalDistances, numTypes);
+		
+	}
+	
+	public int getDataType(){
+		return dataType;
 	}
 	
 	public int getNumInds(){
@@ -179,8 +239,20 @@ public class GeographicComparison {
 		return distanceCategories;
 	}
 	
+	public double getThresholdDissimilarity() {
+		return thresholdDissimilarity;
+	}
+	
 	public double[] getMeanScore(){
 		return meanScore;
+	}
+	
+	public double[] getWithinCatMeanScore(){
+		return withinCatMeanScore;
+	}
+	
+	public double[][][] getWithinTypeMatrix(){
+		return withinTypeDists;
 	}
 	
 	public double[][] getMeanScoreByGroup(){
@@ -203,6 +275,14 @@ public class GeographicComparison {
 		return repertoires2;
 	}
 	
+	public String[] getLevelNames() {
+		return levelNames;
+	}
+	
+	public String[] getLevelNames2() {
+		return levelNames2;
+	}
+	
 	public int[] calculateCategories(int n){
 		
 		//int[][] cats=upgma.calculateClassificationMembers(n+1);
@@ -221,10 +301,10 @@ public class GeographicComparison {
 		numCategories=nc;
 		distanceCategories=calculateDistanceCategories(numCategories, geographicalDistances);
 		System.out.println("DISTANCE CATEGORIES MADE");
-		maxDist=distanceCategories[distanceCategories.length-1][1];
+		maxDist=distanceCategories[1][distanceCategories.length-1];
 		
 		
-		meanScore=calculateMeanScore();
+		meanScore=calculateMeanScore(repertoireComparison, false);
 		for (int i=0; i<meanScore.length; i++){System.out.println(meanScore[i]);}
 		confidenceIntervals=deleteNJackknife(prop, resamples);
 	}
@@ -244,7 +324,7 @@ public class GeographicComparison {
 		
 		calculateRepertoires(categories, lookUps, cr.individualNumber);
 		
-		if (dataType<4){
+		if (dataType<5){
 			int[][] lookUps2=cr.getLookUp();
 			calculateRepertoires2(categories, lookUps, lookUps2, cr.individualNumber);
 		}
@@ -255,7 +335,7 @@ public class GeographicComparison {
 		distanceCategories=calculateDistanceCategories(distcats, geographicalDistances);
 		maxDist=distanceCategories[distanceCategories.length-1][1];
 
-		meanScore=calculateMeanScore();
+		meanScore=calculateMeanScore(repertoireComparison, false);
 		//for (int i=0; i<meanScore.length; i++){System.out.println(meanScore[i]);}
 		confidenceIntervals=deleteNJackknife(prop, resamples);
 		
@@ -265,29 +345,136 @@ public class GeographicComparison {
 		
 	}
 	
-	public double[] calculateMeanScore(){
+	public void doRepComparison(int distcats, double thresh) {
+		
+		System.out.println(distcats+" "+thresh+" "+cr.individualNumber);
+		
+		numCategories=distcats;
+		int[] lookUps=cr.lookUpIndividual;
+		repertoireComparison=calculateJaccardIndex(thresh, lookUps, cr.individualNumber);
+		
+		distanceCategories=calculateDistanceCategories(distcats, geographicalDistances);
+		maxDist=distanceCategories[distanceCategories.length-1][1];
+
+		meanScore=calculateMeanScore(repertoireComparison, true);
 		
 		
-		double[] results=new double[numCategories];
-		double[] counts=new double[numCategories];
 		
-		for (int i=0; i<repertoireComparison.length; i++){
-			for (int j=0; j<i; j++){
-				double p=0;
-				for (int k=0; k<numCategories; k++){
-					if ((geographicalDistances[i][j]>p)&&(geographicalDistances[i][j]<=distanceCategories[0][k])){
-						results[k]+=repertoireComparison[i][j];
-						counts[k]++;
+		
+		
+		confidenceIntervals=deleteNJackknife(prop, resamples);
+		
+		delete1Jackknife();
+		
+		if (groupids!=null){
+			meanScoreByGroup=calculateMeanScoreByGroup(groupids, levelNames.length);
+		}
+		
+		
+		
+	}
+	
+public void doWithinCatRepComparison(int distcats, double threshold){
+		
+		numCategories=distcats;
+		
+		int[] lookUps=cr.lookUpIndividual;
+		
+		double[][] rc=calculateWithinCatDissimilarities(lookUps, cr.individualNumber, cr.getDiss(), threshold);
+		
+		
+		withinCatMeanScore=calculateMeanScore(rc, true);
+		
+	}
+	
+	
+	public void doWithinCatComparison(int distcats, int songcats){
+		
+		
+		
+		numCategories=distcats;
+		int[] categories=calculateCategories(songcats);
+		
+		
+		
+		int[] lookUps=cr.lookUpIndividual;
+		
+		
+		
+		calculateRepertoires(categories, lookUps, cr.individualNumber);
+		
+		if (dataType<5){
+			int[][] lookUps2=cr.getLookUp();
+			calculateRepertoires2(categories, lookUps, lookUps2, cr.individualNumber);
+		}
+		
+		double[][] rc=calculateWithinCatIndex(categories, lookUps, cr.individualNumber, cr.getDiss());
+		
+		
+		withinCatMeanScore=calculateMeanScore(rc, false);
+		
+	}
+	
+	public void doWithinTypeComparison(double[][] geog, int songcats){
+		
+
+		
+		int[] categories=calculateCategories(songcats);
+
+		int[] lookUps=cr.lookUpIndividual;
+			
+		calculateRepertoires(categories, lookUps, cr.individualNumber);
+		
+		if (dataType<5){
+			int[][] lookUps2=cr.getLookUp();
+			calculateRepertoires2(categories, lookUps, lookUps2, cr.individualNumber);
+		}
+		
+		double[][][]rc=new double[songcats+1][][];
+		
+		for (int i=0; i<=songcats; i++){
+			rc[i]=calculateTypeMatrix(i, categories, lookUps,  cr.individualNumber, cr.getDiss(), geog);
+		}
+		
+		withinTypeDists=rc;
+		
+		
+	}
+	
+	
+	
+	public double[] calculateMeanScore(double[][] d, boolean square){
+		
+		int nc=distanceCategories[0].length;
+		
+		double[] results=new double[nc];
+		double[] counts=new double[nc];
+		
+		
+		
+		
+		for (int i=0; i<d.length; i++){
+			int maxj=i;
+			if (square) {maxj=d.length;}
+			for (int j=0; j<maxj; j++){
+				if (i!=j) {
+					double p=0;
+					for (int k=0; k<nc; k++){
+						if ((geographicalDistances[i][j]>p)&&(geographicalDistances[i][j]<=distanceCategories[0][k])&&(d[i][j]>=0)){
+							results[k]+=d[i][j];
+							counts[k]++;
+						}
+						p=distanceCategories[0][k];
 					}
-					p=distanceCategories[0][k];
 				}
 			}
 		}
 		
-		for (int i=0; i<numCategories; i++){
+		for (int i=0; i<nc; i++){
 			if (counts[i]>0){
 				results[i]/=counts[i];
 			}
+			System.out.println(counts[i]+" "+results[i]);
 		}
 		
 		return results;
@@ -296,26 +483,54 @@ public class GeographicComparison {
 	public double[][] calculateMeanScoreByGroup(int[] groups, int ngroups){
 		
 		//System.out.println("calculating mean score by group "+ngroups);
-		double[][] results=new double[ngroups][numCategories];
-		double[][] counts=new double[ngroups][numCategories];
+		
+		
+		
+		int ncomps=ngroups*(ngroups+1)/2;
+		int lookups[][]=new int[ngroups][ngroups];
+		int a=0;
+		for (int i=0; i<ngroups; i++) {
+			for (int j=0; j<=i; j++) {
+				lookups[i][j]=a;
+				lookups[j][i]=a;
+				a++;
+			}
+		}
+		
+		levelNames2=new String[ncomps];
+		int kk=0;
+		for (int i=0; i<levelNames.length; i++) {
+			for (int j=0; j<=i; j++) {
+				levelNames2[kk]=levelNames[i]+" , "+levelNames[j];	
+				kk++;
+			}
+		}
+		
+		
+		
+		double[][] results=new double[ncomps][numCategories];
+		double[][] counts=new double[ncomps][numCategories];
 		
 		for (int i=0; i<repertoireComparison.length; i++){
 			//System.out.println(groups[i]);
 			for (int j=0; j<i; j++){
-				if (groups[i]==groups[j]){
+				//if (groups[i]==groups[j]){
 					double p=0;
 					for (int k=0; k<numCategories; k++){
 						if ((geographicalDistances[i][j]>p)&&(geographicalDistances[i][j]<=distanceCategories[0][k])){
-							results[groups[i]][k]+=repertoireComparison[i][j];
-							counts[groups[i]][k]++;
+							int r=lookups[groups[i]][groups[j]];
+							//results[groups[i]][k]+=repertoireComparison[i][j];
+							//counts[groups[i]][k]++;
+							results[r][k]+=repertoireComparison[i][j];
+							counts[r][k]++;
 						}
 						p=distanceCategories[0][k];
 					}
-				}
+				//}
 			}
 		}
 		
-		for (int i=0; i<ngroups; i++){
+		for (int i=0; i<ncomps; i++){
 			for (int j=0; j<numCategories; j++){
 				if (counts[i][j]>0){
 					results[i][j]/=counts[i][j];		
@@ -325,6 +540,60 @@ public class GeographicComparison {
 		}
 		
 		return results;
+	}
+	
+	public void delete1Jackknife() {
+		int n=repertoireComparison.length;
+		boolean[] delete=new boolean[n];
+		double[] results=new double[numCategories];
+		double[] counts=new double[numCategories];
+		
+		double[][] resampleResults=new double[numCategories][resamples];
+		boolean[][] fs=new boolean[numCategories][resamples];
+		
+		for (int r=0; r<n; r++) {
+			for (int i=0; i<n; i++){
+				delete[i]=false;
+			}
+			delete[r]=true;
+			for (int i=0; i<numCategories; i++){
+				results[i]=0;
+				counts[i]=0;
+			}
+				
+			for (int i=0; i<repertoireComparison.length; i++){
+				if (!delete[i]){
+					for (int j=0; j<i; j++){
+						if (!delete[j]){
+							double p=0;
+							for (int k=0; k<numCategories; k++){
+								if ((geographicalDistances[i][j]>p)&&(geographicalDistances[i][j]<=distanceCategories[0][k])){
+								//if (geographicalDistances[i][j]<=distanceCategories[0][k]){
+									results[k]+=repertoireComparison[i][j];
+									counts[k]++;
+								}
+								p=distanceCategories[0][k];
+							}
+						}
+					}
+				}
+			}
+			System.out.print(r+" ");
+			for (int i=0; i<numCategories; i++){
+				if (counts[i]==0){
+					counts[i]=1;
+					fs[i][r]=false;
+				}
+				else{
+					fs[i][r]=true;
+				}
+				resampleResults[i][r]=results[i]/counts[i];
+				System.out.print(resampleResults[i][r]+" ");
+			}
+			System.out.println();
+			
+		}
+		
 	}
 	
 	public double[][] deleteNJackknife(double prop, int resamples){
@@ -474,6 +743,62 @@ public class GeographicComparison {
 		return results;
 	}
 	
+	public double[][] calculateJaccardIndex(double thresh, int[] lookUps, int ind){
+		int n=lookUps.length;
+		
+		
+		int[][] lu=new int[ind][];
+		for (int i=0; i<ind; i++) {
+			int c=0;
+			for (int j=0; j<lookUps.length; j++) {
+				if (lookUps[j]==i) {
+					c++;
+				}
+			}
+			lu[i]=new int[c];
+			c=0;
+			for (int j=0; j<lookUps.length; j++) {
+				if (lookUps[j]==i) {
+					lu[i][c]=j;
+					c++;
+				}
+			}
+			
+		}
+		
+		double[][] out=new double[ind][ind];
+		
+		double[][]x=cr.getDiss();
+		
+		for (int i=0; i<ind; i++) {
+			for (int j=0; j<ind; j++) {
+				double count=0;
+				for (int a=0; a<lu[i].length; a++) {
+					for (int b=0; b<lu[j].length; b++) {
+						int c=lu[i][a];
+						int d=lu[j][b];
+						
+						if (c<d) {
+							c=lu[j][b];
+							d=lu[i][a];
+						}
+						
+						if (x[c][d]<thresh) {
+							count++;
+							b=lu[j].length;	
+						}
+					}
+				}
+				out[i][j]=count/(lu[i].length+lu[j].length-count);
+				
+				//System.out.println(i+" "+j+" "+count+" "+lu[i].length+" "+lu[j].length+" "+out[i][j]);
+				
+				
+			}
+		}
+		return out;
+	}
+	
 	public double[][] calculateJaccardIndex(int[] songIndex, int[] lookUps, int ind){
 		int n=lookUps.length;
 		int[][] reps=new int[ind][];
@@ -538,6 +863,131 @@ public class GeographicComparison {
 			}
 		}
 		return results;
+	}
+	
+	public double[][] calculateWithinCatDissimilarities(int[] lookUps, int ind, double[][] d, double thresh){
+		int n=lookUps.length;
+		
+		double[][] sim=new double[ind][ind];
+		double[][] counts=new double[ind][ind];
+		
+		for (int i=0; i<n; i++){
+			for (int j=0; j<n; j++){
+				if (i>=j) {
+					if (d[i][j]<thresh) {
+						sim[lookUps[i]][lookUps[j]]+=d[i][j];
+						counts[lookUps[i]][lookUps[j]]++;
+					}	
+				}
+			}
+		}
+	
+		double[][] results=new double[ind][];
+		for (int i=0; i<ind; i++){
+			results[i]=new double[i+1];
+			for (int j=0; j<i; j++){
+				if (counts[i][j]>0){
+					results[i][j]=sim[i][j]/counts[i][j];
+				}
+				else{
+					results[i][j]=-1;
+				}
+			}
+		}	
+	
+		return results;
+	}
+	
+	
+	
+	public double[][] calculateWithinCatIndex(int[] songIndex, int[] lookUps, int ind, double[][] d){
+		int n=lookUps.length;
+		
+		double[][] sim=new double[ind][ind];
+		double[][] counts=new double[ind][ind];
+		
+		for (int i=0; i<n; i++){
+			for (int j=0; j<i; j++){
+				if (songIndex[i]==songIndex[j]){
+					sim[lookUps[i]][lookUps[j]]+=d[i][j];
+					counts[lookUps[i]][lookUps[j]]++;
+				}
+			}
+		}
+	
+		double[][] results=new double[ind][];
+		for (int i=0; i<ind; i++){
+			results[i]=new double[i+1];
+			for (int j=0; j<i; j++){
+				if (counts[i][j]>0){
+					results[i][j]=sim[i][j]/counts[i][j];
+				}
+				else{
+					results[i][j]=-1;
+				}
+			}
+		}	
+	
+		return results;
+	}
+	
+	public double[][] calculateTypeMatrix(int a, int[] songIndex, int[] lookUps, int numInds, double[][] diss, double[][] geog){
+		int n=lookUps.length;
+		int[] indl=new int[numInds];
+		
+		double[][] t=new double[numInds][numInds];
+		double[][] c=new double[numInds][numInds];
+		
+		for (int i=0; i<n; i++){
+			if (songIndex[i]==a){
+				int g=lookUps[i];
+				indl[g]=1;
+				for (int j=0; j<i; j++){
+					if (songIndex[i]==songIndex[j]){
+						int h=lookUps[j];
+						t[g][h]+=diss[i][j];
+						c[g][h]++;
+						t[h][g]+=diss[i][j];
+						c[h][g]++;
+					}
+				}
+			}
+		}
+		
+		for (int i=0; i<numInds; i++){
+			for (int j=0; j<numInds; j++){
+				if (c[i][j]>0){t[i][j]/=c[i][j];}
+			}
+		}	
+		
+		int countInds=0;
+		for (int i=0; i<numInds; i++){
+			countInds+=indl[i];
+		}
+		
+		int[] trans=new int[countInds];
+		countInds=0;
+		for (int i=0; i<numInds; i++){
+			if (indl[i]==1){
+				trans[countInds]=i;
+				countInds++;
+			}
+		}
+		
+		double[][] out=new double[countInds*(countInds-1)/2][4];
+		
+		int x=0;
+		for (int i=0; i<countInds; i++){
+			for (int j=0; j<i; j++){
+				out[x][0]=trans[i];
+				out[x][1]=trans[j];
+				out[x][2]=t[trans[i]][trans[j]];
+				out[x][3]=geog[trans[i]][trans[j]];
+				x++;
+			}
+		}	
+		
+		return out;
 	}
 	
 	public double[][] calculateJaccardIndex2(int[] songIndex, int[] lookUps, int ind){
@@ -878,13 +1328,23 @@ public class GeographicComparison {
 		double deltph = Math.toRadians(lat2-lat1);
 		double deltlam = Math.toRadians(lon2-lon1);
 
-		double a = Math.sin(deltph/2) * Math.sin(deltph/2) +
-		        Math.cos(ph1) * Math.cos(ph2) *
-		        Math.sin(deltlam/2) * Math.sin(deltlam/2);
-		double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+		//double a = Math.sin(deltph/2) * Math.sin(deltph/2) +
+		//        Math.cos(ph1) * Math.cos(ph2) *
+		 //       Math.sin(deltlam/2) * Math.sin(deltlam/2);
+		//double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 
-		double d = R * c;
-		return d;
+		//double d = R * c;
+		//return d;
+		
+		double a = Math.pow(Math.sin(deltph / 2), 2)
+                + Math.cos(ph1) * Math.cos(ph2)
+                * Math.pow(Math.sin(deltlam / 2),2);
+            
+       double c = 2 * Math.asin(Math.sqrt(a));
+       
+       return (c*R);
+				
+		
 	}
 	
 	public double[][] calculateGeographicalDistances(){
@@ -914,7 +1374,7 @@ public class GeographicComparison {
 				}
 				catch(Exception e){}
 			}
-			System.out.println(i+" "+groupids[i]+" "+indname[i]+" "+coordinates[i][0]+" "+coordinates[i][1]);
+			//System.out.println(i+" "+groupids[i]+" "+indname[i]+" "+coordinates[i][0]+" "+coordinates[i][1]);
 		}
 		double[][] geographicalDistances=new double[cr.individualNumber][cr.individualNumber];
 		for (i=0; i<cr.individualNumber; i++){
@@ -928,9 +1388,24 @@ public class GeographicComparison {
 		}
 		return geographicalDistances;
 	}
-
 	
 	public double[][] calculateDistanceCategories(int numCategories, double[][] distances){
+		
+		int[] dists= {100,200,400,800,1600,3200,6400,12800,25600,51200,100000, 200000,400000,800000,1600000,3200000,6400000, 10000000,20000000,40000000,80000000};
+		if (numCategories>=dists.length) {numCategories=dists.length-1;}
+		
+		double[][] distanceCategories=new double[3][numCategories];
+		for (int i=0; i<numCategories; i++) {
+			distanceCategories[0][i]=dists[i];
+			distanceCategories[1][i]=dists[i];
+			distanceCategories[2][i]=dists[i];	
+		}
+		return distanceCategories;
+		
+	}
+
+	
+	public double[][] calculateDistanceCategoriesS(int numCategories, double[][] distances){
 		
 		double[][] distanceCategories=new double[3][numCategories];
 		//double[] distanceAverages=new double[numCategories];
@@ -945,6 +1420,9 @@ public class GeographicComparison {
 		Arrays.sort(distanceSort);
 		
 		double cut=distanceSort.length/(numCategories+0.0);
+		
+		System.out.println("Distance categories: "+numCategories+" "+distanceSort.length+" "+cut);
+		
 		int[] xc=new int[numCategories];
 		for (int i=0; i<numCategories; i++){
 			int j=(int)Math.round((i+1)*cut-1);
@@ -952,27 +1430,36 @@ public class GeographicComparison {
 			distanceCategories[0][i]=distanceSort[j];
 			int xc1=(int)Math.round(i*cut-1);
 			xc[i]=j-xc1;
+			
+			System.out.println(xc[i]);
+			
 		}
 		
 		double[] counter=new double[numCategories];
 		
 		for (int i=0; i<numCategories; i++){
-			double[] p=new double[xc[i]];
-			int pi=0;
+			if (xc.length>0) {
+				double[] p=new double[xc[i]];
+				int pi=0;
 			
-			double t2=distanceCategories[0][i];
-			double t1=0;
-			if (i>0){t1=distanceCategories[0][i-1];}
+				double t2=distanceCategories[0][i];
+				double t1=0;
+				if (i>0){t1=distanceCategories[0][i-1];}
 			
-			for (int j=0; j<distanceSort.length; j++){
-				if ((distanceSort[j]<=t2)&&(distanceSort[j]>t1)){
-					p[pi]=distanceSort[j];
-					pi++;
-					if (pi>=p.length){pi--;}
+				for (int j=0; j<distanceSort.length; j++){
+					if ((distanceSort[j]<=t2)&&(distanceSort[j]>t1)){
+						p[pi]=distanceSort[j];
+						pi++;
+						if (pi>=p.length){pi--;}
+					}
 				}
+				Arrays.sort(p);
+				int q=(int)Math.ceil(xc[i]*0.5);
+				if (q>=p.length) {
+					q=p.length-1;
+				}
+				distanceCategories[1][i]=p[q];
 			}
-			Arrays.sort(p);
-			distanceCategories[1][i]=p[(int)Math.ceil(xc[i]*0.5)];
 		}
 		
 		for (int i=0; i<distanceSort.length; i++){

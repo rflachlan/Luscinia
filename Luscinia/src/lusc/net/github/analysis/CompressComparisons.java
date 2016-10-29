@@ -11,17 +11,136 @@ import java.util.*;
 
 import lusc.net.github.Element;
 import lusc.net.github.Song;
+import lusc.net.github.Syllable;
 import lusc.net.github.ui.ComparisonScheme;
 
 public class CompressComparisons {
 	
 	double syntaxPenalty=0.0;
+	
+	long l4=0l;
+	
 	public CompressComparisons(){
 	
 	
 	}
 	
+	public int getBestOffset(int[] els1, int[] els2, double[][] scores){
+		
+		double[][] submat=new double[els1.length][els2.length];
+		
+		for (int i=0; i<els1.length; i++){
+			for (int j=0; j<els2.length; j++){
+				if (els1[i]<els2[j]){
+					submat[i][j]=scores[els2[j]][els1[i]];
+				}
+				else{
+					submat[i][j]=scores[els1[i]][els2[j]];
+				}
+			}
+		}
+		
+		int loc=0;
+		double bestsc=Double.MAX_VALUE;
+		for (int i=0; i<els2.length-els1.length; i++){
+			double sc=0;
+			for (int j=0; j<els1.length; j++){
+				sc+=submat[j][i+j];
+			}
+			if (sc<bestsc){
+				bestsc=sc;
+				loc=i;
+			}
+		}
+		return loc;
+	}
+	
 	public double[][] compareElements(double[][] scores, Song[] songs){
+		
+		LinkedList<Syllable>phrases=new LinkedList<Syllable>();
+		int ele_count=0;
+		for (int i=0; i<songs.length; i++){
+			LinkedList<Syllable> phr=songs[i].getPhrases();
+			for (Syllable sy:phr){
+				phrases.add(sy);
+				ele_count+=sy.getMaxSyllLength();
+				for (Syllable s:sy.getSyllables()){
+					if (s.getNumEles()<sy.getMaxSyllLength()){
+						int[] els=s.getEleIds2();
+						double p=0;
+						for (Syllable t:sy.getSyllables()){
+							int[] els2=s.getEleIds2();
+							p+=getBestOffset(els, els2, scores);
+							
+						}
+						s.setOffset((int)Math.round(p/(sy.getNumSyllables()+0.0)));
+						
+					}
+				}
+			}
+		}
+		
+		double[][]scoreEle=new double[ele_count][];
+		for (int i=0; i<ele_count; i++){
+			scoreEle[i]=new double[i+1];
+		}
+		
+		
+		int p1=0;
+		for (int i=0; i<phrases.size(); i++){
+			Syllable ph1=phrases.get(i);
+			
+			for (int j=0; j<ph1.getMaxSyllLength(); j++){
+				int p2=0;
+				for (int g=0; g<=i; g++){
+					Syllable ph2=phrases.get(i);
+					
+					for (int h=0; h<ph2.getMaxSyllLength(); h++){
+						if (p2<p1){scoreEle[p1][p2]=getOScore(ph1, ph2, j, h, scores);}
+						p2++;
+					}	
+				}
+				p1++;	
+			}	
+		}
+		return scoreEle;
+	}
+	
+	
+	public double getOScore(Syllable p1, Syllable p2, int a, int b, double[][] d){
+		LinkedList<Syllable> syls1=p1.getSyllables();
+		LinkedList<Syllable> syls2=p2.getSyllables();
+		
+		double sc=0;
+		double count=0;
+		
+		for (Syllable s1: syls1){
+			
+			if (a+s1.getOffset()<s1.getNumEles2()){
+				
+				int x=s1.getEleId2(a+s1.getOffset());
+				
+				for (Syllable s2: syls2){
+					if (b+s2.getOffset()<s2.getNumEles2()){
+						int y=s2.getEleId2(b+s2.getOffset());
+						count++;
+						if (x>y){
+							sc+=d[x][y];
+						}
+						else{
+							sc+=d[y][x];
+						}	
+					}
+				}
+			}
+		}
+		sc/=count;
+		
+		return sc;
+	}
+		
+		
+	/*	
 		int aa=songs.length;
 		LinkedList phrases=new LinkedList();
 		int prev_song_eles=0;
@@ -380,10 +499,24 @@ public class CompressComparisons {
 		}
 		averageScore/=sum;
 		double syntaxPenalty=(sp*averageScore);
-		System.out.println("Syntax penalty: "+sp+" "+averageScore+" "+sum+" "+syntaxPenalty);
+		//System.out.println("Syntax penalty: "+sp+" "+averageScore+" "+sum+" "+syntaxPenalty);
 		int [] syllLengths=new int[scores.length];
 		int p=0;
 		
+		for (int i=0; i<aa; i++){
+			LinkedList<Syllable> ph=songs[i].getPhrases();
+			
+			for (int j=0; j<ph.size(); j++){
+				
+				Syllable sy=ph.get(j);
+				for (int g=0; g<sy.getNumSyllables(); g++){
+					Syllable s=sy.getSyllable(g);
+					syllLengths[p]=s.getNumEles2();
+					p++;
+				}	
+			}
+		}
+		/*
 		for (int i=0; i<aa; i++){
 			for (int j=0; j<songs[i].getNumPhrases(); j++){
 				int[][] q=(int[][])songs[i].getPhrase(j);
@@ -403,7 +536,7 @@ public class CompressComparisons {
 				
 			}
 		}
-		
+		*/
 		for (int i=0; i<scores.length; i++){
 			for (int j=0; j<i; j++){
 				if (syllLengths[i]!=syllLengths[j]){
@@ -415,6 +548,7 @@ public class CompressComparisons {
 		return scores;
 	}
 	
+	
 	/**
 	 * This method generates a phrase x phrase dissimilarity matrix from syllable scores
 	 * @param scores
@@ -424,6 +558,87 @@ public class CompressComparisons {
 	 */
 	
 	public double[][] phraseComp(double[][] scores, Song[] songs, double sp){
+		int aa=songs.length;
+		
+		double averageScore=0;
+		double sum=0;
+		//long l1=System.nanoTime();
+		for (int i=0; i<scores.length; i++){
+			for (int j=0; j<i; j++){
+				if (!Double.isNaN(scores[i][j])){
+					averageScore+=scores[i][j];
+					sum++;
+				}
+				else{
+					System.out.println("NAN Error: "+i+" "+j);
+					scores[i][j]=0;
+				}
+			}
+		}
+		averageScore/=sum;
+		double syntaxPenalty=(sp*averageScore);
+		
+		//System.out.println(averageScore+" "+syntaxPenalty);
+		
+		LinkedList<Syllable> sylls=new LinkedList<Syllable>();
+		for (int i=0; i<aa; i++){
+			LinkedList<Syllable> syl=songs[i].getBaseLevelSyllables();
+			sylls.addAll(syl);
+		}
+		
+		int n=sylls.size();
+		//System.out.println("NUMBER OF SYLS 2: " +n);
+		
+		double[][] scoreSyll=new double[n][];
+		
+		for (int i=0; i<n; i++){
+			scoreSyll[i]=new double[i+1];
+		}
+		
+		int[][] p=new int[n][];
+		for (int i=0; i<n; i++){
+			Syllable syll=sylls.get(i);
+			p[i]=syll.getEleIds2();
+		}
+		
+		//long l2=System.nanoTime();
+		//l4=0;
+		for (int i=0; i<n; i++){
+			int[] p1=p[i];
+			
+			//Syllable syll=sylls.get(i);
+			//int[] p1=syll.getEleIds2();
+			if (p1.length==0){
+				//System.out.println(i);
+			}
+			
+			for (int j=0; j<i; j++){
+				int[] p2=p[j];
+				//Syllable syllb=sylls.get(j);
+				//int[] p2=syllb.getEleIds2();
+				scoreSyll[i][j]=syllableComp(scores, p1[0], p1[p1.length-1]-p1[0]+1, p2[0], p2[p2.length-1]-p2[0]+1, syntaxPenalty);	
+				//System.out.print(scoreSyll[i][j]+" ");
+			}
+			
+			//System.out.println();
+		}
+		//long l3=System.nanoTime();
+		
+		//System.out.println("COMPRESSION TIMING: "+(l2-l1)+" "+(l3-l2)+" "+l4);
+		
+		return scoreSyll;
+		
+	}
+	
+	/**
+	 * This method generates a phrase x phrase dissimilarity matrix from syllable scores
+	 * @param scores
+	 * @param songs
+	 * @param sp
+	 * @return
+	 */
+	/*
+	public double[][] phraseCompX(double[][] scores, Song[] songs, double sp){
 		
 		int aa=songs.length;
 		
@@ -444,7 +659,7 @@ public class CompressComparisons {
 		}
 		averageScore/=sum;
 		double syntaxPenalty=(sp*averageScore);
-		System.out.println("Syntax penalty: "+sp+" "+averageScore+" "+sum+" "+syntaxPenalty);
+		//System.out.println("Syntax penalty: "+sp+" "+averageScore+" "+sum+" "+syntaxPenalty);
 		LinkedList sylls=new LinkedList();
 		int prev_song_eles=0;
 		
@@ -496,6 +711,75 @@ public class CompressComparisons {
 		
 		return compareSyllables5(scoreSyll, songs, 0);
 	}
+	*/
+	
+	public double[][] phraseComp2(double[][] scores, Song[] songs, double sp, LinkedList<int[][]> details){
+		
+		int aa=songs.length;
+		
+		double averageScore=0;
+		double sum=0;
+		
+		for (int i=0; i<scores.length; i++){
+			for (int j=0; j<i; j++){
+				if (!Double.isNaN(scores[i][j])){
+					averageScore+=scores[i][j];
+					sum++;
+				}
+				else{
+					System.out.println("NAN Error: "+i+" "+j);
+					scores[i][j]=0;
+				}
+			}
+		}
+		averageScore/=sum;
+		double syntaxPenalty=(sp*averageScore);	
+		
+		
+		LinkedList<int[]> sylls=new LinkedList<int[]>();
+		
+		for (int i=0; i<details.size(); i++){
+			int[][] x1=details.get(i);
+			int[] r=new int[2];
+			r[0]=i;
+			r[1]=1;
+			for (int j=i+1; j<details.size(); j++){
+				int[][] x2=details.get(j);
+				if (x1[0][3]!=x2[0][3]-1){
+					i=j-1;
+					j=details.size();
+				}
+				else{
+					r[1]++;
+				}
+			}
+			//System.out.println(i+" "+r[0]+" "+r[1]);
+			sylls.add(r);
+		}
+		
+		
+		int syllCount=sylls.size();
+		
+		//System.out.println(syllCount+" "+aa+" "+details.size());
+		
+		
+		double[][]scoreSyll=new double[syllCount][];
+		for (int i=0; i<syllCount; i++){
+			scoreSyll[i]=new double[i+1];
+		}
+		
+		for (int i=0; i<syllCount; i++){
+			int[] p1=(int[])sylls.get(i);
+			
+			for (int j=0; j<i; j++){
+				int[]p2=(int[])sylls.get(j);
+				
+				scoreSyll[i][j]=syllableComp(scores, p1[0], p1[1], p2[0], p2[1], syntaxPenalty);
+			}
+		}
+		
+		return compareSyllables5(scoreSyll, songs, 0);
+	}
 	
 	
 	
@@ -503,11 +787,11 @@ public class CompressComparisons {
 	
 	
 	public double syllableComp(double[][] eleScores, int a, int n, int b, int m, double syntaxPenalty){
-		
+		//long l1=System.nanoTime();
 		// make sure n>m
 		
-		double exp=2;
-		
+		//double exp=2;
+		double q=0;
 		if (n<m){
 			int x=a;
 			int y=n;
@@ -523,7 +807,7 @@ public class CompressComparisons {
 		
 		for (int i=0; i<m; i++){
 			double score=0;
-			double worst=0;
+			//double worst=0;
 			int k=i;
 			for (int j=0; j<n; j++){
 				
@@ -531,34 +815,38 @@ public class CompressComparisons {
 				int y=k+b;
 				
 				if (x>y){
-					score+=Math.pow(eleScores[x][y], exp);
-					if (eleScores[x][y]>worst){worst=eleScores[x][y];}
+					q=eleScores[x][y];
+					//score+=Math.pow(eleScores[x][y], exp);
+					//if (eleScores[x][y]>worst){worst=eleScores[x][y];}
 					//score+=eleScores[x][y];
 				}
 				else{
-					score+=Math.pow(eleScores[y][x], exp);
-					if (eleScores[y][x]>worst){worst=eleScores[y][x];}
+					q=eleScores[y][x];
+					//score+=Math.pow(eleScores[y][x], exp);
+					//if (eleScores[y][x]>worst){worst=eleScores[y][x];}
 					//score+=eleScores[y][x];
 				}
-				
+				score+=q*q;
 				k++;
 				if (k==m){
 					k=0;
 				}
 			}
-			
-			
-			
-			
+
 			score/=n+0.0;
-			score=Math.pow(score, 1/exp);
-			
+			//score=Math.pow(score, 1/exp);
+			score=Math.sqrt(score);
 			//score=worst;
 			
 			if (n!=m){score+=syntaxPenalty;}
 			if (i!=0){score+=syntaxPenalty;}
 			if (score<bestScore){bestScore=score;}
 		}
+		
+		//long l2=System.nanoTime();
+		
+		//l4+=l2-l1;
+		
 		return bestScore;		
 	}
 	
@@ -581,74 +869,51 @@ public class CompressComparisons {
 		
 		int[] phraseID=new int[syScores.length];
 		
-		
 		int phraseCount=0;
 		int syllCount=0;
+		
+		//long l1=System.nanoTime();
+		
 		for (int i=0; i<songs.length; i++){
-			System.out.println(i+" "+songs[i].getNumPhrases());
-			for (int j=0; j<songs[i].getNumPhrases(); j++){
-				int[][] p=(int[][])songs[i].getPhrase(j);
-				int a=p.length;
-				
-				for (int k=0; k<a; k++){
-					boolean incomplete=false;
-					for (int l=0; l<p[k].length; l++){
-						if (p[k][l]==-1){
-							incomplete=true;
-							l=p[k].length;
-						}
-					}
-					
-					//if (incomplete){
-					//	phraseID[syllCount]=-1;
-					//}
-					//else{
-						phraseID[syllCount]=phraseCount;
-					//}
+			LinkedList<Syllable> syl=songs[i].getPhrases();
+			phraseCount+=syl.size();
+		}
+		
+		int[][] ph=new int[phraseCount][];
+		
+		phraseCount=0;
+		int maxLength=0;
+		for (int i=0; i<songs.length; i++){
+			
+			//System.out.println(i+" "+songs[i].getNumPhrases()+" "+syScores.length+" "+syllCount+" "+songs.length);
+			LinkedList<Syllable> syl=songs[i].getPhrases();
+			for (int j=0; j<syl.size(); j++){
+				Syllable sy=syl.get(j);
+				int ns=sy.getNumSyllables();
+				int[] x=new int[ns];
+				if (ns>maxLength) {maxLength=ns;}
+				for (int k=0; k<ns; k++){
+					phraseID[syllCount]=phraseCount;
+					x[k]=syllCount;			
 					syllCount++;
 				}
+				
+				ph[phraseCount]=x;
 				
 				phraseCount++;
 			}
 		}
 		
-		int[] counter=new int[phraseCount];
-		for (int i=0; i<syScores.length; i++){
-			counter[phraseID[i]]++;
-		}
+		//int[] counter=new int[phraseCount];
+		//for (int i=0; i<syScores.length; i++){
+		//	counter[phraseID[i]]++;
+		//}
 	
-		double[][] results=new double[phraseCount][];
-		double[][] count=new double[phraseCount][];
-		/*
-		for (int i=0; i<phraseCount; i++){
-			results[i]=new double[i+1];
-			//for (int j=0; j<i; j++){
-				//results[i][j]=1000000f;
-			//}
-			count[i]=new double[i+1];
-		}
+		//long l2=System.nanoTime();
 		
-		for (int i=0; i<syScores.length; i++){
-			for (int j=0; j<i; j++){
-				//if ((phraseID[i]>=0)&&(phraseID[j]>=0)){
-					//if (syScores[i][j]<results[phraseID[i]][phraseID[j]]){
-						//results[phraseID[i]][phraseID[j]]=syScores[i][j];
-					//}
-					
-					results[phraseID[i]][phraseID[j]]+=syScores[i][j];
-					count[phraseID[i]][phraseID[j]]++;
-				//}
-			}
-		}
-		for (int i=0; i<phraseCount; i++){
-			for (int j=0; j<i; j++){
-				results[i][j]/=count[i][j];
-				//results[i][j]*=results[i][j];
-				if (count[i][j]==0){System.out.println("ALERT! "+i+" "+j);}
-			}
-			results[i][i]=0;
-		}
-		*/
+		double[][] results=new double[phraseCount][];
+		//double[][] count=new double[phraseCount][];
+		/*
 		for (int i=0; i<results.length; i++){
 			results[i]=new double[i+1];
 			int c1=counter[i];		
@@ -668,19 +933,93 @@ public class CompressComparisons {
 								else{
 									submat[a][b]=syScores[h][g];
 								}
-								//submat[b][a]=submat[a][b];
 								b++;
 							}
 						}
 						a++;
 					}	
 				}
-				results[i][j]=DTW(submat);
+				results[i][j]=median(submat);
 				
 			}
 		}
+		*/
+		
+		/*
+		long l6=0;
+		long l7=0;
+		for (int i=0; i<results.length; i++){
+			results[i]=new double[i+1];
+			int c1=counter[i];		
+			for (int j=0; j<i; j++){
+				long l3=System.nanoTime();
+				int c2=counter[j];
+				double[] submat=new double[c1*c2];
+				int a=0;
+				
+				for (int g=0; g<syScores.length; g++){
+					if (phraseID[g]==i){
+						for (int h=0; h<syScores.length; h++){
+							if (phraseID[h]==j){
+								if (g>h){
+									submat[a]=syScores[g][h];
+								}
+								else{
+									submat[a]=syScores[h][g];
+								}
+								a++;
+							}
+						}
+					}	
+				}
+				long l4=System.nanoTime();
+				results[i][j]=median(submat);
+				long l5=System.nanoTime();
+				l6+=l4-l3;
+				l7+=l5-l4;
+				
+			}
+		}
+		
+		*/
 
-		count=null;
+		
+		//long l6=0;
+		//long l7=0;
+		
+		int gg, hh;
+		double[] submat=new double[maxLength*maxLength];
+		for (int i=0; i<results.length; i++){
+			results[i]=new double[i+1];
+			for (int j=0; j<i; j++){
+				//System.out.println(i+" "+j);
+				//long l3=System.nanoTime();				
+				int a=0;
+				for (int g=0; g<ph[i].length; g++){
+					gg=ph[i][g];
+					for (int h=0; h<ph[j].length; h++){
+						hh=ph[j][h];
+						if (gg>hh){
+							submat[a]=syScores[gg][hh];
+						}
+						else{
+							submat[a]=syScores[hh][gg];
+						}
+						a++;
+					}	
+				}
+				//long l4=System.nanoTime();
+				results[i][j]=median(submat, a);
+				//long l5=System.nanoTime();
+				//l6+=l4-l3;
+				//l7+=l5-l4;
+				
+			}
+		}
+		
+		//System.out.println((l2-l1)+" "+l6+" "+l7);
+		
+		//count=null;
 		
 		return results;
 	}
@@ -693,7 +1032,6 @@ public class CompressComparisons {
 		
 		int[] x1={-1, 0, -1};
 		int[] y1={-1, -1, 0};
-		
 		
 		for (int i=0; i<n; i++){
 			for (int j=0; j<m; j++){
@@ -720,6 +1058,79 @@ public class CompressComparisons {
 		
 		return(temp[n-1][m-1]/p);
 		
+	}
+	
+	public double median(double[][] input){
+		int n=input.length;
+		int m=input[0].length;
+		
+		double[] temp=new double[n*m];
+		
+		int a=0;
+		
+		for (int i=0; i<n; i++){
+			for (int j=0; j<m; j++){
+				
+				temp[a]=input[i][j];
+				a++;
+			}
+		}
+				
+		Arrays.sort(temp);
+	
+		double median;
+		if (temp.length % 2 == 0)
+		    median = ((double)temp[temp.length/2] + (double)temp[temp.length/2 - 1])/2;
+		else
+		    median = (double) temp[temp.length/2];
+		
+		return(median);
+		
+	}
+	
+	public double median(double[] input){
+		int n=input.length;
+				
+		Arrays.sort(input);	
+		double median;
+		if (n % 2 == 0)
+		    median = ((double)input[n/2] + (double)input[n/2 - 1])/2;
+		else
+		    median = (double) input[n/2];
+		
+		return(median);		
+	}
+	
+	public double median(double[] input, int n){
+		//int n=input.length;
+		double x=0;
+		double y=0;
+		int a=n/2;
+		int b=n/2 -1;
+		int c=0;
+		for (int i=0; i<n; i++) {
+			//System.out.println(i+" "+input[i]);
+			c=0;
+			for (int j=0; j<n; j++) {
+				if (input[i]<input[j]) {
+					c++;
+				}
+			}
+			if (c==a) {
+				x=input[i];
+			}
+			if (c==b) {
+				y=input[i];
+			}
+		}
+		
+		double median=x;
+		if (n % 2 == 0) {
+			median=0.5*(x+y);
+		}
+		//System.out.println(median+" "+n+" "+x+" "+y+" "+a+" "+b);
+		
+		return(median);		
 	}
 	
 	/*
@@ -1149,12 +1560,12 @@ public class CompressComparisons {
 		
 		int songNumber=songs.length;
 		int sylNumber=scores.length-songNumber;		//For each song, there are n-1 transitions, where n=number of phrases!
-		System.out.println(sylNumber+" "+songNumber+" "+scores.length);
+		//System.out.println(sylNumber+" "+songNumber+" "+scores.length);
 		int[] songLocs=new int[sylNumber];
 		int count=0;
 		int count2=0;
 		for (int i=0; i<songNumber; i++){
-			int p=songs[i].getNumPhrases();
+			int p=songs[i].getNumSyllables(2);
 			//System.out.println(p+" "+count);
 			int p1=p-1;
 			for (int j=0; j<p; j++){
@@ -1165,7 +1576,7 @@ public class CompressComparisons {
 				count2++;
 			}
 		}
-		System.out.println(sylNumber+" "+scores.length);
+		//System.out.println(sylNumber+" "+scores.length);
 		double[][] scoreTrans=new double[sylNumber][];
 		for (int i=0; i<sylNumber; i++){
 			scoreTrans[i]=new double[i+1];
@@ -1395,7 +1806,7 @@ public class CompressComparisons {
 		int adj=-1;
 		if (!useTrans){adj=0;}
 		for (int i=0; i<songNumber; i++){
-			int p=songs[i].getNumPhrases();
+			int p=songs[i].getNumSyllables(2);
 			
 			int[]r={count, count+p+adj};
 			songlocs.add(r);
@@ -1613,7 +2024,7 @@ public class CompressComparisons {
 		int[][] songlocs=new int[songNumber][];
 		int count=0;
 		for (int i=0; i<songNumber; i++){
-			int p=songs[i].getNumPhrases();
+			int p=songs[i].getNumSyllables(2);
 			int[]r=new int[p];
 			for (int j=0; j<p; j++){
 				r[j]=count;
@@ -1636,7 +2047,7 @@ public class CompressComparisons {
 		tot/=scores.length*(scores.length-1)*0.5;
 		double penalty=(tot*0.25);
 		
-		System.out.println("Mismatch penalty: "+tot+" "+minScore);
+		//System.out.println("Mismatch penalty: "+tot+" "+minScore);
 		double[][] results=new double[songNumber][];
 		for (int i=0; i<songNumber; i++){
 			results[i]=new double[i+1];
@@ -1653,9 +2064,9 @@ public class CompressComparisons {
 				dtw=new double[r1l][r2l];
 				for (int a=0; a<r1l; a++){
 					for (int b=0; b<r2l; b++){
-						dtw[a][b]=scores[r1[a]][r2[b]];
+						//dtw[a][b]=scores[r1[a]][r2[b]];
 						
-						//dtw[a][b]=scores[r1[a]][r2[b]]*scores[r1[a]][r2[b]];
+						dtw[a][b]=scores[r1[a]][r2[b]]*scores[r1[a]][r2[b]];
 						//if (dtw[a][b]>penalty){dtw[a][b]=penalty;}
 						
 						bestscore=1000000;
@@ -1676,7 +2087,8 @@ public class CompressComparisons {
 				//double d=Math.sqrt(dtw[r1l-1][r2l-1]);
 				double d=dtw[r1l-1][r2l-1];
 				//results[i][j]=(double)(d/(0.0+Math.min(r1l,r2l)));
-				results[i][j]=(d/(0.0+Math.max(r1l,r2l)));
+				//results[i][j]=(d/(0.0+Math.min(r1l,r2l)));
+				results[i][j]=Math.sqrt(d/(0.0+Math.min(r1l,r2l)));
 				//results[i][j]=(float)(d/(0.5*(r1l+r2l)));
 				
 			}
@@ -1796,7 +2208,7 @@ public class CompressComparisons {
 		
 		double minposs=cr.calculateMin();
 		
-		double penalty=cr.calculatePercentile(5);
+		double penalty=cr.calculatePercentile(25);
 		
 		if (lt){penalty=Math.log(penalty/minposs);}
 		
@@ -1857,7 +2269,7 @@ public class CompressComparisons {
 		
 		double[][] out = new double[n][];
 		for (int i=0; i<m; i++){
-			for (int j=0; j<i; j++){
+			for (int j=0; j<=i; j++){
 				temp[i][j]=songDiffs[i][j];
 				temp[j][i]=songDiffs[i][j];
 			}
@@ -1867,8 +2279,8 @@ public class CompressComparisons {
 		}
 		
 		for (int i=0; i<n; i++){
-			for (int j=0; j<i; j++){
-				if (i!=j){
+			for (int j=0; j<=i; j++){
+				//if (i!=j){
 					double u=0;
 					double u2=0;
 					for (int a=0; a<indIds[i].length; a++){
@@ -1882,7 +2294,15 @@ public class CompressComparisons {
 						u+=sc;
 						u2+=sc2/(indIds[j].length+0.0);
 					}
-					u/=indIds[i].length+0.0;
+					if (i==j){
+						u/=indIds[i].length-1.0;
+						if (u==0){u=1;}
+						u=0;
+					}
+					else{
+						u/=indIds[i].length-0.0;
+					}
+					//u/=indIds[i].length+0.0;
 					u2/=indIds[i].length+0.0;
 					double v=0;
 					double v2=0;
@@ -1897,7 +2317,14 @@ public class CompressComparisons {
 						v+=sc;
 						v2+=sc2/(indIds[i].length+0.0);
 					}
-					v/=indIds[j].length+0.0;
+					if (i==j){
+						v/=indIds[j].length-1.0;
+						if (v==0){v=1;}
+						v=0;
+					}
+					else{
+						v/=indIds[j].length-0.0;
+					}
 					v2/=indIds[j].length+0.0;
 					if (av){
 						out[i][j]=u+v;
@@ -1905,9 +2332,9 @@ public class CompressComparisons {
 					else{
 						out[i][j]=u2+v2;
 					}
-					System.out.println(i+" "+j+" "+out[i][j]);
+					//System.out.println(i+" "+j+" "+out[i][j]);
 					
-				}
+				//}
 			}
 		}
 		return out;
@@ -1927,7 +2354,7 @@ public class CompressComparisons {
 		int[] x={-1,0,-1};
 		int[] y={0,-1,-1};
 		double[] z={penalty, penalty, 0};
-		//System.out.println(penalty);
+		//System.out.println("Syllable DTW penalty: "+penalty);
 		for (int i=0; i<n; i++){
 			for (int j=0; j<m; j++){
 				t[i][j]=dtw[i][j];
@@ -1938,7 +2365,7 @@ public class CompressComparisons {
 					int c=j+y[a];
 					if ((b>=0)&&(c>=0)){
 						
-						double q=t[b][c];
+						double q=t[b][c]+z[a];
 						//System.out.print(a+" "+q+" "+bestS+" ");
 						if (q<bestS){
 							bestS=q;

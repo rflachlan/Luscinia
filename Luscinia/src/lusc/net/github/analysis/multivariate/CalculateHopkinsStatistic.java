@@ -9,6 +9,7 @@ package lusc.net.github.analysis.multivariate;
 import java.util.*;
 
 import lusc.net.github.analysis.BasicStatistics;
+import lusc.net.github.analysis.ComparisonResults;
 
 public class CalculateHopkinsStatistic {
 
@@ -26,19 +27,25 @@ public class CalculateHopkinsStatistic {
 	
 	int distribution=0;
 	
+	BasicStatistics bs=new BasicStatistics();
 	
-	public CalculateHopkinsStatistic(double[][] data, int resamples, int maxPicks, int distribution, int type){
+	LinkedList<double[]> timeResults=new LinkedList<double[]>();
+	
+	int maxPicks;
+	
+	public CalculateHopkinsStatistic(ComparisonResults cr, int resamples, int maxPicks, int distribution, int type){
 		this.resamples=resamples;
 		this.type=type;
-		this.pick=maxPicks;
+		this.maxPicks=maxPicks;
 		this.distribution=distribution;
+		
+		
+		double[][] data=cr.getMDS().getConfiguration();
 		int dims=data[0].length;
 		int n=data.length;
 		
 		double[][] inputData=new double[dims][n];
-		
-		BasicStatistics bs=new BasicStatistics();
-		
+
 		for (int i=0; i<dims; i++){
 			for (int j=0; j<n; j++){
 				inputData[i][j]=data[j][i];
@@ -50,101 +57,13 @@ public class CalculateHopkinsStatistic {
 		}
 		
 		
-		double[]sds=new double[dims];
-		
-		
-		for (int i=0; i<dims; i++){
-			sds[i]=bs.calculateSD(inputData[i], true);
-		}
-	
-		//double realdensity[]=calculateDensity(inputData);
-		//int p=(int)Math.round(inputData.length);
-		//double threshold=realdensity[p];
-		//realdensity=null;
-		//double realscore=calculateSumNearestNeighbourGreaterThanX(inputData, threshold);
-		//int[] picks={1, 2, 5, 10, 20, 50};
-		
-		
-		if (pick>=n-1){
-			pick=n-2;
-		}
-		
-		/*
-		for (int i=0; i<picks.length; i++){
-			if (picks[i]>=n-1){
-				picks[i]=n-2;
-			}
-		}
-		*/
-				
-		//double realscore[]=calculateSumNNearestNeighbour(inputData, picks);
-		double realscore=calculateSumNNearestNeighbour(inputData, pick);
-		
-		
-		//double realscore=calculateSumNNearestNeighbour(inputData, 5);
-		//double realdensity[]=calculateDensity(inputData);
-		double[][] simData=new double[dims][n];
-		//double[][] simresults=new double [picks.length][resamples];
-		double[] simresults=new double [resamples];
-		//double[][] simresults2=new double [realdensity.length][resamples];
-		//double[][]sdsim=new double[dims][resamples];
-
-
-		//silhouetteMax=new double[n][resamples];
-
-		for (int i=0; i<resamples; i++){
-			for (int j=0; j<dims; j++){
-				for (int k=0; k<n; k++){
-					if (distribution==0){
-						simData[j][k]=random.nextGaussian()*sds[j];
-					}
-					else if (distribution==1){
-						simData[j][k]=random.nextDouble()*sds[j];
-					}
-				}
-				//sdsim[j][i]=bs.calculateSD(simData[j], false)-sds[j];				
-			}
-			//double[] score=calculateSumNNearestNeighbour(simData, inputData, picks);
-			//double score=calculateSumNNearestNeighbour(simData, inputData, pick);
-			double score=calculateSumNNearestNeighbour(simData, pick);
-			//double score=calculateSumNearestNeighbourGreaterThanX(simData, threshold);
-			
-			simresults[i]=score/(score+realscore);
-			
-			//for (int j=0; j<picks.length; j++){
-				//simresults[j][i]=score[j]/(score[j]+realscore[j]);
-			//}
-			//double [] score2=calculateDensity(simData);
-			//for (int j=0; j<simresults2.length; j++){
-			//	simresults2[j][i]=score2[j]/(score2[j]+realdensity[j]);
-			//}
-			
-			//for (int j=0; j<dims; j++){
-			//	for (int k=0; k<n; k++){
-			//		simData[j][k]=(float)(random.nextDouble()*sds[j]);
-			//	}
-			//}
-
-			//float[][] matrix=createDistanceMatrix(simData);
-			//UPGMA upgma=new UPGMA(matrix);
-			//for (int j=0; j<upgma.silhouette.length; j++){
-			//	silhouetteMax[j][i]=upgma.silhouette[j];
-			//}
-			//upgma=null;
-			//matrix=null;
-			
-		}
-		
-		
-		//for (int i=0; i<n; i++){
-			//Arrays.sort(silhouetteMax[i]);
+		//if (pick>=n-1){
+			//pick=n-2;
 		//}
 		
-		//double[] meanscore=new double[picks.length];
-		//double[] sdscore=new double[picks.length];
-		//double[] upper2point5=new double[picks.length];
-		//double[] lower2point5=new double[picks.length];
-		//resultString=new String[picks.length];
+		
+		double[] simresults=calculateHopkins(inputData);
+		
 		resultString=new String("");
 		results=new double[4];
 		//results=new double[picks.length][4];
@@ -158,31 +77,35 @@ public class CalculateHopkinsStatistic {
 		results[2]=upper2point5;
 		results[3]=lower2point5;
 		resultString=pick+" MEAN: "+meanscore+ " SD: "+sdscore+" UPPER 2.5: "+upper2point5+" LOWER 2.5: "+lower2point5;
+		System.out.println(resultString);
+
+		LinkedList<int[]> breaks=cr.getSplits(20, 36);
 		
-		/*
-		for (int i=0; i<picks.length; i++){	
-			double meanscore=bs.calculateMean(simresults[i]);
-			double sdscore=bs.calculateSD(simresults[i], true);
-			double upper2point5=bs.calculatePercentile(simresults[i], 2.5, true);
-			double lower2point5=bs.calculatePercentile(simresults[i], 2.5, false);
-			results[i][0]=meanscore;
-			results[i][1]=sdscore;
-			results[i][2]=upper2point5;
-			results[i][3]=lower2point5;
-			resultString[i]=picks[i]+" MEAN: "+meanscore+ " SD: "+sdscore+" UPPER 2.5: "+upper2point5+" LOWER 2.5: "+lower2point5;
+		for (int[] x : breaks){
+			System.out.println(x[0]+" "+x[1]+" "+x[2]);
+			double[][] idata=new double[dims][x[2]];
+			int j=0;
+			for (int i=x[0]; i<x[1]; i++){
+				for (int k=0; k<dims; k++){
+					idata[k][j]=inputData[k][i];
+				}
+				j++;
+			}
+			
+			double[] sresults=calculateHopkins(idata);
+			double[] r=new double[5];
+			System.out.println(sresults.length);
+			r[0]=x[3]/24.0;
+			r[1]=bs.calculateMean(sresults);
+			r[2]=bs.calculateSD(sresults, true);
+			r[3]=bs.calculatePercentile(sresults, 2.5, true);
+			r[4]=bs.calculatePercentile(sresults, 2.5, false);
+			System.out.println(r[0]+" "+r[1]+" "+r[2]+" "+r[3]+" "+r[4]);
+			timeResults.add(r);
 		}
-		*/
-		/*for (int i=0; i<dims; i++){
-			double meansd=bs.calculateMean(sdsim[i]);
-			double sdsd=bs.calculateSD(sdsim[i], false);
-		}
-		for (int i=0; i<simresults2.length; i++){
-			double meanscore2=bs.calculateMean(simresults2[i]);
-			double sdscore2=bs.calculateSD(simresults2[i], true);
-			double upper2point52=bs.calculatePercentile(simresults2[i], 2.5, true);
-			double lower2point52=bs.calculatePercentile(simresults2[i], 2.5, false);
-		}
-		*/
+		
+		
+		
 	}
 	
 	public int getType(){
@@ -220,7 +143,89 @@ public class CalculateHopkinsStatistic {
 	public double[][] getSilhouetteMax(){
 		return silhouetteMax;
 	}
+	
+	public LinkedList<double[]> getTimeResults(){
+		return timeResults;
+	}
+	
+	public double[] calculateHopkins(double[][] data){
+		int n=data[0].length;
+		pick=(int)Math.round(n*maxPicks/100);
+		int dims=data.length;
+		
+		double[]sds=new double[dims];
+		for (int i=0; i<dims; i++){
+			sds[i]=bs.calculateSD(data[i], true);
+		}
+		
+		double[] realscore=calculateNearestNeighbour(data, data, true);
+		
+		
+		//double realscore=calculateSumNNearestNeighbour(data, pick);
+		double[][] simData=new double[dims][pick];
+		double[] simresults=new double [resamples];
 
+		for (int i=0; i<resamples; i++){
+			boolean[] chosen=new boolean[n];
+			double escore=0;
+			for (int j=0; j<pick; j++){
+				int p=random.nextInt(n);
+				while (chosen[p]){p=random.nextInt(n);}
+				chosen[p]=true;
+				escore+=realscore[p];
+			}
+			
+			
+			for (int j=0; j<dims; j++){
+				for (int k=0; k<pick; k++){
+					if (distribution==0){
+						simData[j][k]=random.nextGaussian()*sds[j];
+					}
+					else if (distribution==1){
+						simData[j][k]=random.nextDouble()*2*sds[j];
+					}
+				}
+			}
+			
+			double[] ssc=calculateNearestNeighbour(simData, data, false);
+			double sscore=0;
+			for (int j=0; j<pick; j++){
+				sscore+=ssc[j];
+			}			
+			simresults[i]=sscore/(sscore+escore);
+		}
+		return simresults;
+	}
+	
+	public double[] calculateNearestNeighbour(double[][] data, double[][] data2, boolean avoidIdentical){
+		int n=data[0].length;
+		int m=data2[0].length;
+		int p=data.length;
+		double[] out=new double[n];
+		
+		for (int i=0; i<n; i++){
+			double x=Double.MAX_VALUE;
+			//int loc=-1;
+			for (int j=0; j<m; j++){
+				if ((!avoidIdentical)||(i!=j)){
+					double y=0;
+					for (int k=0; k<p; k++){
+						y+=(data[k][i]-data2[k][j])*(data[k][i]-data2[k][j]);
+					}
+					if (y<x){
+						x=y;
+						//loc=j;
+					}
+					
+				}
+			}
+			out[i]=Math.sqrt(x);
+		}
+		
+		return out;
+	}
+	
+	
 	public double calculateSumNearestNeighbour(double[][] data){
 	
 		double sum=0;

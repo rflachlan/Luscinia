@@ -79,7 +79,10 @@ public class DendrogramOptions extends JPanel {
 		printView=printViewBox.isSelected();
 		useRaw=useRawBox.isSelected();
 		dendType=dendOpts.getSelectedIndex();
+		try {
 		beta=(double)((Number)betaField.getValue()).doubleValue();
+		}
+		catch(Exception e) {}
 		System.out.println("DEF SET: "+intView+" "+printView+" "+useRaw+" "+dendType+" "+beta);
 
 		defaults.setBooleanProperty("dendintview", intView);

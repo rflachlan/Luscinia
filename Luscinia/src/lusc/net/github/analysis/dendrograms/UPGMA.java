@@ -260,6 +260,26 @@ public class UPGMA {
 		}
 		return cats;
 	}
+	
+	public int[][] calculateClassificationMembers(){
+		int[][] partitions=getPartitionMembers();
+		
+		int q=partitions.length/2;
+
+		int[][] cats=new int[le][q];
+
+		for (int i=1; i<q; i++){
+			int ii=partitions.length-i-1;
+			if (partitions[ii]!=null){
+				for (int j=0; j<partitions[ii].length; j++){
+					for (int k=0; k<dat[partitions[ii][j]].child.length; k++){
+						cats[dat[partitions[ii][j]].child[k]][i]=j;
+					}
+				}
+			}
+		}
+		return cats;
+	}
 		
 	public double[][] calculateMeanClusterDistances(int q){
 		int[][] cats=calculateClassificationMembers(q);

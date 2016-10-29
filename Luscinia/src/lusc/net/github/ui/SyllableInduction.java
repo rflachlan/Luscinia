@@ -172,8 +172,8 @@ public class SyllableInduction extends JFrame implements ActionListener{
 		
 		
 		
-		song.setSyllList(new LinkedList());
-		
+		//song.setSyllList(new LinkedList());
+		song.clearSyllables();
 		for (int i=0; i<phrase_choice.size(); i++){
 			int[] x=(int[])phrase_choice.get(i);
 			if ((x[0]<n)&&(x[1]<n)){
@@ -314,8 +314,8 @@ public class SyllableInduction extends JFrame implements ActionListener{
 			i+=phrase_choice[i][0];
 		}
 		
-		song.setSyllList(new LinkedList());
-		
+		//song.setSyllList(new LinkedList());
+		song.clearSyllables();
 		for (int i=0; i<size; i++){
 			int a=i+phrase_choice[i][0];
 			Element ele1=(Element)song.getElement(i);

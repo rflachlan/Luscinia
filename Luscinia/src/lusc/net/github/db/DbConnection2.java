@@ -564,7 +564,7 @@ public class DbConnection2 {
 			stmt = con.createStatement(); 
 			stmt.executeUpdate(queryb+comp5);
 			
-			String comp6="comparetriplet (user CHAR(50), songA INT, songB INT, songX INT, choice INT, trial INT, exptype INT)";
+			String comp6="comparetriplet (user CHAR(50), songA INT, songB INT, songX INT, choice INT, trial INT, exptype INT, modtype INT)";
 			stmt = con.createStatement(); 
 			stmt.executeUpdate(queryb+comp6);
 			

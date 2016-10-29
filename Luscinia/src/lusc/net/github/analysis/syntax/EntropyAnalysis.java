@@ -3,6 +3,7 @@ package lusc.net.github.analysis.syntax;
 import java.util.LinkedList;
 
 import lusc.net.github.analysis.ComparisonResults;
+import lusc.net.github.ui.SyntaxOptions;
 //
 //  EntropyAnalysis.java
 //  Luscinia
@@ -18,17 +19,33 @@ public class EntropyAnalysis {
 	int n=0;
 	int mode=2;
 	int maxK=0;
+	int minK=0;
+	
+	long[] rollingtimes;
 	
 	SWMLEntropyEstimate[] swml;
 	MarkovChain[] mkc;
+	SWMLNoCategories snc;
+	
+	double[][] swmltrajectory, mkctrajectory;
+	
+	SyntaxClusteringThread[] sct;
 	int[][] overallAssignments;
+	
+	boolean rolling=false;
+	boolean byIndividual=false;
+	int window=50;
 	
 	//public EntropyAnalysis (double[][] dMat, int maxK, int[][] individuals, int[][] lookUps, int type, int mode){
 
-	public EntropyAnalysis (ComparisonResults cr, int maxK, int mode){
+	public EntropyAnalysis (ComparisonResults cr, SyntaxOptions sop, boolean rolling, int window, boolean byIndividual){
 		this.type=cr.getType();
-		this.maxK=maxK;
-		this.mode=mode;
+		this.maxK=sop.maxSyntaxK;
+		this.minK=sop.minSyntaxK;
+		this.mode=sop.syntaxMode;
+		this.rolling=rolling;
+		this.byIndividual=byIndividual;
+		this.window=window;
 		makeMatrix(cr.getDissT());		
 		
 		n=mat.length;
@@ -41,13 +58,25 @@ public class EntropyAnalysis {
 		int[][] individuals=cr.getIndividualSongs();
 		
 		
-		if (mode>0){
-			swml=new SWMLEntropyEstimate[maxK-1];
+		if (mode==1){
+			swml=new SWMLEntropyEstimate[maxK-minK+1];
+			swmltrajectory=new double[maxK-minK+1][];
 		}
-		if (mode!=1){
-			mkc=new MarkovChain[maxK-1];
+		if (mode==0){
+			mkc=new MarkovChain[maxK-minK+1];
+			mkctrajectory=new double[maxK-minK+1][];
 		}
-		overallAssignments=new int[maxK-1][];
+		if (mode==2){
+			snc=new SWMLNoCategories(cr, sop.thresh);
+		}
+		
+		if (mode<2){
+		
+		overallAssignments=new int[maxK-minK+1][];
+		
+		if (rolling){
+			calculateTimes(cr.getSongDates());
+		}
 		
 		System.out.println("INDIVIDUALS");
 		for (int i=0; i<individuals.length; i++){
@@ -65,9 +94,30 @@ public class EntropyAnalysis {
 			}
 			System.out.println();
 		}
-		
-		clusterOnEntropy(individuals, songLabels);
+		if (mode<2){
+			clusterOnEntropy(individuals, songLabels);
+		}
+		}
 		mat=null;
+	}
+	
+	public void calculateTimes(long[] input){
+		int n=input.length;
+		rollingtimes=new long[n-window];
+		
+		for (int i=window; i<input.length; i++){
+			long t=0;
+			int s=0;
+			for (int j=i-window; j<i; j++){
+				t+=input[j];
+				s++;
+			}
+			rollingtimes[i-window]=t/s;
+		}
+	}
+	
+	public long[] getTimes(){
+		return rollingtimes;
 	}
 	
 	public int getType(){
@@ -94,21 +144,33 @@ public class EntropyAnalysis {
 		return mkc;
 	}
 	
+	public SWMLNoCategories getSWMLNC(){
+		return snc;
+	}
+	
+	public double[][] getSWMLTrajectory(){
+		return swmltrajectory;
+	}
+	
+	public double[][] getMKCTrajectory(){
+		return mkctrajectory;
+	}
+	
 	public void clusterOnEntropy(int[][]individuals, int[][]songs){
 				
 		int ncores=Runtime.getRuntime().availableProcessors()/2;
 		swml=new SWMLEntropyEstimate[maxK-1];
-		SyntaxClusteringThread[] sct=new SyntaxClusteringThread[maxK-1];
+		sct=new SyntaxClusteringThread[maxK-minK+1];
 				
-		for (int i=2; i<=maxK; i++){
-			sct[i-2]=new SyntaxClusteringThread(i, mat, individuals, songs, mode);
-			sct[i-2].setPriority(Thread.MIN_PRIORITY);
-			sct[i-2].start();
+		for (int i=minK; i<=maxK; i++){
+			sct[i-minK]=new SyntaxClusteringThread(i, mat, individuals, songs, mode, rolling, window, byIndividual);
+			sct[i-minK].setPriority(Thread.MIN_PRIORITY);
+			sct[i-minK].start();
 		}
 		
 		try{
-			for (int i=2; i<=maxK; i++){
-				sct[i-2].join();
+			for (int i=minK; i<=maxK; i++){
+				sct[i-minK].join();
 
 			}
 		}
@@ -116,18 +178,24 @@ public class EntropyAnalysis {
 			e.printStackTrace();
 		}
 		
-		for (int i=2; i<=maxK; i++){
-			overallAssignments[i-2]=sct[i-2].assignments;
+		for (int i=minK; i<=maxK; i++){
+			overallAssignments[i-minK]=sct[i-minK].assignments;
 			if (mode>0){
-				swml[i-2]=sct[i-2].swml;
+				swml[i-minK]=sct[i-minK].swml;
+				if (rolling){
+					swmltrajectory[i-minK]=sct[i-minK].swtrajectory;
+				}
 			}
 			if (mode!=1){
-				mkc[i-2]=sct[i-2].mkc;
+				mkc[i-minK]=sct[i-minK].mkc;
+				if (rolling){
+					mkctrajectory[i-minK]=sct[i-minK].mktrajectory;
+				}
 			}
 		}
 		
-		for (int i=2; i<=maxK; i++){
-			sct[i-2]=null;
+		for (int i=minK; i<=maxK; i++){
+			sct[i-minK]=null;
 		}	
 	}
 	

@@ -1,11 +1,16 @@
 package lusc.net.github.ui.compmethods;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.GridLayout;
+import java.awt.RenderingHints;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.image.BufferedImage;
 import java.text.NumberFormat;
 import java.util.LinkedList;
 import java.util.Random;
@@ -26,6 +31,7 @@ import lusc.net.github.db.DataBaseController;
 import lusc.net.github.ui.DendrogramOptions;
 import lusc.net.github.ui.PCPaneOptions;
 import lusc.net.github.ui.SaveDocument;
+import lusc.net.github.ui.spectrogram.SpectrPane;
 
 public class ABXdiscrimination extends JPanel implements ActionListener{
 	
@@ -34,8 +40,10 @@ public class ABXdiscrimination extends JPanel implements ActionListener{
 	static int BXA_OPTION=2;
 	
 	int experimentType=1;
+	int modalityType=0;  //0=Visual, 1=auditory, 2=Vis-aud
+	int modType=0; //current modality
 	
-	int balanceType=1;	//0= not balanced; 1 means A and B are swapped and the experiment repeated...
+	int balanceType=0;	//0= not balanced; 1 means A and B are swapped and the experiment repeated...
 	
 	int repetitions=10; // if repetitions is <= 0, then playback continues until a choice is made
 	
@@ -50,7 +58,8 @@ public class ABXdiscrimination extends JPanel implements ActionListener{
 	
 	
 	
-	String instructionString="You will hear three sounds: one in your left ear, one in your right, and one in both ears. Is the left sound or the right sound more similar to the one in both ears?";
+	String auditoryInstructionString="You will hear three sounds. Is the first sound or the third sound more similar to the second sound?";
+	String visualInstructionString="You will see three sonograms. Is the first one or the third one more similar to the second one?";
 	
 	int nTrials=100;	//number of trials
 	int nt;
@@ -63,29 +72,18 @@ public class ABXdiscrimination extends JPanel implements ActionListener{
 	Defaults defaults;
 	Random random=new Random(System.currentTimeMillis());
 	
-	JButton start=new JButton("Start");
-	JButton finish=new JButton("Finish");
-	JButton left=new JButton("Left");
-	JButton right=new JButton("Right");
-	JButton next=new JButton("Next");
-	JButton repeat=new JButton("Play stimulus again");
-	JButton back=new JButton("Back");
-	JButton manage=new JButton("Manage");
+	JButton start, finish, left, right, next, repeat, back, manage, downloadResults, deleteAllResults;
 	
 	JTextField snameBox=new JTextField();
 	
 	//Below are components of the Manage Panel
 	JFormattedTextField ABGapField, BXGapField, XAGapField, repField, trialField;
-	String[] experimentOptions={"ABX", "XAB", "BXA"};
-	JComboBox exptOpts=new JComboBox(experimentOptions);
+	String[] modalityOptions={"Visual", "Auditory", "Visual-Auditory", "Auditory-Visual"};
 	String[] channelOptions={"Left", "Right", "Stereo"};
-	JComboBox AchannelOpts=new JComboBox(channelOptions);
-	JComboBox BchannelOpts=new JComboBox(channelOptions);
-	JComboBox XchannelOpts=new JComboBox(channelOptions);
+	String[] experimentOptions={"ABX", "XAB", "BXA"};
 	
-	JButton downloadResults=new JButton("Download");
-	JButton deleteAllResults=new JButton("Clear Database");
-	JComboBox deleteUser;
+	JComboBox exptOpts, modalityOpts, AchannelOpts, BchannelOpts, XchannelOpts, deleteUser;
+	
 	DefaultComboBoxModel deleteModel=new DefaultComboBoxModel();
 	
 	
@@ -100,7 +98,7 @@ public class ABXdiscrimination extends JPanel implements ActionListener{
 	
 	int currentPosition=-1;
 	
-	int[] responses;
+	int[] responsesAuditory, responsesVisual;
 	int[][] pbSet;
 	
 	JLabel progressLabel, currentChoiceLabel;
@@ -108,6 +106,10 @@ public class ABXdiscrimination extends JPanel implements ActionListener{
 	public String[] userData;
 	public int[][] otherData;
 	
+	JPanel imagePanel=new JPanel();
+	
+	
+	boolean disabled=false;
 	
 	public ABXdiscrimination(AnalysisGroup ag, Defaults defaults){
 		this.ag=ag;
@@ -116,9 +118,7 @@ public class ABXdiscrimination extends JPanel implements ActionListener{
 		readDefaults();
 		songs=ag.getSongs();
 		n=songs.length;
-		nt=nTrials;
-		if (balanceType==1){nt*=2;}
-		responses=new int[nt];
+		setUpResponses();
 		makePanel();
 
 	}
@@ -129,16 +129,37 @@ public class ABXdiscrimination extends JPanel implements ActionListener{
 		this.defaults=defaults;
 	}
 	
-	public void restart(){
+	public void setUpResponses(){
 		nt=nTrials;
 		if (balanceType==1){nt*=2;}
-		responses=new int[nt];
-		resetPanel();
+		responsesAuditory=new int[nt];
+		responsesVisual=new int[nt];
+	}
+	
+	public void restart(){
+		disabled=true;
+		//nt=nTrials;
+		//if (balanceType==1){nt*=2;}
+		//responsesAuditory=new int[nt];
+		//responsesVisual=new int[nt];
+		this.removeAll();
+		this.revalidate();
+		makePanel();
+		this.revalidate();
+		disabled=false;
+		//resetPanel();
 	}
 	
 	
 	public void makePanel(){
-		
+		start=new JButton("Start");
+		finish=new JButton("Finish");
+		left=new JButton("Left");
+		right=new JButton("Right");
+		next=new JButton("Next");
+		repeat=new JButton("Play stimulus again");
+		back=new JButton("Back");
+		manage=new JButton("Manage");
 		start.addActionListener(this);
 		finish.addActionListener(this);
 		left.addActionListener(this);
@@ -154,7 +175,7 @@ public class ABXdiscrimination extends JPanel implements ActionListener{
 		JPanel mainPanel=new JPanel();
 		mainPanel.setPreferredSize(new Dimension(600, 400));
 		//mainPanel.setLayout(new BorderLayout());
-		mainPanel.setLayout(new GridLayout(0,1));
+		mainPanel.setLayout(new BorderLayout());
 		
 		JPanel topPanel=new JPanel(new FlowLayout());
 		topPanel.setMaximumSize(new Dimension(300, 100));
@@ -177,12 +198,18 @@ public class ABXdiscrimination extends JPanel implements ActionListener{
 		topPanel.add(manage);
 		
 		//mainPanel.add(topPanel, BorderLayout.NORTH);
-		mainPanel.add(topPanel);
+		mainPanel.add(topPanel, BorderLayout.NORTH);
+		
+		mainPanel.add(imagePanel, BorderLayout.CENTER);
+		
+		JPanel bottomPanel=new JPanel(new GridLayout(0,1));
 		
 		
-		JLabel instructionLabel=new JLabel(instructionString);
+		JLabel instructionLabel=new JLabel();
+		if (modType==0){instructionLabel.setText(visualInstructionString);}
+		else{instructionLabel.setText(auditoryInstructionString);}
 		
-		mainPanel.add(instructionLabel);
+		bottomPanel.add(instructionLabel);
 		
 		
 		
@@ -194,13 +221,15 @@ public class ABXdiscrimination extends JPanel implements ActionListener{
 		//choicePanel.add(right, BorderLayout.EAST);
 		choicePanel.add(left);
 		choicePanel.add(right);
-		choicePanel.add(repeat);
+		if (modType==1){
+			choicePanel.add(repeat);
+		}
 		
 		currentChoiceLabel=new JLabel(" ");
 		choicePanel.add(currentChoiceLabel);
 		
 		//mainPanel.add(choicePanel, BorderLayout.CENTER);
-		mainPanel.add(choicePanel);
+		bottomPanel.add(choicePanel);
 		
 		//JPanel progressPanel=new JPanel(new BorderLayout());
 		JPanel progressPanel=new JPanel(new FlowLayout());
@@ -217,7 +246,9 @@ public class ABXdiscrimination extends JPanel implements ActionListener{
 		progressPanel.add(progressLabel);
 		
 		//mainPanel.add(progressPanel, BorderLayout.SOUTH);
-		mainPanel.add(progressPanel);
+		bottomPanel.add(progressPanel);
+		
+		mainPanel.add(bottomPanel, BorderLayout.SOUTH);
 		
 		this.add(mainPanel, BorderLayout.CENTER);
 		
@@ -288,6 +319,12 @@ public class ABXdiscrimination extends JPanel implements ActionListener{
 		trialPanel.add(trialField, BorderLayout.CENTER);
 		managePane.add(trialPanel);
 		
+		exptOpts=new JComboBox(experimentOptions);
+		modalityOpts=new JComboBox(modalityOptions);	
+		AchannelOpts=new JComboBox(channelOptions);
+		BchannelOpts=new JComboBox(channelOptions);
+		XchannelOpts=new JComboBox(channelOptions);
+		
 		
 		JPanel optsPanel=new JPanel(new BorderLayout());
 		JLabel optsLabel=new JLabel("Experiment type: ");
@@ -295,6 +332,13 @@ public class ABXdiscrimination extends JPanel implements ActionListener{
 		exptOpts.setSelectedIndex(experimentType);
 		optsPanel.add(exptOpts, BorderLayout.CENTER);
 		managePane.add(optsPanel);
+		
+		JPanel modPanel=new JPanel(new BorderLayout());
+		JLabel modLabel=new JLabel("Modality: ");
+		modPanel.add(modLabel, BorderLayout.WEST);
+		modalityOpts.setSelectedIndex(modalityType);
+		modPanel.add(modalityOpts, BorderLayout.CENTER);
+		managePane.add(modPanel);
 		
 		JPanel ACoptsPanel=new JPanel(new BorderLayout());
 		JLabel ACoptsLabel=new JLabel("Stim A Channel: ");
@@ -352,6 +396,9 @@ public class ABXdiscrimination extends JPanel implements ActionListener{
 		deletePanel.add(deleteLabel, BorderLayout.WEST);
 		deletePanel.add(deleteUser, BorderLayout.CENTER);
 		managePane.add(deletePanel);
+		
+		downloadResults=new JButton("Download");
+		deleteAllResults=new JButton("Clear Database");
 		
 		deleteAllResults.addActionListener(this);
 		managePane.add(deleteAllResults);
@@ -414,6 +461,98 @@ public class ABXdiscrimination extends JPanel implements ActionListener{
 		}
 		
 		return output;
+	}
+	
+	public ImageIcon createSpectrogramStimulus(int[] stims){
+		
+		
+		
+		if (songs[stims[0]].getRawData()==null){
+			Song song=dbc.loadSongFromDatabase(songs[stims[0]].getSongID(), 0);
+			if ((song.getMaxF()<=1)||(song.getDynRange()<1)){
+				defaults.getSongParameters(song);
+			}
+			song.setFFTParameters();
+			songs[stims[0]]=song;
+		}
+		Song songA=songs[stims[0]];
+		if (songs[stims[1]].getRawData()==null){
+			Song song=dbc.loadSongFromDatabase(songs[stims[1]].getSongID(), 0);
+			if ((song.getMaxF()<=1)||(song.getDynRange()<1)){
+				defaults.getSongParameters(song);
+			}
+			song.setFFTParameters();
+			songs[stims[1]]=song;
+		}
+		Song songB=songs[stims[1]];
+		if (songs[stims[2]].getRawData()==null){
+			Song song=dbc.loadSongFromDatabase(songs[stims[2]].getSongID(), 0);
+			if ((song.getMaxF()<=1)||(song.getDynRange()<1)){
+				defaults.getSongParameters(song);
+			}
+			song.setFFTParameters();
+			songs[stims[2]]=song;
+		}
+		Song songX=songs[stims[2]];
+		
+		
+		SpectrPane spA=new SpectrPane(songA, defaults, true);
+		BufferedImage imA=spA.getIm();
+		
+		SpectrPane spB=new SpectrPane(songB, defaults, true);
+		BufferedImage imB=spB.getIm();
+		SpectrPane spX=new SpectrPane(songX, defaults, true);
+		BufferedImage imX=spX.getIm();
+		
+		int x=imA.getWidth()+imB.getWidth()+imX.getWidth();
+		
+		double scalef=(imagePanel.getWidth()-100)/(x+0.0);
+		if (scalef>1){scalef=1;}	
+		
+		int y=(int)Math.round(imA.getHeight()*scalef +50);
+		
+		System.out.println("IMAGESCALING: "+x+" "+scalef+" "+y);
+		
+		BufferedImage imn=new BufferedImage(imagePanel.getWidth()-50, y, BufferedImage.TYPE_INT_ARGB);
+		
+		//BufferedImage imn=new BufferedImage(505, 105, BufferedImage.TYPE_INT_ARGB);
+		
+		Graphics2D g=imn.createGraphics();
+		
+		RenderingHints hints = new RenderingHints(
+                RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+		g.setRenderingHints(hints);
+		
+		//g.setColor(Color.BLACK);
+		//g.fillRect(0, 0, imn.getWidth(), imn.getHeight());
+		
+		//g.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+               // RenderingHints.VALUE_ANTIALIAS_ON);
+		
+		int x1=(int)Math.round(imA.getWidth()*scalef);
+		int y1=(int)Math.round(imA.getHeight()*scalef);
+		
+		g.drawImage(imA, 0, 0, x1, y1, null);
+		
+		int x2=(int)Math.round(imX.getWidth()*scalef);
+		int y2=(int)Math.round(imX.getHeight()*scalef);
+		g.drawImage(imX, x1, 0, x2, y2, null);
+		
+		int x3=(int)Math.round(imB.getWidth()*scalef);
+		int y3=(int)Math.round(imB.getHeight()*scalef);
+		g.drawImage(imB, x1+x2, 0, x3, y3, null);
+	
+		
+		System.out.println((x1+x2+x3)+" "+imn.getWidth());
+		System.out.println(y1+" "+y2+" "+y3+" "+imn.getHeight());
+		System.out.println(imagePanel.getWidth()+" "+imagePanel.getHeight());
+		g.dispose();
+		
+		ImageIcon im=new ImageIcon(imn);
+		
+		System.out.println("ICON DIMS: "+im.getIconWidth()+" "+im.getIconHeight());
+		
+		return im;
 	}
 	
 	
@@ -557,23 +696,36 @@ public class ABXdiscrimination extends JPanel implements ActionListener{
 	
 	
 	 public void actionPerformed(ActionEvent e) {
-		 
+		 if (!disabled){
 		 Object object=e.getSource();
+		 
+		 System.out.println("ACTION TRIGGERED");
 		 
 		 if (object.equals(start)){
 			 start.setEnabled(false);
 			 finish.setEnabled(true);
-			 manage.setEnabled(false);
+			 //manage.setEnabled(false);
 			 setUp();
 			 newTrial();
 		 }
 		 else if(object.equals(left)){
 			 currentChoiceLabel.setText("You have chosen LEFT");
-			 responses[currentPosition]=-1;
+			 if (modType==0){
+				 System.out.println("HERE!!!!!!!!!!!");
+				 responsesVisual[currentPosition]=-1;
+			 }
+			 else{
+				 responsesAuditory[currentPosition]=-1;
+			 }
 		 }
 		 else if(object.equals(right)){
 			 currentChoiceLabel.setText("You have chosen RIGHT");
-			 responses[currentPosition]=1;
+			 if (modType==0){
+				 responsesVisual[currentPosition]=1;
+			 }
+			 else{
+				 responsesAuditory[currentPosition]=1;
+			 }
 		 }
 		 else if (object.equals(next)){
 			 stopSound();
@@ -591,9 +743,13 @@ public class ABXdiscrimination extends JPanel implements ActionListener{
 			 int a=JOptionPane.showConfirmDialog(this, "Click YES to end the experiment and save your choices, NO to end the experiment without saving your choices.", "Thank you for participating", JOptionPane.YES_NO_CANCEL_OPTION);
 			 if (a==JOptionPane.YES_OPTION){
 				 writeResultsToDB();
+				 currentPosition=-1;
+				 setUpResponses();
 				 restart();
 			 }
 			 else if (a==JOptionPane.NO_OPTION){
+				 currentPosition=-1;
+				 setUpResponses();
 				 restart();
 			 }
 		 }	
@@ -602,6 +758,8 @@ public class ABXdiscrimination extends JPanel implements ActionListener{
 			 int a=JOptionPane.showConfirmDialog(this, managePane);
 			 if (a==JOptionPane.OK_OPTION){
 				 updateSettings();
+				 writeDefaults();
+				 defaults.writeProperties();
 			 }
 		 }
 		 else if (object.equals(deleteUser)){
@@ -617,13 +775,15 @@ public class ABXdiscrimination extends JPanel implements ActionListener{
 		 else if (object.equals(deleteAllResults)){
 			 int a=JOptionPane.showConfirmDialog(this, "Really delete all results from database?");
 			 if (a==JOptionPane.OK_OPTION){
-				 String t="DELETE ALL FROM comparetriplet";
+				 //String t="DELETE ALL FROM comparetriplet";
+				 String t="DELETE FROM comparetriplet";
 				 dbc.writeToDataBase(t);
 			 }
 		 }
 		 
 		 else if (object.equals(downloadResults)){
 			 downloadResultsFromDB();
+		 }
 		 }
 	}	
 	 
@@ -652,6 +812,7 @@ public class ABXdiscrimination extends JPanel implements ActionListener{
 			sd.writeString("Choice");
 			sd.writeString("Trial");
 			sd.writeString("Type");
+			sd.writeString("Modality");
 			
 			sd.writeLine();
 			
@@ -675,6 +836,7 @@ public class ABXdiscrimination extends JPanel implements ActionListener{
 				sd.writeInt(otherData[i][3]);
 				sd.writeInt(otherData[i][4]);
 				sd.writeInt(otherData[i][5]);
+				sd.writeInt(otherData[i][6]);
 				sd.writeLine();
 	
 			}
@@ -703,26 +865,51 @@ public class ABXdiscrimination extends JPanel implements ActionListener{
 		x=exptOpts.getSelectedIndex();
 		if (x>=0){experimentType=x;}
 		
+		x=modalityOpts.getSelectedIndex();
+		if (x>=0){
+			modalityType=x;
+			modType=modalityType;
+			if (modalityType==2){modType=0;}
+			if (modalityType==3){modType=1;}
+		}
+		
 		x=AchannelOpts.getSelectedIndex();
 		if (x>=0){Achannel=x;}
 		x=BchannelOpts.getSelectedIndex();
 		if (x>=0){Bchannel=x;}
 		x=XchannelOpts.getSelectedIndex();
 		if (x>=0){Xchannel=x;}
-		
+		setUpResponses();
+		currentPosition=-1;
 		restart();
 		writeDefaults();
 	}
 	 
 	 public void writeResultsToDB(){
+		 
 		 for (int i=0; i<nt; i++){
 				//String comp6="comparetriplet (user CHAR(50), songA INT, songB INT, songX INT, choice INT, trial INT, exptype INT)";
 				//writeToDataBase("INSERT INTO songdata (name, IndividualID) VALUES ('"+sname+"' , "+indID+")");
 			 String t=snameBox.getText();
 			 int[] u=pbSet[i];
-			 String s="INSERT into comparetriplet (user, songA, songB, songX, choice, trial, exptype) VALUES ('"+t+"' , "+songs[u[0]].getSongID()+" , "+songs[u[1]].getSongID()+" , "+songs[u[2]].getSongID()+" , "+responses[i]+" , "+(i+1)+" , "+experimentType+")";
-			 //System.out.println(s);
-			 dbc.writeToDataBase(s);
+			 if (modalityType==0){
+				 String s="INSERT into comparetriplet (user, songA, songB, songX, choice, trial, exptype, modtype) VALUES ('"+t+"' , "+songs[u[0]].getSongID()+" , "+songs[u[1]].getSongID()+" , "+songs[u[2]].getSongID()+" , "+responsesVisual[i]+" , "+(i+1)+" , "+experimentType+" , "+modalityType+")";
+				 dbc.writeToDataBase(s);
+			 }
+			 if (modalityType==1){
+				 String s="INSERT into comparetriplet (user, songA, songB, songX, choice, trial, exptype, modtype) VALUES ('"+t+"' , "+songs[u[0]].getSongID()+" , "+songs[u[1]].getSongID()+" , "+songs[u[2]].getSongID()+" , "+responsesAuditory[i]+" , "+(i+1)+" , "+experimentType+" , "+modalityType+")";
+				 dbc.writeToDataBase(s);
+			 }
+			 if (modalityType>1){
+				 String s="INSERT into comparetriplet (user, songA, songB, songX, choice, trial, exptype, modtype) VALUES ('"+t+"' , "+songs[u[0]].getSongID()+" , "+songs[u[1]].getSongID()+" , "+songs[u[2]].getSongID()+" , "+responsesVisual[i]+" , "+(i+1)+" , "+experimentType+" , "+0+")";
+				// System.out.println(s);
+				 dbc.writeToDataBase(s);
+				 s="INSERT into comparetriplet (user, songA, songB, songX, choice, trial, exptype, modtype) VALUES ('"+t+"' , "+songs[u[0]].getSongID()+" , "+songs[u[1]].getSongID()+" , "+songs[u[2]].getSongID()+" , "+responsesAuditory[i]+" , "+(i+1)+" , "+experimentType+" , "+1+")";
+				 dbc.writeToDataBase(s);
+				 //System.out.println(s);
+			 }
+				 //System.out.println(s);
+			
 		 }
 	 }
 	 
@@ -735,17 +922,64 @@ public class ABXdiscrimination extends JPanel implements ActionListener{
 	 }
 	 
 	 public void newTrial(){
+		 System.out.println("NEW TRIAL TRIGGERED");
 		 currentPosition++;
 		 if (currentPosition==nt){
-			 progressLabel.setText("Trial "+currentPosition+" out of "+nt);
-			 JOptionPane.showMessageDialog(this, "Experiment completed");
+			 
+			 if ((modalityType==2)&&(modType==0)){
+				 modType=1;
+				 currentPosition=0;
+				 imagePanel=new JPanel();
+				 restart();
+				 progressLabel.setText("Trial "+currentPosition+" out of "+nt);
+				 currentChoiceLabel.setText("You haven't chosen yet for this trial");
+				 int[] d=pbSet[currentPosition];
+				 soundData=createSoundStimulus(d);
+				 playSound();
+			 }
+			 else if ((modalityType==3)&&(modType==1)){
+				 modType=0;
+				 currentPosition=0;
+				 restart();
+				 progressLabel.setText("Trial "+currentPosition+" out of "+nt);
+				 currentChoiceLabel.setText("You haven't chosen yet for this trial");
+				 int[] d=pbSet[currentPosition];
+				 ImageIcon spectData=createSpectrogramStimulus(d);
+				 JLabel label=new JLabel(spectData);
+				 imagePanel.removeAll();
+				 imagePanel.setSize(spectData.getIconWidth(), spectData.getIconHeight());
+					
+				 imagePanel.revalidate();
+				 imagePanel.add(label);
+				 imagePanel.revalidate();
+				
+				 //playSound();
+			 }
+			 else{
+				 progressLabel.setText("Trial "+currentPosition+" out of "+nt);
+				 JOptionPane.showMessageDialog(this, "Experiment completed");
+				 next.setEnabled(false);
+				 finish.setEnabled(true);
+			 }
 		 }
 		 else{
 			progressLabel.setText("Trial "+currentPosition+" out of "+nt);
 			currentChoiceLabel.setText("You haven't chosen yet for this trial");
 			int[] d=pbSet[currentPosition];
-			soundData=createSoundStimulus(d);
-			playSound();
+			if (modType==1){
+				soundData=createSoundStimulus(d);
+				playSound();
+			}
+			else if (modType==0){
+				ImageIcon spectData=createSpectrogramStimulus(d);
+				JLabel label=new JLabel(spectData);
+				imagePanel.removeAll();
+				imagePanel.setSize(spectData.getIconWidth(), spectData.getIconHeight());
+				
+				imagePanel.revalidate();
+				imagePanel.add(label);
+				imagePanel.revalidate();
+			}
 		 }
 	 }
 	 
@@ -757,19 +991,31 @@ public class ABXdiscrimination extends JPanel implements ActionListener{
 		 currentPosition--;
 		 if (currentPosition<0){currentPosition=0;}
 		 progressLabel.setText("Trial "+currentPosition+" out of "+nt);
-		 if (responses[currentPosition]==-1){
-			 currentChoiceLabel.setText("You have chosen LEFT");
+		 if (modType==0){
+			 if (responsesVisual[currentPosition]==-1){
+				 currentChoiceLabel.setText("You have chosen LEFT");
+			 }
+			 else if (responsesVisual[currentPosition]==0){
+				 currentChoiceLabel.setText("You haven't chosen yet for this trial");
+			 }
+			 else {
+				 currentChoiceLabel.setText("You have chosen RIGHT");
+			 }
 		 }
-		 else if (responses[currentPosition]==0){
-			 currentChoiceLabel.setText("You haven't chosen yet for this trial");
-		 }
-		 else {
-			 currentChoiceLabel.setText("You have chosen RIGHT");
-		 }
-		 
-		 int[] d=pbSet[currentPosition];
-		 soundData=createSoundStimulus(d);
-		 playSound();
+		 else{
+			 if (responsesAuditory[currentPosition]==-1){
+				 currentChoiceLabel.setText("You have chosen LEFT");
+			 }
+			 else if (responsesAuditory[currentPosition]==0){
+				 currentChoiceLabel.setText("You haven't chosen yet for this trial");
+			 }
+			 else {
+				 currentChoiceLabel.setText("You have chosen RIGHT");
+			 }
+			 int[] d=pbSet[currentPosition];
+			 soundData=createSoundStimulus(d);
+			 playSound();
+		 } 
 	 }
 
 		/**
@@ -778,9 +1024,16 @@ public class ABXdiscrimination extends JPanel implements ActionListener{
 		public void setUpPlayback(){
 			try{
 				Song song=dbc.loadSongFromDatabase(songs[0].getSongID(), 0);
-				songs[0]=song;
-				songs[0].makeAudioFormat();
-				AudioFormat af2=songs[0].getAf();
+				
+				
+				
+				System.out.println("started audio...");
+				
+				song.makeAudioFormat();
+				
+				System.out.println("Got through this...");
+				
+				AudioFormat af2=song.getAf();
 				boolean signed=false;
 				AudioFormat.Encoding afe=af2.getEncoding();
 				if (afe.toString().startsWith("PCM_SIGNED")){signed=true;}
@@ -792,6 +1045,9 @@ public class ABXdiscrimination extends JPanel implements ActionListener{
 				line = null;
 				line = (SourceDataLine) AudioSystem.getLine(info);
 				line.open(af);
+				
+				System.out.println("Got through this...");
+				
 			} 
 			catch (Exception e) {
 				e.printStackTrace();
@@ -871,17 +1127,19 @@ public class ABXdiscrimination extends JPanel implements ActionListener{
 		 * This is a method to stop playback of the sound 
 		 */
 		public void stopSound(){
-			try{
-				dostop=true;
-				if (line.isOpen()){
-					line.stop();
-					line.flush();
-					//line.close();
+			if (modType==1){
+				try{
+					dostop=true;
+					if (line.isOpen()){
+						line.stop();
+						line.flush();
+						//line.close();
+					}
+					dostop=false;
 				}
-				dostop=false;
-			}
-			catch (Exception e) {
-				System.out.println("Stop playback error");
+				catch (Exception e) {
+					System.out.println("Stop playback error");
+				}
 			}
 		}
 	
@@ -896,6 +1154,7 @@ public class ABXdiscrimination extends JPanel implements ActionListener{
 			defaults.setIntProperty("abxtrials", nTrials);
 			
 			defaults.setIntProperty("abxtype", experimentType);
+			defaults.setIntProperty("abxmod", modalityType);
 			defaults.setIntProperty("abxachan", Achannel);
 			defaults.setIntProperty("abxbchan", Bchannel);
 			defaults.setIntProperty("abxXchan", Xchannel);
@@ -912,6 +1171,12 @@ public class ABXdiscrimination extends JPanel implements ActionListener{
 			nTrials=defaults.getIntProperty("abxtrials", 10);
 			
 			experimentType=defaults.getIntProperty("abxtype", 0);
+			modalityType=defaults.getIntProperty("abxmod", 0);
+			
+			modType=modalityType;
+			if (modalityType==2){modType=0;}
+			if (modalityType==3){modType=1;}
+			
 			Achannel=defaults.getIntProperty("abxachan", 0);
 			Bchannel=defaults.getIntProperty("abxbchan", 1);
 			Xchannel=defaults.getIntProperty("abxxchan", 2);

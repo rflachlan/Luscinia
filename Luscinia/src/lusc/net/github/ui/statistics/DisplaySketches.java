@@ -13,8 +13,10 @@ import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.*;
 import java.util.*;
+
 import lusc.net.github.Song;
 import lusc.net.github.Element;
+import lusc.net.github.Syllable;
 import lusc.net.github.analysis.AnalysisGroup;
 
 public class DisplaySketches {
@@ -381,7 +383,13 @@ public class DisplaySketches {
 	
 	public BufferedImage drawSyllable (int so, int syll, int height, boolean decorate){
 		Song song=sg.getSong(so);
-		int[] syl=(int[])song.getSyllable(syll);
+		//int[] syl=(int[])song.getSyllable(syll);
+		
+		LinkedList<Syllable> sl=song.getBaseLevelSyllables();
+		Syllable sy=sl.get(syll);
+		Element[] ele=(Element[])sy.getElements2().toArray(new Element[sy.getNumEles2()]);
+		/*
+		
 		int d=syl.length;
 		
 		Element[] ele=new Element[d];
@@ -392,6 +400,7 @@ public class DisplaySketches {
 				ele[i]=(Element)song.getElement(syl[i]);
 			}
 		}
+		*/
 		BufferedImage ims=drawElements(ele, height, decorate);
 		return ims;
 	}
@@ -406,16 +415,26 @@ public class DisplaySketches {
 		BufferedImage[] syls=new BufferedImage[2];
 		int totalLength=0;
 		
+		
+		
 		for (int i=0; i<2; i++){
+			
+			
+			Syllable ph=song.getPhrase(tr+i);
+			
+			Syllable sy=ph.getSyllable(ph.getNumSyllables()/2);
+			
+			Element[] eles=sy.getElements2().toArray(new Element[sy.getNumEles2()]);
 	
-			int[][] phrase=(int[][])song.getPhrase(tr+i);
+			//int[][] phrase=(int[][])song.getPhrase(tr+i);
 	
-			int c=phrase.length/2;
-			int d=phrase[c].length;
+			//int c=phrase.length/2;
+			//int d=phrase[c].length;
 
 			
 			
-			Element[] eles=new Element[d];
+			//Element[] eles=new Element[d];
+			/*
 			boolean complete=false;
 			while(complete=false){
 				complete=true;
@@ -432,6 +451,7 @@ public class DisplaySketches {
 					}
 				}
 			}
+			*/
 			syls[i]=drawElements(eles, height, decorate);
 			totalLength+=syls[i].getWidth();
 		}
@@ -555,8 +575,18 @@ public class DisplaySketches {
 		
 		Song song=sg.getSong(so);
 		
-		int[][] phrase=(int[][])song.getPhrase(ph);
+		//int[][] phrase=(int[][])song.getPhrase(ph);
 		
+		
+		Syllable phr=song.getPhrase(ph);
+		
+		Syllable sy=phr.getSyllable(phr.getNumSyllables()/2);
+		
+		Element[] ele=sy.getElements2().toArray(new Element[sy.getNumEles2()]);
+
+		
+		
+		/*
 		int c=phrase.length/2;
 		int d=phrase[c].length;
 		
@@ -567,6 +597,7 @@ public class DisplaySketches {
 				ele[i]=(Element)song.getElement(phrase[c][i]);
 			}
 		}
+		*/
 		BufferedImage ims=drawElements(ele, height, decorate);
 		return ims;
 	}

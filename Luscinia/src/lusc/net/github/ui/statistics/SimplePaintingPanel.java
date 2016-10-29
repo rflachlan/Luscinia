@@ -73,12 +73,12 @@ public class SimplePaintingPanel extends JPanel{
         int visibleWidth = (int)Math.round(g.getClipBounds().width*scale);
         int visibleHeight = (int)Math.round(g.getClipBounds().height*scale);
         
-        //System.out.println(upperLeftX+" "+upperLeftY+" "+visibleWidth+" "+visibleHeight+" "+imf.getWidth()+" "+imf.getHeight());
+        System.out.println(upperLeftX+" "+upperLeftY+" "+visibleWidth+" "+visibleHeight+" "+imf.getWidth()+" "+imf.getHeight());
         
         if (upperLeftX+visibleWidth>imf.getWidth()){visibleWidth=imf.getWidth()-upperLeftX;}
         if (upperLeftY+visibleHeight>imf.getHeight()){visibleHeight=imf.getHeight()-upperLeftY;}
        
-        //System.out.println(upperLeftX+" "+upperLeftY+" "+visibleWidth+" "+visibleHeight+" "+imf.getWidth()+" "+imf.getHeight());
+        System.out.println(upperLeftX+" "+upperLeftY+" "+visibleWidth+" "+visibleHeight+" "+imf.getWidth()+" "+imf.getHeight());
  
         BufferedImage q=imf.getSubimage(upperLeftX,  upperLeftY,  visibleWidth,  visibleHeight);
         

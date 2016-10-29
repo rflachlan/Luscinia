@@ -22,7 +22,6 @@ public class SpectrogramMeasurement {
 	int ny;
 	int minFreq=5;
 	double octstep=10;
-	
 	/**
 	 * This constructor builds from a {@link Song} object
 	 * @param song
@@ -109,7 +108,7 @@ public class SpectrogramMeasurement {
 	 * @param unx length of the spectrogram (shouldn't be necessary!)
 	 * @return a LinkedList of int[][] containing signal locations
 	 */
-	public LinkedList<int[][]> getSignal(int[][] pointList, int unx){						
+	public LinkedList<int[][]> getSignal(int[] pointList1, int[] pointList2, int unx, boolean detectHarmonics){						
 		setUp();
 		//This method identifies which parts of the highlighted sound are loud enough to be "signal"
 		//and joins them together on the basis of temporal contiguity into elements (further lumping/splitting
@@ -119,18 +118,18 @@ public class SpectrogramMeasurement {
 		
 		
 		int minx=0;
-		while (pointList[minx][0]==0){minx++;}
+		while (pointList1[minx]==0){minx++;}
 		int maxx=unx-2;								//this bit identifies the start and end of the element
-		while (pointList[maxx][0]==0){maxx--;}
+		while (pointList1[maxx]==0){maxx--;}
 		maxx++;
 	
 		int p1;
 		for (int i=minx; i<maxx; i++){
-			p1=ny-pointList[i][0]-1;
-			pointList[i][0]=ny-pointList[i][1]-1;
-			pointList[i][1]=p1;
-			if (pointList[i][1]==ny-1){pointList[i][1]--;}
-			if (pointList[i][0]==0){pointList[i][0]++;}
+			p1=ny-pointList1[i]-1;
+			pointList1[i]=ny-pointList2[i]-1;
+			pointList2[i]=p1;
+			if (pointList2[i]==ny-1){pointList2[i]--;}
+			if (pointList1[i]==0){pointList1[i]++;}
 		}
 	
 		int ou[][]=new int[ny][unx];
@@ -143,18 +142,42 @@ public class SpectrogramMeasurement {
 		double l1=song.lowerLoop;
 	
 		//System.out.println("loop "+u1+" "+l1);
-	
+		
 		for (int j=minx; j<maxx; j++){
-			for (int i=pointList[j][0]; i<pointList[j][1]; i++){
+			//System.out.println("POINT RANGE: "+pointList1[j]+" "+pointList2[j]);
+			for (int i=pointList1[j]; i<pointList2[j]; i++){
 				focal=nout[i][j]*c;
 				if (focal>u1){
-					int[] new2={i, j};
-					the2list.add(new2);
+					//int[] new2={i, j};
+					//the2list.add(new2);
 					ou[i][j]=2;
 				}
 				else if (focal>l1){ou[i][j]=1;}	
 				else{ou[i][j]=0;}
 			}
+			
+			if (detectHarmonics) {
+				for (int h=2; h<10; h++) {
+					
+					double h2=0.5*(pointList1[j]+pointList2[j]);
+					double h3= 0.5*(pointList2[j]-pointList1[j]);
+					int h4=(int)Math.round(h2*h-h3);
+					int h5=(int)Math.round(h2*h+h3);	//This code keeps the bands roughly even widths...
+					if (h5>ny-5) {h5=ny-5;}
+					for (int i=h4; i<h5; i++){
+						//System.out.println(i+" "+ny);
+						focal=nout[i][j]*c;
+						if (focal>u1){
+								//int[] new2={i, j};
+								//the2list.add(new2);
+							ou[i][j]=2;
+						}
+						else if (focal>l1){ou[i][j]=1;}	
+						else{ou[i][j]=0;}
+					}
+				}
+			}
+			
 		}
 	
 		int i,j,k, a,b, ia, jb, ii, jj;
@@ -163,7 +186,7 @@ public class SpectrogramMeasurement {
 		int counter=3;
 	
 		for (j=minx; j<maxx; j++){
-			for (i=pointList[j][0]; i<pointList[j][1]; i++){
+			for (i=0; i<ny; i++){
 				if (ou[i][j]==2){
 					int[]n3={i, j};
 					ou[i][j]=counter;
@@ -194,7 +217,7 @@ public class SpectrogramMeasurement {
 		}
 	
 		int numEls=counter-3;
-	
+		System.out.println("NUMBER ELS DISCOVERED: "+numEls);
 		int[]starts=new int[numEls];
 		int[]ends=new int[numEls];
 		boolean[] exists=new boolean[numEls];
@@ -202,7 +225,7 @@ public class SpectrogramMeasurement {
 			int mx1=-1;
 			int mx2=0;
 			for (j=minx; j<maxx; j++){
-				for (ii=pointList[j][0]; ii<pointList[j][1]; ii++){
+				for (ii=0; ii<ny; ii++){
 					if (ou[ii][j]==k+3){
 						if (mx1==-1){
 							mx1=j;
@@ -236,7 +259,7 @@ public class SpectrogramMeasurement {
 						if (merge){
 							exists[j]=false;
 							for (jj=minx; jj<maxx; jj++){
-								for (ii=pointList[jj][0]; ii<pointList[jj][1]; ii++){
+								for (ii=0; ii<ny; ii++){
 									if (ou[ii][jj]==j+3){
 										ou[ii][jj]=k+3;
 									}
@@ -253,7 +276,7 @@ public class SpectrogramMeasurement {
 			int mx1=-1;
 			int mx2=0;
 			for (j=minx; j<maxx; j++){
-				for (ii=pointList[j][0]; ii<pointList[j][1]; ii++){
+				for (ii=pointList1[j]; ii<ny; ii++){
 					if (ou[ii][j]==k+3){
 						if (mx1==-1){
 							mx1=j;
@@ -270,7 +293,7 @@ public class SpectrogramMeasurement {
 	
 				for (j=mx1; j<mx2; j++){
 					int cc=0;
-					for (ii=pointList[j][0]; ii<pointList[j][1]; ii++){
+					for (ii=pointList1[j]; ii<ny; ii++){
 						//System.out.print(ou[ii][j]+" ");
 						if ((ou[ii][j]==k+3)&&(ou[ii-1][j]!=k+3)){
 							cc++;
@@ -279,7 +302,7 @@ public class SpectrogramMeasurement {
 							cc++;
 						}
 					}
-					if (ou[pointList[j][1]-1][j]==k+3){
+					if (ou[ny-1][j]==k+3){
 						cc++;
 					}
 	
@@ -293,7 +316,7 @@ public class SpectrogramMeasurement {
 	
 					cc=1;
 	
-					for (ii=pointList[j][0]; ii<pointList[j][1]; ii++){
+					for (ii=pointList1[j]; ii<ny; ii++){
 						if ((ou[ii][j]==k+3)&&(ou[ii-1][j]!=k+3)){
 							data[jj][cc]=ii;
 							cc++;
@@ -303,8 +326,8 @@ public class SpectrogramMeasurement {
 							cc++;
 						}
 					}
-					if (ou[pointList[j][1]-1][j]==k+3){
-						data[jj][cc]=pointList[j][1];
+					if (ou[ny-1][j]==k+3){
+						data[jj][cc]=pointList2[j];
 					}
 				}
 				
@@ -327,6 +350,9 @@ public class SpectrogramMeasurement {
 		//First slot filled with time. Next two frequency slots are left blank for now (will be filled with: peak freq, fund freq below). Then, there are a variable
 		//number of pairs: min, max; min, max etc. that represent minima and maxima for "chunks" of signal. e.g a tonal signal will have just one
 		//min and max pair, while a harmonic signal will have multiple pairs one for each harmonic.
+		
+		
+		
 		return tList;	
 	}
 	
@@ -338,24 +364,24 @@ public class SpectrogramMeasurement {
 	 * @param unx length of the spectrogram (shouldn't be necessary!)
 	 * @return a LinkedList of int[][] containing signal locations
 	 */
-	public LinkedList<int[][]> eraseSignal(int[][] pointList, int currentMinX){						
+	public LinkedList<int[][]> eraseSignal(int[] pointList1, int[] pointList2, int currentMinX){						
 		setUp();
 		
 		LinkedList<int[][]> alteredElements=new LinkedList<int[][]>();
 		LinkedList<Element> removeList=new LinkedList<Element>();
 		int minx=0;
-		while (pointList[minx][0]==0){minx++;}
-		int maxx=pointList.length-2;								//this bit identifies the start and end of the element
-		while (pointList[maxx][0]==0){maxx--;}
+		while (pointList1[minx]==0){minx++;}
+		int maxx=pointList1.length-2;								//this bit identifies the start and end of the element
+		while (pointList1[maxx]==0){maxx--;}
 		maxx++;
 	
 		int p1;
 		for (int i=minx; i<maxx; i++){
-			p1=ny-pointList[i][0]-1;
-			pointList[i][0]=ny-pointList[i][1]-1;
-			pointList[i][1]=p1;
-			if (pointList[i][1]==ny-1){pointList[i][1]--;}
-			if (pointList[i][0]==0){pointList[i][0]++;}
+			p1=ny-pointList1[i]-1;
+			pointList1[i]=ny-pointList2[i]-1;
+			pointList2[i]=p1;
+			if (pointList2[i]==ny-1){pointList2[i]--;}
+			if (pointList1[i]==0){pointList1[i]++;}
 		}
 		
 		for (Element ele : song.eleList){
@@ -365,7 +391,7 @@ public class SpectrogramMeasurement {
 			//System.out.println("CHECKING: "+start+" "+end+" "+minx+" "+maxx);
 			
 			if (((start<minx)&&(end>minx))||((start>=minx)&&(start<maxx))){
-				System.out.println("PROCESSING");
+				//System.out.println("PROCESSING");
 				
 				removeList.add(ele);
 				
@@ -392,7 +418,7 @@ public class SpectrogramMeasurement {
 					for (int i=minx; i<maxx; i++){
 						int x=i+currentMinX;				
 						if (signal[j][0]==x){
-							for (int k=pointList[i][0]; k<pointList[i][1]; k++){
+							for (int k=pointList1[i]; k<pointList2[i]; k++){
 								if (col[k]){
 									y--;
 									col[k]=false;
@@ -601,6 +627,8 @@ public class SpectrogramMeasurement {
 		calculatePowerSpectrum(signals, powerList);
 		LinkedList<double[][]> measures=new LinkedList<double[][]>();
 		for (int i=0; i<freqList.size(); i++){
+			
+			
 			double[] harmonicity=harmList.get(i);
 			double[] wiener=wienerList.get(i);
 			int[] bandwidth=bandwidthList.get(i);
@@ -658,7 +686,9 @@ public class SpectrogramMeasurement {
 			archiveLastElementsAdded[i]=count;
 		}
 		
-		sp.archiveElements(archiveLastElementsAdded);
+		if (sp!=null) {
+			sp.archiveElements(archiveLastElementsAdded);
+		}
 		
 		signals=null;
 		measures=null;
@@ -1260,12 +1290,14 @@ void measureFrequencyChange2a(LinkedList<double[][]> freqList, LinkedList<double
 		int elNum=freqList.size();
 		for (int i=0; i<elNum; i++){
 					
+			//System.out.println("Element: "+(i+1));
+			
 			double[][] freqMeasures=freqList.get(i);
 			int[][] data=tList.get(i);
 			int eleLength=freqMeasures.length;
 			double dxx=1;
 			if (dx<1){dxx=dx;}
-			int boxSize=(int)Math.round(8/dxx);
+			int boxSize=(int)Math.round(4/dxx);
 		
 			if (boxSize>=eleLength/2){boxSize=(eleLength/2)-1;}
 			int x;
@@ -1278,7 +1310,10 @@ void measureFrequencyChange2a(LinkedList<double[][]> freqList, LinkedList<double
 				for (int k=1; k<chunkNum; k+=2){
 					for (int j2=data[j][k]; j2<data[j][k+1]; j2++){
 						if (j2<0){
-							System.out.println("Problem: "+data[j][k]+" "+data[j][k+1]+" "+j2+" "+j+" "+k);
+							System.out.println("Problem: "+data[j][k]+" "+data[j][k+1]+" "+j2+" "+j+" "+k+" "+i);
+							for (int a=0; a<data[j].length; a++) {
+								System.out.println(data[j][a]);
+							}
 						}
 						if (time<0){
 							System.out.println("Problem: "+time+" "+j+" "+k);
@@ -1362,6 +1397,9 @@ void measureFrequencyChange2a(LinkedList<double[][]> freqList, LinkedList<double
 					tot=(sxy*cx-(sx*sy))/(cx*sx2-sx*sx);
 					//tot=30*sxy/(sx2);
 					//dat[k][j]=(float)(0.5+(Math.atan2(tot, 1)/Math.PI));
+					
+					if (k<1){System.out.println(k+" "+boxSize+" "+dx);}
+					
 					dat[k][j]=tot;
 					//if (j==3){System.out.println(k+" "+sy+" "+sx+" "+sxy+" "+sx2+" "+tot+" "+dat[k][j]);}
 				}
@@ -1434,7 +1472,7 @@ void measureFrequencyChange2a(LinkedList<double[][]> freqList, LinkedList<double
 					//if (j==3){System.out.println(k+" "+sy+" "+sx+" "+sxy+" "+sx2);}
 					tot=30*sxy/(sx2);
 					dat[k][j]=(float)(0.5+(Math.atan2(tot, 1)/Math.PI));
-					if (j==3){System.out.println(k+" "+sy+" "+sx+" "+sxy+" "+sx2+" "+tot+" "+dat[k][j]);}
+					//if (j==3){System.out.println(k+" "+sy+" "+sx+" "+sxy+" "+sx2+" "+tot+" "+dat[k][j]);}
 				}
 				//for (int k=0; k<boxSize; k++){
 					//dat[k][j]=dat[boxSize][j];
@@ -1514,14 +1552,14 @@ void measureFrequencyChange2a(LinkedList<double[][]> freqList, LinkedList<double
 									}
 								}
 							}
-							System.out.println(j+" "+k+" "+sxx+" "+sxy);
+							//System.out.println(j+" "+k+" "+sxx+" "+sxy);
 							tot+=ns*30*sxy/sxx;
 							c+=ns;
 						}
 					}
 					tot/=c;
 					dat[j][0]=(float)(0.5+(Math.atan2(tot, 1)/Math.PI));
-					System.out.println(tot+" "+c);
+					//System.out.println(tot+" "+c);
 			}
 			for (int k=0; k<boxSize; k++){
 				dat[k][0]=dat[boxSize][0];
@@ -1658,8 +1696,8 @@ void measureFrequencyChange2a(LinkedList<double[][]> freqList, LinkedList<double
 		int elNum=tList.size();
 		boolean signal[]=new boolean[ny];
 		
-		//double logd=10/(Math.log(10));
-		//double maxC=song.dynRange-Math.log(song.maxPossAmp)*logd;
+		double logd=10/(Math.log(10));
+		double maxC=song.dynRange-Math.log(song.maxPossAmp)*logd;
 		//double minPower=Math.pow(10, (0-maxC)*0.1);
 		double minPower=Math.pow(10, -1);
 		int x=0;
@@ -1672,6 +1710,9 @@ void measureFrequencyChange2a(LinkedList<double[][]> freqList, LinkedList<double
 				int chunkNum=data[j].length;
 				double scoreArith=0;
 				double scoreGeom=0;
+				
+				//double scoreArith2=0;
+				//double scoreGeom2=0;
 				for (int k=0; k<ny; k++){
 					signal[k]=false;
 				}
@@ -1682,7 +1723,9 @@ void measureFrequencyChange2a(LinkedList<double[][]> freqList, LinkedList<double
 						if (nout[a][x]>maxNout){maxNout=nout[a][x];}
 					}
 				}
-				minPower=Math.pow(10, maxNout-100);
+				maxNout-=100;
+				minPower=Math.pow(10, maxNout);
+				//double c=0;
 				for (int k=0; k<ny; k++){
 					if (signal[k]){
 						//double amp=nout[k][x]/maxNout;
@@ -1693,15 +1736,38 @@ void measureFrequencyChange2a(LinkedList<double[][]> freqList, LinkedList<double
 					}
 					else{
 						scoreArith+=minPower;
-						scoreGeom+=maxNout-100;
+						scoreGeom+=maxNout;
+						
+						//double amp=nout[k][x];
+						//scoreArith+=Math.pow(10, (amp-maxC)*0.1);
+						//scoreArith+=Math.pow(10, (amp-1));
+						//scoreGeom+=amp;
+						
+						//scoreArith2+=Math.pow(10, (amp-1));
+						//scoreGeom2+=amp;
+						//c++;
 					}
 				}
 				//System.out.println(scoreGeom+" "+scoreArith);
+				
+				
+				//scoreGeom-=maxC*ny;
+				
 				scoreArith/=ny+0.0;
 				//scoreGeom=Math.pow(10, 0.1*((scoreGeom/(ny+0.0))-maxC));
+				
+				
 				scoreGeom=Math.pow(10, ((scoreGeom/(ny+0.0))-1));
+				
+				//scoreArith2/=c;
+				//scoreGeom2=Math.pow(10, ((scoreGeom2/c)-1));
+				
+				
+				
 				wienerEntropies[j]=-1*Math.log(scoreGeom/scoreArith);
-				//System.out.println("W "+wienerEntropies[j]+" "+scoreGeom+" "+scoreArith);
+				
+				//wienerEntropies[j]=-1*Math.log((scoreGeom-scoreGeom2)/(scoreArith-scoreArith2));
+				//System.out.println("W "+wienerEntropies[j]+" "+scoreGeom+" "+scoreArith+" "+minPower+" "+maxNout);
 			}
 			results.add(wienerEntropies);
 		}
@@ -2696,7 +2762,7 @@ void measureFrequencyChange2a(LinkedList<double[][]> freqList, LinkedList<double
 		
 		
 		double[][] results=new double[n][2];
-		System.out.println("made it");
+		//System.out.println("made it");
 		
 		for (int i=0; i<n; i++){
 			
@@ -3058,7 +3124,7 @@ void measureFrequencyChange2a(LinkedList<double[][]> freqList, LinkedList<double
 			ele.calculateStatistics();
 			eleList.add(ele);
 		}
-		System.out.println("done");
+		//System.out.println("done");
 		song.eleList=eleList;
 
 	}
@@ -3104,7 +3170,7 @@ void measureFrequencyChange2a(LinkedList<double[][]> freqList, LinkedList<double
 			ele.calculateStatistics();
 			eleList.add(ele);
 		}
-		System.out.println("done");
+		//System.out.println("done");
 		song.eleList=eleList;
 	}
 	
@@ -3132,7 +3198,7 @@ void measureFrequencyChange2a(LinkedList<double[][]> freqList, LinkedList<double
 			double[][] freq=new double[ele.measurements.length-5][4];
 			for (int j=0; j<freq.length; j++){
 				for (int k=0; k<4; k++){
-					freq[j][k]=ele.measurements[j+5][k]/ele.dy;
+					freq[j][k]=(ele.measurements[j+5][k]/ele.dy);
 				}
 			}
 			LinkedList<double[][]> freqList=new LinkedList<double[][]>();
@@ -3156,7 +3222,12 @@ void measureFrequencyChange2a(LinkedList<double[][]> freqList, LinkedList<double
 				for (int k=0; k<4; k++){
 					//System.out.print(freqChange[j][k]+" ");
 					newm[j][4+k]=freqChange[j][k];
+					
+					//System.out.print(newm[j][4+k]+" "+newm[j][k]+" ");
+					
+					
 				}
+				//System.out.println();
 				//System.out.println();
 			}
 			
@@ -3170,7 +3241,7 @@ void measureFrequencyChange2a(LinkedList<double[][]> freqList, LinkedList<double
 			ele.calculateStatistics();
 			eleList.add(ele);
 		}
-		System.out.println("done");
+		//System.out.println("done");
 		song.eleList=eleList;
 	}
 	
@@ -3228,6 +3299,112 @@ void measureFrequencyChange2a(LinkedList<double[][]> freqList, LinkedList<double
 		song.eleList=eleList;
 	}
 	
+	
+	public void checkMinimumLengths(LinkedList<int[][]> signals){
+		double x=song.minLength/song.timeStep;
+		for (int i=0; i<signals.size(); i++){
+			int[][] s=signals.get(i);
+			if (s.length<x){
+				signals.remove(i);
+				i--;
+			}
+		}
+		
+	}
+	
+	public void segment(LinkedList<int[][]> signals, boolean force){
+		
+		//This method checks through the discovered elements, and joins together those elements that are separated by less than minGap
+	
+		int i, j, k, jj, loc;
+		
+		double r=song.getMinGap()/song.getTimeStep();
+		
+		for (i=0; i<signals.size()-1; i++){
+			int[][]t1=signals.get(i);			//t1 is the first signal space
+			int[][]t2=signals.get(i+1);		//t2 is the second signal space
+			
+			if ((t2[0][0]-t1[t1.length-1][0]<r)||(force)){			//if the two signals are closer than minGap to each other... then we have to join them up!
+				
+				
+				int newLength=t2[t2.length-1][0]-t1[0][0]+1;
+				
+				int [][]u=new int [newLength][];	//u is the new signal space for our new joined up element
+				
+				for (j=0; j<t1.length; j++){		//this is the easy bit: copy the first signal into the beginning of the new vectors (u, u2)
+					u[j]=new int[t1[j].length];
+					for (k=0; k<u[j].length; k++){u[j][k]=t1[j][k];}
+				}
+				
+				
+				jj=t2[0][0]-t1[0][0];
+				for (j=0; j<t2.length; j++){		//this is also easy: copy the second signal into the end of the new vectors
+					u[jj]=new int[t2[j].length];
+					for (k=0; k<u[jj].length; k++){u[jj][k]=t2[j][k];}
+					jj++;
+				}
+				
+				jj=t2[0][0]-t1[0][0];
+				int bottom1=t1[t1.length-1][1];
+				int bottom2=t2[0][1];
+				int top1=t1[t1.length-1][t1[t1.length-1].length-1];
+				int top2=t2[0][t2[0].length-1];
+				int st, sb;
+				double place;
+				double diff=jj-t1.length;
+				float max2;
+				
+				for (j=t1.length; j<jj; j++){			//now comes the difficult bit: filling in the gap between the two signals (if there is one)
+					u[j]=new int[3];			//make a new vector: we assume there's only one band of signal present!
+					u[j][0]=t1[0][0]+j;					//fill in the time value (easy!)
+					
+					
+					place=(j-t1.length)/diff;
+					st=(int)Math.round(place*top1+(1-place)*top2);
+					sb=(int)Math.round(place*bottom1+(1-place)*bottom2);
+					
+					max2=-1000000;
+					loc=0;
+					for (k=sb; k<=st; k++){
+						if (nout[k][u[j][0]]>max2){
+							max2=nout[k][u[j][0]];
+							loc=k;
+						}
+					}
+					
+					u[j][1]=sb;
+					for (k=loc; k>=sb; k--){
+						if (nout[k][u[j][0]]<max2*0.25){
+							u[j][1]=k;
+							k=sb-1;
+						}
+					}
+					
+					u[j][2]=st;
+					for (k=loc; k<=st; k++){
+						if (nout[k][u[j][0]]<max2*0.25){
+							u[j][2]=k;
+							k=st+1;
+						}
+					}
+					if (u[j][2]==u[j][1]){
+						u[j][2]++;
+						if (u[j][2]>=nout.length){
+							u[j][2]=nout.length-1;
+						}
+						u[j][1]--;
+						if (u[j][1]<0){
+							u[j][1]=0;
+						}
+					}					
+				}
+				signals.remove(i);
+				signals.remove(i);
+				signals.add(i, u);
+				i--;
+			}
+		}
+	}
 	
 	
 	

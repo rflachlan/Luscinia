@@ -31,6 +31,7 @@ public class DatabaseTree2 extends JPanel {
 	private int indc=0;
 	myNode selnode;
 	AnalysisChoose ac;
+	JScrollPane scrollPane;
 	
     public DatabaseTree2(AnalysisChoose ac, DataBaseController dbc) {
         super(new GridLayout(1,0));
@@ -43,7 +44,7 @@ public class DatabaseTree2 extends JPanel {
         tree.getSelectionModel().setSelectionMode(TreeSelectionModel.DISCONTIGUOUS_TREE_SELECTION);
         tree.setShowsRootHandles(true);
 
-        JScrollPane scrollPane = new JScrollPane(tree);
+        scrollPane = new JScrollPane(tree);
         add(scrollPane);
     }
     
@@ -96,6 +97,11 @@ public class DatabaseTree2 extends JPanel {
         treeModel.insertNodeInto(childNode, parent, parent.getChildCount());
         //if (shouldBeVisible) {tree.scrollPathToVisible(new TreePath(childNode.getPath()));}
         return childNode;
+    }
+    
+    
+    public void removeAllNodes() {
+    	rootNode.removeAllChildren();
     }
 
 	

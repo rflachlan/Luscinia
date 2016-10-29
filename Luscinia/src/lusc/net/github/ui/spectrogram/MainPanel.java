@@ -20,9 +20,11 @@ import java.util.*;
 import lusc.net.github.Defaults;
 import lusc.net.github.Element;
 import lusc.net.github.Song;
+import lusc.net.github.Syllable;
 import lusc.net.github.db.DataBaseController;
 import lusc.net.github.ui.SaveImage;
 import lusc.net.github.ui.db.DatabaseView;
+import lusc.net.github.ui.IndividualReview;
 import lusc.net.github.ui.SaveSound;
 import lusc.net.github.ui.SyllableInduction;
 
@@ -51,6 +53,7 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 	JButton automatic=new JButton("Select All");
 	JButton mode=new JButton("Mode: elements");
 	JCheckBox erase=new JCheckBox("Erase");
+	JCheckBox findHarmonics=new JCheckBox("Find Harmonics");
 	JButton update=new JButton("Update spectrograph");
 	JButton defaultSettings=new JButton("Default settings");
 	JButton saveDefault=new JButton("Set default");
@@ -67,7 +70,11 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 	JButton fForwardButton= new JButton(">>");
 	JButton fBackButton=new JButton("<<");
 	
+	JButton detectButton=new JButton("Detect songs");
+	
 	JButton calculateSyllableStructure=new JButton("Calculate syllables automatically");
+	
+	JButton useFileNameForTimeDate=new JButton("Use name for time and date");
 	
 	boolean LISTEN_TO_DROP_DOWNS=true;
 	
@@ -80,7 +87,6 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 	private static String SAVE_IMAGE_COMMAND = "save image";
 	private static String SAVE_NEXT_COMMAND = "save next";
 	private static String SAVE_PREVIOUS_COMMAND = "save prev";
-	private static String PLAY_COMMAND = "play";
 	private static String PLAY_SPEED_COMMAND = "play speed";
 	private static String PLAY_ALL_COMMAND = "play all";
 	private static String PLAY_SCREEN_COMMAND = "play screen";
@@ -91,6 +97,7 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 	private static String AUTOMATIC_COMMAND = "automatic";
 	private static String MODE_COMMAND = "mode";
 	private static String ERASE_COMMAND = "erase";
+	private static String FIND_HARMONICS_COMMAND = "find harmonics";
 	private static String UPDATE_COMMAND = "update";
 	//private static String SELECT_COMMAND = "select";
 	private static String DELETE_COMMAND = "delete";
@@ -126,6 +133,11 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 	private static String REEST_ALL_COMMAND="reestimate all";
 	private static String CALC_SYLL_COMMAND="recalculate syllables automatically";
 	private static String DISPLAY_MODE="display mode";
+	private static String DETECT_COMMAND="detect";
+	private static String STEREOMODE_COMMAND="stereo mode";
+	private static String STEREOMODE_GP_COMMAND="stereo mode GP";
+	private static String SHOW_BEAM_FORM_COMMAND="show beam form";
+	private static String MIC_ARRAY_COMMAND="mic array mode";
 	
 	private static String TIME_UNIT_S="time unit s";
 	private static String TIME_UNIT_MS="time unit ms";
@@ -141,20 +153,28 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 	private static String AXIS_LABEL_FONT_STYLE="axis label font style";
 	private static String FONT_FACE="font face";
 	private static String CLICK_DRAG="click drag";
+	private static String FILE_NAME_TIME_DATE="file name for time and date";
 	
 	String [] brushSizes={"2", "5", "10", "20", "50", "all", "custom"};
 	int[] brushSizeInd={2, 5, 10, 20, 50};
 	JComboBox brush=new JComboBox(brushSizes);
 	
-	String[] playbackSpeeds={"Full", "Half", "Quarter", "Eighth"};
+	String[] playbackSpeeds={"Full", "1/2", "1/3", "1/4", "1/5", "1/10", "1/20"};
 	JComboBox pbSpeed=new JComboBox(playbackSpeeds);
 	
 	String [] windowMethods={"Gaussian", "Hamming", "Hann"};
 	JComboBox windowMethod=new JComboBox(windowMethods);
-	JComboBox delete, deleteS, merge, playSyllable;
+	
+	
+	String[] stereoModes, micArrayModes, stereoModesGP;
+	JComboBox stereoMode, micArray, stereoModeGP;
+	
+	
+	
+	
+	JComboBox delete, deleteS, merge;
 	
 	DefaultComboBoxModel mergeModel=new DefaultComboBoxModel();
-	DefaultComboBoxModel playModel=new DefaultComboBoxModel();
 	DefaultComboBoxModel deleteModel=new DefaultComboBoxModel();
 	DefaultComboBoxModel deleteModelS=new DefaultComboBoxModel();
 	
@@ -167,9 +187,13 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 	JTextField typeField=new JTextField(25);
 	JTextField custom1Field=new JTextField(40);
 	JTextField custom2Field=new JTextField(40);
+	
+	JTextField nameField=new JTextField(25);
+	
 	JTextArea notesField=new JTextArea();
 	JFormattedTextField dynRange, dynM, echoAmt, dynEqual, echoRange, noiseAmt, noiseRange1, noiseRange2, harmonic, minGap, filterCutOff, minLength,
-		maxFreq, frameLength, timeStep, spectPoints, spectOverlap, timeZoom, freqZoom, upperLoop, lowerLoop, gpMaxF, fundJumpSuppression;
+		maxFreq, frameLength, timeStep, spectPoints, spectOverlap, timeZoom, freqZoom, upperLoop, lowerLoop, gpMaxF, fundJumpSuppression,
+		dminfreq,dmaxfreq,dthresh,dwindow;
 	JSlider dynRangeSL, echoAmtSL, dynEqualSL, dynMSL, echoRangeSL, noiseAmtSL, noiseRange1SL, noiseRange2SL, filterCutOffSL, maxFreqSL, 
 		frameLengthSL, timeStepSL, timeZoomSL, freqZoomSL, spectPointsSL, spectOverlapSL;
 	JSpinner timeSpinner, dateSpinner;
@@ -185,7 +209,7 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 	JLabel echoAmtL=new JLabel("Dereverberation (%): ", JLabel.TRAILING);
 	JLabel echoRangeL=new JLabel("Dereverb. range (ms): ", JLabel.TRAILING);
 	
-	JLabel noiseAmtL=new JLabel("Noise removal (dB): ", JLabel.TRAILING);
+	JLabel noiseAmtL=new JLabel("     Noise removal (dB): ", JLabel.TRAILING);
 	JLabel noiseRange1L=new JLabel("NR range1 (ms): ", JLabel.TRAILING);
 	JLabel noiseRange2L=new JLabel("NR range2 (ms): ", JLabel.TRAILING);
 	
@@ -194,7 +218,6 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 	JLabel minGapL=new JLabel("Min. gap (ms): ", JLabel.TRAILING);
 	JLabel minLengthL=new JLabel("Min. length (ms): ", JLabel.TRAILING);
 	JLabel filterCutOffL=new JLabel("High Pass threshold (Hz): ", JLabel.TRAILING); 
-	JLabel playL=new JLabel("    Play syllable:  ", JLabel.TRAILING);
 	JLabel playSpeedL=new JLabel("Playback speed:  ", JLabel.TRAILING);
 	JLabel guidePanelL=new JLabel("Guide panel max. freq.:  ", JLabel.TRAILING);
 	JLabel maxFreqL=new JLabel("Max. frequency (Hz): ", JLabel.TRAILING);
@@ -213,7 +236,7 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 	JLabel typeL=new JLabel("Vocalisation type: ");
 	JLabel custom1L=new JLabel("Custom field 1: ");
 	JLabel custom2L=new JLabel("Custom field 2: ");
-	
+	JLabel nameL=new JLabel("Name: ");
 	JLabel equipmentL=new JLabel("Recording equipment: ");
 	JLabel recordistL=new JLabel("Recordist: ");
 	
@@ -233,6 +256,15 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 	JLabel harmonicL=new JLabel("FF bias: ", JLabel.TRAILING);
 	JLabel jumpSuppressionL=new JLabel("FF jump suppression: ", JLabel.TRAILING);
 	
+	JLabel dminfreqL=new JLabel("Detection minimum frequency (Hz): ");
+	JLabel dmaxfreqL=new JLabel("Detection maximum frequency (Hz): ");
+	JLabel dthreshL=new JLabel("Detection threshold (dB): ");
+	JLabel dwindowL=new JLabel("Detection window length (ms): ");
+	
+	JLabel stereoModeL=new JLabel("Stereo mode:");
+	JLabel stereoModeLGP=new JLabel("GP Stereo mode:");
+	JLabel micArrayModeL=new JLabel("Mic array:");
+	
 	
 	JRadioButton timeUnitS=new JRadioButton("s");
 	JRadioButton timeUnitMS=new JRadioButton("ms");
@@ -244,6 +276,8 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 	JCheckBox showMinorTimeTickMark=new JCheckBox("Show minor time tick-marks");
 	JCheckBox showMajorFreqTickMark=new JCheckBox("Show major frequency tick-marks");
 	JCheckBox showMinorFreqTickMark=new JCheckBox("Show minor frequency tick-marks");
+	
+	JCheckBox showBeamForm=new JCheckBox("Show beam-forming offset");
 	
 	JCheckBox clickDrag=new JCheckBox("Click and drag");
 	
@@ -277,7 +311,7 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 	
 	int xoffset, yoffset, ysize, xsize;
 	
-	JPanel controls, controlPane, settingsPane, measurePane, parameterPane, recordPane, appearancePane;
+	JPanel controls, controlPane, settingsPane, measurePane, parameterPane, recordPane, appearancePane, detectPane;
 	JTabbedPane tabPane;
 	NumberFormat num;
 	String details="null";
@@ -310,13 +344,19 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 	boolean editMode=false;
 	boolean justGuidePanel=false;
 	
+	public int detectMinFreq=2000;
+	public int detectMaxFreq=8000;
+	public double detectThresh=5;
+	public int detectWindow=500;
+	
+		
 	public MainPanel(DataBaseController dbc, int songID, String user, Defaults defaults){
 		this.dbc=dbc;
 		this.songID=songID;
 		this.defaults=defaults;
 		editMode=true;
 		song=dbc.loadSongFromDatabase(songID, 0);
-		song.setUpPlayback();
+		//song.setUpPlayback();
 		//defaults.getSongParameters(song);
 		cloneLists();
 	}
@@ -327,7 +367,7 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		this.defaults=defaults;
 		editMode=true;
 		song=dbc.loadSongFromDatabase(songID, 0);
-		song.setUpPlayback();
+		//song.setUpPlayback();
 		//defaults.getSongParameters(song);
 		cloneLists();
 	}
@@ -339,7 +379,7 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		this.host=host;
 		editMode=true;
 		song=dbc.loadSongFromDatabase(songID, 0);
-		song.setUpPlayback();
+		//song.setUpPlayback();
 		//defaults.getSongParameters(song);
 		cloneLists();
 	}
@@ -354,7 +394,7 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		//editMode=false;
 		editMode=true;
 		song=dbc.loadSongFromDatabase(songID, 0);
-		song.setUpPlayback();
+		//song.setUpPlayback();
 		//defaults.getSongParameters(song);
 		cloneLists();
 	}
@@ -367,9 +407,18 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		this.dbv=dbv;
 		this.justGuidePanel=justGuidePanel;
 		editMode=false;
-		song.setUpPlayback();
+		//song.setUpPlayback();
 		//defaults.getSongParameters(song);
 		cloneLists();
+	}
+	
+	
+	public Dimension getDimensions(){
+		return d;
+	}
+	
+	public void setDimension(Dimension dim){
+		d=dim;
 	}
 	
 	public void getNextSong(boolean direction){
@@ -424,7 +473,12 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		return song;
 	}
 	
-	public void startDrawing(){
+	public void startDrawing(boolean display){
+		System.out.println("STARTING DRAWING! "+song.getName()+" "+song.getIndividualName());
+		
+		
+		System.out.println(song.getTimeStep()+" "+song.getMaxF());
+		
 		this.setLayout(new BorderLayout());
 		this.setFocusable(true);
 		this.addKeyListener(this);
@@ -437,22 +491,34 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		dimSlider=new Dimension(100, 25);
 		
 		if (song.getMaxF()<=0){
-			defaults.getSongParameters(song);
+			
+			if (editMode) {
+				defaults.getSongParameters(song);
+			}
+			else {
+				defaults.getSongParametersRec(song);
+			}
 		}
-		
-		defaults.getMiscellaneousSongParameters(song);
+		if (editMode) {
+			defaults.getMiscellaneousSongParameters(song);
+		}
+		else {
+			defaults.getMiscellaneousSongParametersRec(song);
+		}
 		//System.out.println("maxfhere3: "+song.maxf);
 		song.setFFTParameters();
 		s=new SpectrPane(song, true, false, this);
 		
 		defaults.getParameterViews(s);
 		
-		if (!editMode){
+		if (!editMode) {
+			s.editMode=false;
 			s.syllable=true;
 			song.setBrushType(2);
 			s.viewParameters[2]=true;
 		}
 		
+		defaults.getDetectParams(this);
 		
 		s.clickDrag=defaults.getBooleanProperty("clickdrag", false);
 		guidePanelMaxFrequency=defaults.getIntProperty("GPMAXF", 10000);
@@ -490,6 +556,9 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 			s.setPreferredSize(new Dimension(s.nnx, s.nny));
 			sp.setPreferredSize(new Dimension(x, y));
 		}
+		else{
+			gp.removeMouseListener(gp);
+		}
 		
 		forwardButton.addActionListener(this);
 		backButton.addActionListener(this);
@@ -512,30 +581,36 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		JSplitPane bottomSplitPane=new JSplitPane(JSplitPane.VERTICAL_SPLIT, sp, bPane);
 		bottomSplitPane.setResizeWeight(1);
 		
-		controls=makeControlPanel();
 		
-		JPanel c2=null;
+		
+		//JPanel c2=null;
+		if (justGuidePanel){
+			this.add(bPane);
+		}
 		if (!justGuidePanel){
-			c2=controls;
+			controls=makeControlPanel();
+			//c2=controls;
+		//}
+		
+			JSplitPane mainSplitPane=new JSplitPane(JSplitPane.VERTICAL_SPLIT, controls, bottomSplitPane);
+			mainSplitPane.setDividerLocation(170 + mainSplitPane.getInsets().top);
+			mainSplitPane.setResizeWeight(0);
+			this.add(mainSplitPane, BorderLayout.CENTER);
 		}
 		
-		JSplitPane mainSplitPane=new JSplitPane(JSplitPane.VERTICAL_SPLIT, c2, bottomSplitPane);
-		mainSplitPane.setDividerLocation(170 + mainSplitPane.getInsets().top);
-		mainSplitPane.setResizeWeight(0);
-		this.add(mainSplitPane, BorderLayout.CENTER);
-		
-		f.requestFocus();
-		String s=song.getName();
-		f.setTitle(s);
-		f.getContentPane().add(this);
-		f.pack();
-		f.setVisible(true);
-		f.addWindowListener(this);
+		if (display){
+			f.requestFocus();
+			String s=song.getName();
+			f.setTitle(s);
+			f.getContentPane().add(this);
+			f.pack();
+			f.setVisible(true);
+			f.addWindowListener(this);
+		}
 		started=true;
 		
 	}
-	
-	
+
 	
 	public JPanel makeControlPanel(){
 		
@@ -568,7 +643,6 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		minGapL.setFont(font2);
 		minLengthL.setFont(font2);
 		filterCutOffL.setFont(font);
-		playL.setFont(font);
 		playSpeedL.setFont(font);
 		guidePanelL.setFont(font);
 		maxFreqL.setFont(font);
@@ -586,6 +660,7 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		custom1L.setFont(font);
 		custom2L.setFont(font);
 		equipmentL.setFont(font);
+		nameL.setFont(font);
 		recordistL.setFont(font);
 		dynML.setFont(font);
 		spectOverlapL.setFont(font);
@@ -604,14 +679,81 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		fontStyleL.setFont(font);
 		fontSizeL.setFont(font);
 		fontFaceL.setFont(font);
-	
+		
+		dwindowL.setFont(font);
+		dthreshL.setFont(font);
+		dminfreqL.setFont(font);
+		dmaxfreqL.setFont(font);
 			
-		//COMPONENTS FOR THE CONTROLS TAB
-		playSyllable=new JComboBox(playModel);
-		playSyllable.setMaximumRowCount(30);
-		playSyllable.setActionCommand(PLAY_COMMAND);
-        playSyllable.addActionListener(this);
-		playSyllable.setFont(font);
+		
+		
+		
+		int st=song.getStereo();
+		
+		int stch=song.getStereoMode();
+		
+		System.out.println("STEREO DETAILS: "+st+" "+stch);
+		
+		if (st==2) {
+			String[] stereoOptions2= {"Left", "Right", "Left & Right"};
+			stereoMode=new JComboBox(stereoOptions2);
+			
+			if (stch<stereoOptions2.length) {
+				stereoMode.setSelectedIndex(stch);
+			}
+			
+			stereoMode.setActionCommand(STEREOMODE_COMMAND);
+			stereoMode.addActionListener(this);
+			stereoMode.setFont(font);
+			stereoModeL.setFont(font);
+			
+			String[] stereoOptions2GP= {"Left", "Right"};
+			stereoModeGP=new JComboBox(stereoOptions2GP);
+			
+			stereoModeGP.setSelectedIndex(0);
+
+			
+			stereoModeGP.setActionCommand(STEREOMODE_GP_COMMAND);
+			stereoModeGP.addActionListener(this);
+			stereoModeGP.setFont(font);
+			stereoModeLGP.setFont(font);
+			
+			
+		}
+		if (st==4) {
+			String[] stereoOptions4= {"1", "2", "3", "4", "1&2", "3&4", "1&2&3&4"};
+			stereoMode=new JComboBox(stereoOptions4);
+			
+			if (stch<stereoOptions4.length) {
+				stereoMode.setSelectedIndex(stch);
+			}
+			
+			stereoMode.setActionCommand(STEREOMODE_COMMAND);
+			stereoMode.addActionListener(this);
+			stereoMode.setFont(font);
+			stereoModeL.setFont(font);
+			
+			String[] micArrayModes= {"A", "B", "C", "D"};
+			micArray=new JComboBox(micArrayModes);
+			micArray.setSelectedIndex(0);
+			micArray.setActionCommand(MIC_ARRAY_COMMAND);
+			micArray.addActionListener(this);
+			micArray.setFont(font);
+			micArrayModeL.setFont(font);
+			
+			String[] stereoOptions4GP= {"1", "2", "3", "4"};
+			stereoModeGP=new JComboBox(stereoOptions4GP);
+			
+			stereoModeGP.setSelectedIndex(0);
+			
+			stereoModeGP.setActionCommand(STEREOMODE_GP_COMMAND);
+			stereoModeGP.addActionListener(this);
+			stereoModeGP.setFont(font);
+			stereoModeLGP.setFont(font);
+		}
+		
+		
+		
 		
 		pbSpeed.setActionCommand(PLAY_SPEED_COMMAND);
 		pbSpeed.addActionListener(this);
@@ -636,12 +778,7 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		gpMaxF.setValue(new Double(guidePanelMaxFrequency));
 		gpMaxF.setFont(font);
 		
-		clickDrag.setSelected(s.clickDrag);
-		clickDrag.setActionCommand(CLICK_DRAG);
-		clickDrag.addActionListener(this);
-		clickDrag.setFont(font);
-		
-				
+
 		zoomTimeAll.setActionCommand(ZOOM_TO_ALL_COMMAND);
 		zoomTimeAll.addActionListener(this);
 		zoomTimeAll.setFont(font);
@@ -951,8 +1088,14 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		spectPointsSL.setPreferredSize(dimSlider);
 		SpringLayout slayout1=new SpringLayout();
 		controlPane=new JPanel(slayout1);
-				
-		Spring spring=Spring.constant(1, 10, 20);
+		
+		
+		showBeamForm.setActionCommand(SHOW_BEAM_FORM_COMMAND);
+		showBeamForm.addActionListener(this);
+		showBeamForm.setFont(font);
+			
+		Spring spring=Spring.constant(5, 10, 20);
+		Spring springrev=Spring.constant(-10, -15, -20);
 		controlPane.add(save);
 		controlPane.add(saveSound);
 		controlPane.add(saveImage);
@@ -962,31 +1105,41 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		controlPane.add(playScreen);
 		controlPane.add(playFrom);
 		controlPane.add(stop);
-		controlPane.add(playSyllable);
-		controlPane.add(playL);
+		if ((st==2)||(st==4)){
+			controlPane.add(stereoMode);
+			controlPane.add(stereoModeL);
+			controlPane.add(showBeamForm);
+			controlPane.add(stereoModeGP);
+			controlPane.add(stereoModeLGP);
+		}
+		if (st==4) {
+			controlPane.add(micArray);
+			controlPane.add(micArrayModeL);
+		}
 		controlPane.add(pbSpeed);
 		controlPane.add(playSpeedL);
 		controlPane.add(displayMode);
-		controlPane.add(guidePanelL);
-		controlPane.add(gpMaxF);
-		controlPane.add(clickDrag);
+		
 		
 		slayout1.putConstraint(SpringLayout.WEST, save, spring, SpringLayout.WEST, controlPane);
 		slayout1.putConstraint(SpringLayout.NORTH, save, 2, SpringLayout.NORTH, controlPane);
 		
-		slayout1.putConstraint(SpringLayout.WEST, saveSound, 0, SpringLayout.WEST, save);
-		slayout1.putConstraint(SpringLayout.NORTH, saveSound, spring, SpringLayout.SOUTH, save);
-		
-		slayout1.putConstraint(SpringLayout.WEST, saveImage, 0, SpringLayout.WEST, save);
-		slayout1.putConstraint(SpringLayout.NORTH, saveImage, spring, SpringLayout.SOUTH, saveSound);
-		
 		slayout1.putConstraint(SpringLayout.WEST, saveNext, 0, SpringLayout.WEST, save);
-		slayout1.putConstraint(SpringLayout.NORTH, saveNext, spring, SpringLayout.SOUTH, saveImage);
+		slayout1.putConstraint(SpringLayout.NORTH, saveNext, spring, SpringLayout.SOUTH, save);
 		
 		slayout1.putConstraint(SpringLayout.WEST, savePrev, 0, SpringLayout.WEST, save);
 		slayout1.putConstraint(SpringLayout.NORTH, savePrev, spring, SpringLayout.SOUTH, saveNext);
 		
-		slayout1.putConstraint(SpringLayout.WEST, playAll, spring, SpringLayout.EAST, save);
+		slayout1.putConstraint(SpringLayout.WEST, saveSound, spring, SpringLayout.EAST, save);
+		slayout1.putConstraint(SpringLayout.NORTH, saveSound, 2, SpringLayout.NORTH, controlPane);
+		
+		slayout1.putConstraint(SpringLayout.WEST, saveImage, 0, SpringLayout.WEST, saveSound);
+		slayout1.putConstraint(SpringLayout.NORTH, saveImage, spring, SpringLayout.SOUTH, saveSound);
+		
+		slayout1.putConstraint(SpringLayout.WEST, displayMode, 0, SpringLayout.WEST, saveSound);
+		slayout1.putConstraint(SpringLayout.NORTH, displayMode,spring, SpringLayout.SOUTH, saveImage);
+		
+		slayout1.putConstraint(SpringLayout.WEST, playAll, spring, SpringLayout.EAST, displayMode);
 		slayout1.putConstraint(SpringLayout.NORTH, playAll, 2, SpringLayout.NORTH, controlPane);
 		
 		slayout1.putConstraint(SpringLayout.WEST, playScreen, 0, SpringLayout.WEST, playAll);
@@ -995,40 +1148,64 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		slayout1.putConstraint(SpringLayout.WEST, playFrom, 0, SpringLayout.WEST, playAll);
 		slayout1.putConstraint(SpringLayout.NORTH, playFrom, spring, SpringLayout.SOUTH, playScreen);
 		
-		//slayout1.putConstraint(SpringLayout.WEST, stop, 0, SpringLayout.WEST, playAll);
-		//slayout1.putConstraint(SpringLayout.NORTH, stop, spring, SpringLayout.SOUTH, playFrom);
+		//slayout1.putConstraint(SpringLayout.WEST, stop, spring, SpringLayout.EAST, playScreen);
+		//slayout1.putConstraint(SpringLayout.NORTH, stop, 2, SpringLayout.NORTH, controlPane);
 		
-		slayout1.putConstraint(SpringLayout.WEST, stop, spring, SpringLayout.EAST, playScreen);
-		slayout1.putConstraint(SpringLayout.NORTH, stop, 2, SpringLayout.NORTH, controlPane);
-			
-		//slayout1.putConstraint(SpringLayout.WEST, playL, spring, SpringLayout.EAST, playScreen);
-		//slayout1.putConstraint(SpringLayout.NORTH, playL, 5, SpringLayout.NORTH, controlPane);
+		slayout1.putConstraint(SpringLayout.WEST, stop, 0, SpringLayout.WEST, playAll);
+		slayout1.putConstraint(SpringLayout.NORTH, stop, spring, SpringLayout.SOUTH, playFrom);
+
+				
+		//slayout1.putConstraint(SpringLayout.WEST, playSpeedL, 0, SpringLayout.WEST, stop);
+		//slayout1.putConstraint(SpringLayout.NORTH, playSpeedL, spring, SpringLayout.SOUTH, stop);
 		
-		slayout1.putConstraint(SpringLayout.WEST, playL, 0, SpringLayout.WEST, stop);
-		slayout1.putConstraint(SpringLayout.NORTH, playL, spring, SpringLayout.SOUTH, stop);
-		
-		slayout1.putConstraint(SpringLayout.WEST, playSyllable, spring, SpringLayout.EAST, playL);
-		slayout1.putConstraint(SpringLayout.NORTH, playSyllable, spring, SpringLayout.SOUTH, stop);
-		
-		slayout1.putConstraint(SpringLayout.WEST, playSpeedL, 0, SpringLayout.WEST, stop);
-		slayout1.putConstraint(SpringLayout.NORTH, playSpeedL, 0, SpringLayout.NORTH, playFrom);
+		slayout1.putConstraint(SpringLayout.WEST, playSpeedL, spring, SpringLayout.EAST, playScreen);
+		slayout1.putConstraint(SpringLayout.NORTH, playSpeedL, 7, SpringLayout.NORTH, controlPane);
 		
 		slayout1.putConstraint(SpringLayout.WEST, pbSpeed, spring, SpringLayout.EAST, playSpeedL);
-		slayout1.putConstraint(SpringLayout.NORTH, pbSpeed, 0, SpringLayout.NORTH, playFrom);
+		slayout1.putConstraint(SpringLayout.NORTH, pbSpeed, -5, SpringLayout.NORTH, playSpeedL);
 		
-		slayout1.putConstraint(SpringLayout.WEST, displayMode, spring, SpringLayout.EAST, pbSpeed);
-		slayout1.putConstraint(SpringLayout.NORTH, displayMode,2, SpringLayout.NORTH, controlPane);
 		
-		slayout1.putConstraint(SpringLayout.WEST, guidePanelL, 0, SpringLayout.WEST, displayMode);
-		slayout1.putConstraint(SpringLayout.NORTH, guidePanelL, spring, SpringLayout.SOUTH, displayMode);
 		
-		slayout1.putConstraint(SpringLayout.WEST, gpMaxF, spring, SpringLayout.EAST, guidePanelL);
-		slayout1.putConstraint(SpringLayout.NORTH, gpMaxF, spring, SpringLayout.SOUTH, displayMode);
+		if (st==4){
+			slayout1.putConstraint(SpringLayout.WEST, stereoModeL, spring, SpringLayout.EAST, pbSpeed);
+			slayout1.putConstraint(SpringLayout.NORTH, stereoModeL, 2, SpringLayout.NORTH, controlPane);
+			slayout1.putConstraint(SpringLayout.WEST, stereoMode, 5, SpringLayout.EAST, stereoModeL);
+			slayout1.putConstraint(SpringLayout.NORTH, stereoMode, 0, SpringLayout.NORTH, stereoModeL);
+						
+			
+			slayout1.putConstraint(SpringLayout.WEST, micArray, 0, SpringLayout.WEST, stereoMode);
+			slayout1.putConstraint(SpringLayout.NORTH, micArray, spring, SpringLayout.SOUTH, stereoMode);
+			slayout1.putConstraint(SpringLayout.EAST, micArrayModeL, -5, SpringLayout.WEST, micArray);
+			slayout1.putConstraint(SpringLayout.NORTH, micArrayModeL, 0, SpringLayout.NORTH, micArray);
+			
+			slayout1.putConstraint(SpringLayout.WEST, stereoModeGP, 0, SpringLayout.WEST, stereoMode);
+			slayout1.putConstraint(SpringLayout.NORTH, stereoModeGP, spring, SpringLayout.SOUTH, micArray);
+			slayout1.putConstraint(SpringLayout.EAST, stereoModeLGP, -5, SpringLayout.WEST, stereoModeGP);
+			slayout1.putConstraint(SpringLayout.NORTH, stereoModeLGP, 0, SpringLayout.NORTH, stereoModeGP);
+			
+			
+			slayout1.putConstraint(SpringLayout.WEST, showBeamForm, spring, SpringLayout.EAST, stereoMode);
+			slayout1.putConstraint(SpringLayout.NORTH, showBeamForm, 2, SpringLayout.NORTH, controlPane);
+		}
 		
-		slayout1.putConstraint(SpringLayout.WEST, clickDrag, 0, SpringLayout.WEST, gpMaxF);
-		slayout1.putConstraint(SpringLayout.NORTH, clickDrag, spring, SpringLayout.SOUTH, gpMaxF);
+		else if (st==2){
+			slayout1.putConstraint(SpringLayout.WEST, stereoModeL, spring, SpringLayout.EAST, pbSpeed);
+			slayout1.putConstraint(SpringLayout.NORTH, stereoModeL, 2, SpringLayout.NORTH, controlPane);
+			slayout1.putConstraint(SpringLayout.WEST, stereoMode, spring, SpringLayout.EAST, stereoModeL);
+			slayout1.putConstraint(SpringLayout.NORTH, stereoMode, 0, SpringLayout.NORTH, stereoModeL);
+						
+			slayout1.putConstraint(SpringLayout.WEST, stereoModeLGP, 0, SpringLayout.WEST, stereoModeL);
+			slayout1.putConstraint(SpringLayout.NORTH, stereoModeLGP, spring, SpringLayout.SOUTH, stereoMode);
+			slayout1.putConstraint(SpringLayout.WEST, stereoModeGP, spring, SpringLayout.EAST, stereoModeLGP);
+			slayout1.putConstraint(SpringLayout.NORTH, stereoModeGP, 0, SpringLayout.NORTH, stereoModeLGP);
+			
+			slayout1.putConstraint(SpringLayout.WEST, showBeamForm, spring, SpringLayout.EAST, stereoMode);
+			slayout1.putConstraint(SpringLayout.NORTH, showBeamForm, 2, SpringLayout.NORTH, controlPane);
+		}
 		
-		slayout1.putConstraint(SpringLayout.SOUTH, controlPane, spring, SpringLayout.SOUTH, savePrev);
+		
+		
+		slayout1.putConstraint(SpringLayout.SOUTH, controlPane, spring, SpringLayout.SOUTH, stop);
 
 		SpringLayout slayout2=new SpringLayout();
 		settingsPane=new JPanel(slayout2);
@@ -1089,6 +1266,8 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		settingsPane.add(noiseRange2L);
 		settingsPane.add(noiseRange2);
 		settingsPane.add(noiseRange2SL);
+		settingsPane.add(guidePanelL);
+		settingsPane.add(gpMaxF);
 		
 		slayout2.putConstraint(SpringLayout.WEST, update, spring, SpringLayout.WEST, settingsPane);
 		slayout2.putConstraint(SpringLayout.NORTH, update, 2, SpringLayout.NORTH, settingsPane);
@@ -1261,6 +1440,12 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		slayout2.putConstraint(SpringLayout.WEST, noiseRange2SL, 5, SpringLayout.EAST, noiseRange2);
 		slayout2.putConstraint(SpringLayout.NORTH, noiseRange2SL, 0, SpringLayout.NORTH, noiseRange2);
 		
+		slayout2.putConstraint(SpringLayout.WEST, gpMaxF, 0, SpringLayout.WEST, noiseAmt);
+		slayout2.putConstraint(SpringLayout.NORTH, gpMaxF, spring, SpringLayout.SOUTH, noiseRange2);
+		
+		slayout2.putConstraint(SpringLayout.EAST, guidePanelL, -5, SpringLayout.WEST, gpMaxF);
+		slayout2.putConstraint(SpringLayout.NORTH, guidePanelL, 0, SpringLayout.NORTH, gpMaxF);
+		
 		
 		
 		//slayout2.putConstraint(SpringLayout.SOUTH, settingsPane, spring, SpringLayout.SOUTH, setMaxDyn);
@@ -1357,6 +1542,10 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
         erase.setActionCommand(ERASE_COMMAND);
         erase.addActionListener(this);
         
+        findHarmonics.setFont(font2);
+        findHarmonics.setActionCommand(FIND_HARMONICS_COMMAND);
+        findHarmonics.addActionListener(this);
+        
 		jumpSuppressionL.setLabelFor(fundJumpSuppression);
 		fundJumpSuppression=new JFormattedTextField(num);
 		fundJumpSuppression.setFont(font2);
@@ -1401,6 +1590,46 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		lowerLoop.addPropertyChangeListener("value", this);
 		lowerLoop.setValue(new Double(song.getLowerLoop()));
 		lowerLoop.setFont(font);
+		
+		dwindowL.setLabelFor(dwindow);
+		dwindow=new JFormattedTextField(num);
+		dwindow.setColumns(6);
+		dwindow.addPropertyChangeListener("value", this);
+		dwindow.setValue(new Integer(detectWindow));
+		dwindow.setFont(font);
+		
+		dthreshL.setLabelFor(dthresh);
+		dthresh=new JFormattedTextField(num);
+		dthresh.setColumns(6);
+		dthresh.addPropertyChangeListener("value", this);
+		dthresh.setValue(new Double(detectThresh));
+		dthresh.setFont(font);
+		
+		dminfreqL.setLabelFor(dminfreq);
+		dminfreq=new JFormattedTextField(num);
+		dminfreq.setColumns(6);
+		dminfreq.addPropertyChangeListener("value", this);
+		dminfreq.setValue(new Double(detectMinFreq));
+		dminfreq.setFont(font);
+		
+		dmaxfreqL.setLabelFor(dthresh);
+		dmaxfreq=new JFormattedTextField(num);
+		dmaxfreq.setColumns(6);
+		dmaxfreq.addPropertyChangeListener("value", this);
+		dmaxfreq.setValue(new Double(detectMaxFreq));
+		dmaxfreq.setFont(font);
+		
+		detectButton.setMnemonic(KeyEvent.VK_C);
+		detectButton.setFont(font2);
+		detectButton.setDisplayedMnemonicIndex(0);
+		detectButton.setActionCommand(DETECT_COMMAND);
+		detectButton.addActionListener(this);
+		
+		clickDrag.setSelected(s.clickDrag);
+		clickDrag.setActionCommand(CLICK_DRAG);
+		clickDrag.addActionListener(this);
+		clickDrag.setFont(font);
+		
 		
 		viewSignal.setSelected(s.viewParameters[0]);
 		viewSignal.setActionCommand(SIGNAL_COMMAND);
@@ -1485,12 +1714,13 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		if (editMode){
 			measurePane.add(mode);
 			measurePane.add(erase);
+			measurePane.add(findHarmonics);
 			measurePane.add(undo);
 			measurePane.add(redo);
 			measurePane.add(automatic);
 			measurePane.add(reestimate);
-			measurePane.add(reestAll);
-			measurePane.add(calculateSyllableStructure);
+			//measurePane.add(reestAll);
+			//measurePane.add(calculateSyllableStructure);
 			//measurePane.add(selectModel);
 		
 			measurePane.add(delete);
@@ -1513,11 +1743,14 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 			measurePane.add(lowerLoopL);
 			measurePane.add(jumpSuppressionL);
 			measurePane.add(fundJumpSuppression);
+			measurePane.add(clickDrag);
 		}
 		else{
+			measurePane.add(erase);
 			measurePane.add(undo);
 			measurePane.add(redo);
 			measurePane.add(automatic);
+			measurePane.add(clickDrag);
 		}
 		
 		parameterPane.add(viewElements);
@@ -1538,6 +1771,21 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		parameterPane.add(viewTrillAmp);
 		parameterPane.add(viewTrillRate);
 		parameterPane.add(viewReverb);
+		SpringLayout slayout7=new SpringLayout();
+		if (!editMode){
+			
+			detectPane=new JPanel(slayout7);
+			detectPane.add(dminfreqL);
+			detectPane.add(dmaxfreqL);
+			detectPane.add(dminfreq);
+			detectPane.add(dmaxfreq);
+			detectPane.add(dwindowL);
+			detectPane.add(dwindow);
+			detectPane.add(dthreshL);
+			detectPane.add(dthresh);
+			detectPane.add(detectButton);
+		}
+		
 		
 		if (editMode){
 			slayout3.putConstraint(SpringLayout.WEST, mode, spring, SpringLayout.WEST, measurePane);
@@ -1546,28 +1794,34 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 			slayout3.putConstraint(SpringLayout.WEST, erase, 0, SpringLayout.WEST, mode);
 			slayout3.putConstraint(SpringLayout.NORTH, erase, spring, SpringLayout.SOUTH, mode);
 			
-			slayout3.putConstraint(SpringLayout.WEST, undo, 0, SpringLayout.WEST, mode);
-			slayout3.putConstraint(SpringLayout.NORTH, undo, spring, SpringLayout.SOUTH, erase);
+			slayout3.putConstraint(SpringLayout.WEST, findHarmonics, 0, SpringLayout.WEST, mode);
+			slayout3.putConstraint(SpringLayout.NORTH, findHarmonics, spring, SpringLayout.SOUTH, erase);
+			
+			slayout3.putConstraint(SpringLayout.WEST, clickDrag, 0, SpringLayout.WEST, mode);
+			slayout3.putConstraint(SpringLayout.NORTH, clickDrag, spring, SpringLayout.SOUTH, findHarmonics);
+			
+			slayout3.putConstraint(SpringLayout.WEST, undo, spring, SpringLayout.EAST, mode);
+			slayout3.putConstraint(SpringLayout.NORTH, undo,  2, SpringLayout.NORTH, measurePane);
 		
-			slayout3.putConstraint(SpringLayout.WEST, redo, 0, SpringLayout.WEST, mode);
+			slayout3.putConstraint(SpringLayout.WEST, redo, 0, SpringLayout.WEST, undo);
 			slayout3.putConstraint(SpringLayout.NORTH, redo, spring, SpringLayout.SOUTH, undo);
 		
 			//slayout3.putConstraint(SpringLayout.WEST, selectModel, spring, SpringLayout.EAST, mode);
 			//slayout3.putConstraint(SpringLayout.NORTH, selectModel, 2, SpringLayout.NORTH, measurePane);
 		
-			slayout3.putConstraint(SpringLayout.WEST, automatic, spring, SpringLayout.EAST, mode);
-			slayout3.putConstraint(SpringLayout.NORTH, automatic, 2, SpringLayout.NORTH, measurePane);
+			slayout3.putConstraint(SpringLayout.WEST, automatic, 0, SpringLayout.WEST, undo);
+			slayout3.putConstraint(SpringLayout.NORTH, automatic, spring, SpringLayout.SOUTH, redo);
 		
 			slayout3.putConstraint(SpringLayout.WEST, reestimate, 0, SpringLayout.WEST, automatic);
 			slayout3.putConstraint(SpringLayout.NORTH, reestimate, spring, SpringLayout.SOUTH, automatic);
 		
-			slayout3.putConstraint(SpringLayout.WEST, reestAll, 0, SpringLayout.WEST, automatic);
-			slayout3.putConstraint(SpringLayout.NORTH, reestAll, spring, SpringLayout.SOUTH, reestimate);
+			//slayout3.putConstraint(SpringLayout.WEST, reestAll, 0, SpringLayout.WEST, automatic);
+			//slayout3.putConstraint(SpringLayout.NORTH, reestAll, spring, SpringLayout.SOUTH, reestimate);
 		
-			slayout3.putConstraint(SpringLayout.WEST, calculateSyllableStructure, 0, SpringLayout.WEST, automatic);
-			slayout3.putConstraint(SpringLayout.NORTH, calculateSyllableStructure, spring, SpringLayout.SOUTH, reestAll);
+			//slayout3.putConstraint(SpringLayout.WEST, calculateSyllableStructure, 0, SpringLayout.WEST, automatic);
+			//slayout3.putConstraint(SpringLayout.NORTH, calculateSyllableStructure, spring, SpringLayout.SOUTH, reestAll);
 		
-			slayout3.putConstraint(SpringLayout.WEST, deleteLE, spring, SpringLayout.EAST, calculateSyllableStructure);
+			slayout3.putConstraint(SpringLayout.WEST, deleteLE, spring, SpringLayout.EAST, reestimate);
 			slayout3.putConstraint(SpringLayout.NORTH, deleteLE, 10, SpringLayout.NORTH, measurePane);
 		
 			slayout3.putConstraint(SpringLayout.WEST, delete, 5, SpringLayout.EAST, deleteLE);
@@ -1578,6 +1832,8 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		
 			slayout3.putConstraint(SpringLayout.WEST, merge, 0, SpringLayout.WEST, delete);
 			slayout3.putConstraint(SpringLayout.NORTH, merge, spring, SpringLayout.SOUTH, deleteS);
+			
+			
 		
 			slayout3.putConstraint(SpringLayout.EAST, deleteLS, -5, SpringLayout.WEST, deleteS);
 			slayout3.putConstraint(SpringLayout.NORTH, deleteLS, 2, SpringLayout.NORTH, deleteS);
@@ -1628,19 +1884,28 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 			slayout3.putConstraint(SpringLayout.NORTH, minLengthL, 0, SpringLayout.NORTH, minLength);
 			
 			//slayout3.putConstraint(SpringLayout.SOUTH, parameterPane, spring, SpringLayout.SOUTH, brushS);
-			slayout3.putConstraint(SpringLayout.SOUTH, measurePane, spring, SpringLayout.SOUTH, calculateSyllableStructure);
+			//slayout3.putConstraint(SpringLayout.SOUTH, measurePane, spring, SpringLayout.SOUTH, calculateSyllableStructure);
+			slayout3.putConstraint(SpringLayout.SOUTH, measurePane, spring, SpringLayout.SOUTH, reestimate);
 		}
 		else{
-			slayout3.putConstraint(SpringLayout.WEST, undo, spring, SpringLayout.WEST, measurePane);
-			slayout3.putConstraint(SpringLayout.NORTH, undo, 2, SpringLayout.NORTH, measurePane);
+			slayout3.putConstraint(SpringLayout.WEST, erase, spring, SpringLayout.WEST, measurePane);
+			slayout3.putConstraint(SpringLayout.NORTH, erase, 2, SpringLayout.NORTH, measurePane);
+			
+			slayout3.putConstraint(SpringLayout.WEST, undo, 0, SpringLayout.WEST, erase);
+			slayout3.putConstraint(SpringLayout.NORTH, undo, spring, SpringLayout.SOUTH, erase);
 		
 			slayout3.putConstraint(SpringLayout.WEST, redo, 0, SpringLayout.WEST, undo);
 			slayout3.putConstraint(SpringLayout.NORTH, redo, spring, SpringLayout.SOUTH, undo);
 		
 			slayout3.putConstraint(SpringLayout.WEST, automatic, spring, SpringLayout.EAST, undo);
 			slayout3.putConstraint(SpringLayout.NORTH, automatic, 2, SpringLayout.NORTH, measurePane);
+			
+			slayout3.putConstraint(SpringLayout.WEST, clickDrag, 0, SpringLayout.WEST, automatic);
+			slayout3.putConstraint(SpringLayout.NORTH, clickDrag, spring, SpringLayout.SOUTH, automatic);
+	
 		
 		}
+		
 		slayout4.putConstraint(SpringLayout.WEST, viewElements, spring, SpringLayout.WEST, parameterPane);
 		slayout4.putConstraint(SpringLayout.NORTH, viewElements, 5, SpringLayout.NORTH, parameterPane);
 		
@@ -1698,9 +1963,43 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		
 		slayout4.putConstraint(SpringLayout.SOUTH, parameterPane, spring, SpringLayout.SOUTH, viewMedianFreqChange);
 		
+		if (!editMode) {
+			slayout7.putConstraint(SpringLayout.WEST, detectButton, spring, SpringLayout.WEST, detectPane);
+			slayout7.putConstraint(SpringLayout.NORTH, detectButton, 5, SpringLayout.NORTH, detectPane);
+			
+			slayout7.putConstraint(SpringLayout.WEST, dwindowL, 0, SpringLayout.WEST, detectButton);
+			slayout7.putConstraint(SpringLayout.NORTH, dwindowL, 0, SpringLayout.SOUTH, detectButton);
+			
+			slayout7.putConstraint(SpringLayout.WEST, dthreshL, 0, SpringLayout.WEST, detectButton);
+			slayout7.putConstraint(SpringLayout.NORTH, dthreshL, spring, SpringLayout.SOUTH, dwindowL);
+			
+			slayout7.putConstraint(SpringLayout.WEST, dmaxfreqL, 0, SpringLayout.WEST, detectButton);
+			slayout7.putConstraint(SpringLayout.NORTH, dmaxfreqL, spring, SpringLayout.SOUTH, dthreshL);
+			
+			slayout7.putConstraint(SpringLayout.WEST, dminfreqL, 0, SpringLayout.WEST, detectButton);
+			slayout7.putConstraint(SpringLayout.NORTH, dminfreqL, spring, SpringLayout.SOUTH, dmaxfreqL);
+			
+			slayout7.putConstraint(SpringLayout.WEST, dwindow, 5, SpringLayout.EAST, dwindowL);
+			slayout7.putConstraint(SpringLayout.SOUTH, dwindow, 0, SpringLayout.SOUTH, dwindowL);
+			
+			slayout7.putConstraint(SpringLayout.WEST, dthresh, 5, SpringLayout.EAST, dthreshL);
+			slayout7.putConstraint(SpringLayout.SOUTH, dthresh, 0, SpringLayout.SOUTH, dthreshL);
+			
+			slayout7.putConstraint(SpringLayout.WEST, dmaxfreq, 5, SpringLayout.EAST, dmaxfreqL);
+			slayout7.putConstraint(SpringLayout.SOUTH, dmaxfreq, 0, SpringLayout.SOUTH, dmaxfreqL);
+			
+			slayout7.putConstraint(SpringLayout.WEST, dminfreq, 5, SpringLayout.EAST, dminfreqL);
+			slayout7.putConstraint(SpringLayout.SOUTH, dminfreq, 0, SpringLayout.SOUTH, dminfreqL);
+			
+		}
+		
+		
 		tabPane.addTab("Measurements", measurePane);
 		if (editMode){	
 			tabPane.addTab("Parameters", parameterPane);
+		}
+		if (!editMode) {
+			tabPane.addTab("Detect", detectPane);
 		}
 		SpringLayout slayout5=new SpringLayout();
 		recordPane=new JPanel(slayout5);
@@ -1722,11 +2021,11 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		cal.setTimeInMillis(song.getTDate());
 		Date initTime = cal.getTime();
 		
-		cal.add(Calendar.HOUR, 24);
+		//cal.add(Calendar.HOUR, 24);
 					
-		cal.add(Calendar.HOUR, -48);
+		//cal.add(Calendar.HOUR, -48);
 		
-		cal.setTimeInMillis(song.getTDate());
+		//cal.setTimeInMillis(song.getTDate());
 		
 		timeModel = new SpinnerDateModel(initTime, earliestDate, latestDate, Calendar.MILLISECOND);
 		timeSpinner=new JSpinner(timeModel);
@@ -1759,11 +2058,14 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		notesField.setFont(font2);
 		notesField.setBorder(BorderFactory.createLoweredBevelBorder());
 		notesField.setText(song.getNotes());
-		notesField.setColumns(20);
-		notesField.setRows(6);
+		notesField.setColumns(30);
+		notesField.setRows(4);
 		notesField.setLineWrap(true);
 		notesField.setWrapStyleWord(true);
 		notesField.setDragEnabled(true);
+		
+		nameField.setFont(font2);
+		nameField.setText(song.getName());
 		
 		equipmentField.setFont(font2);
 		equipmentField.setText(song.getRecordEquipment());
@@ -1771,6 +2073,13 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		recordistField.setFont(font2);
 		recordistField.setText(song.getRecordist());
 		
+		
+		useFileNameForTimeDate.setActionCommand(FILE_NAME_TIME_DATE);
+		useFileNameForTimeDate.addActionListener(this);
+		useFileNameForTimeDate.setFont(font2);
+		
+		recordPane.add(nameL);
+		recordPane.add(nameField);
 		recordPane.add(previousDetails);
 		recordPane.add(timeL);
 		recordPane.add(timeSpinner);
@@ -1792,14 +2101,17 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		recordPane.add(notesL);
 		recordPane.add(equipmentL);
 		recordPane.add(recordistL);
+		recordPane.add(useFileNameForTimeDate);
 		
 		
+		slayout5.putConstraint(SpringLayout.EAST, nameL, 0, SpringLayout.EAST, timeL);
+		slayout5.putConstraint(SpringLayout.NORTH, nameL, 5, SpringLayout.NORTH, recordPane);
 		
-		slayout5.putConstraint(SpringLayout.WEST, timeL, spring, SpringLayout.WEST, recordPane);
-		slayout5.putConstraint(SpringLayout.NORTH, timeL, 5, SpringLayout.NORTH, recordPane);
+		slayout5.putConstraint(SpringLayout.WEST, nameField, spring, SpringLayout.EAST, nameL);
+		slayout5.putConstraint(SpringLayout.NORTH, nameField, 0, SpringLayout.NORTH, nameL);
 		
-		slayout5.putConstraint(SpringLayout.WEST, timeSpinner, spring, SpringLayout.EAST, timeL);
-		slayout5.putConstraint(SpringLayout.NORTH, timeSpinner, 0, SpringLayout.NORTH, timeL);
+		slayout5.putConstraint(SpringLayout.WEST, timeSpinner, 0, SpringLayout.WEST, nameField);
+		slayout5.putConstraint(SpringLayout.NORTH, timeSpinner, spring, SpringLayout.SOUTH, nameField);
 		
 		slayout5.putConstraint(SpringLayout.WEST, dateSpinner, 0, SpringLayout.WEST, timeSpinner);
 		slayout5.putConstraint(SpringLayout.NORTH, dateSpinner, spring, SpringLayout.SOUTH, timeSpinner);
@@ -1809,6 +2121,9 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		
 		slayout5.putConstraint(SpringLayout.WEST, typeField, 0, SpringLayout.WEST, timeSpinner);
 		slayout5.putConstraint(SpringLayout.NORTH, typeField, spring, SpringLayout.SOUTH, qualityField);
+		
+		slayout5.putConstraint(SpringLayout.WEST, timeL, spring, SpringLayout.WEST, recordPane);
+		slayout5.putConstraint(SpringLayout.NORTH, timeL, 0, SpringLayout.NORTH, timeSpinner);
 		
 		slayout5.putConstraint(SpringLayout.EAST, dateL, spring, SpringLayout.WEST, dateSpinner);
 		slayout5.putConstraint(SpringLayout.NORTH, dateL, 0, SpringLayout.NORTH, dateSpinner);
@@ -1859,6 +2174,9 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		
 		slayout5.putConstraint(SpringLayout.WEST, previousDetails, 0, SpringLayout.WEST, notesField);
 		slayout5.putConstraint(SpringLayout.NORTH, previousDetails, spring, SpringLayout.SOUTH, notesField);
+		
+		slayout5.putConstraint(SpringLayout.WEST, useFileNameForTimeDate, 0, SpringLayout.WEST, notesField);
+		slayout5.putConstraint(SpringLayout.NORTH, useFileNameForTimeDate, spring, SpringLayout.SOUTH, previousDetails);
 		
 		slayout5.putConstraint(SpringLayout.SOUTH, recordPane, spring, SpringLayout.SOUTH, custom2Field);
 		
@@ -2125,11 +2443,11 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 	}
 	
 	public void deleteSyllable(int ind){
-		
-		if (ind==song.getNumSyllables()){
+		int ns=song.getSyllList().size();
+		if (ind==ns){
 			song.clearSyllables();
 		}
-		else if (ind<song.getNumSyllables()){
+		else if (ind<ns){
 			song.removeSyllable(ind);
 		}
 		updateSyllableLists();
@@ -2154,43 +2472,17 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 				if (ind>-2){
 					deleteElement(ind2);
 				}
-				/*
-				delete.setSelectedIndex(0);
-				if (ind>=0){
-					deleteElement(ind2);
-				}
-				if (ind==-1){
-					song.clearElements();
-				}
-				s.paintFound();
-				gp.draw();
-				updateElementLists();
-				cloneLists();
-				redo.setEnabled(false);
-				*/
+
 			}
 			if (DELETES_COMMAND.equals(command)) {
 				player=false;
 				JComboBox cb = (JComboBox)e.getSource();
 				int ind=cb.getSelectedIndex()-2;
-				int ind2=song.getNumSyllables()-ind-1;
+				int ind2=song.getSyllList().size()-ind-1;
 				if (ind>-2){
 					deleteSyllable(ind2);
 				}
-				/*
-				if (ind>=0){
-					deleteSyllable(ind2);
-				}
-				if (ind==-1){
-					song.clearSyllables();
-				}
-				updateSyllableLists();
-				player=true;
-				s.paintFound();
-				gp.draw();
-				cloneLists();
-				redo.setEnabled(false);
-				*/
+
 			}
 			if (MERGE_COMMAND.equals(command)) {
 				JComboBox cb = (JComboBox)e.getSource();
@@ -2208,53 +2500,41 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 				int p=0;
 				if (ind==0){p=1;}
 				else if (ind==1){p=2;}
-				else if (ind==2){p=4;}
-				else if (ind==3){p=8;}
+				else if (ind==2){p=3;}
+				else if (ind==3){p=4;}
+				else if (ind==4){p=5;}
+				else if (ind==5){p=10;}
+				else if (ind==6){p=20;}
 				song.setPlaybackDivider(p);
-				song.setUpPlayback();
+				//song.setUpPlayback();
 			}
-			if (PLAY_COMMAND.equals(command)) {
-				if ((player)&&(song.getNumSyllables()>0)){
-					JComboBox cb = (JComboBox)e.getSource();
-					int ind=cb.getSelectedIndex()-1;
-					ind=song.getNumSyllables()-ind-1;
-					int[] syll=(int[])song.getSyllable(ind);
-					double[] x=song.prepPlayback(syll);
-					drawProgress(x[0], x[1], song.getPlaybackDivider());
-					
-					//I'VE MOVED MOST OF THE BELOW TO SONG.PREPPLAYBACK. CHECK FOR BUGS!
-					/*int a=0;
-					int b=0;
-					ind=song.getNumSyllables()-ind-1;
-					int[] syll=(int[])song.getSyllable(ind);
-					
-					
-					
-					
-					if (song.getSizeInBits()<=16){
-						int p1=syll[0]-7;
-						if (p1<0){p1=0;}
-						int p2=syll[1]+7;
-						if (p2>=song.getOverallLength()){
-							p2=song.getOverallLength()-1;
-						}
-						a=(int)(p1*Math.round(song.getSampleRate()*song.getStereo()*0.002));
-						b=(int)(p2*Math.round(song.getSampleRate()*song.getStereo()*0.002));
-					}
-					if(song.getRawData.length<=b){
-						b=a;
-					}		
-					
-					song.playSound(a, b);
-					
-					drawProgress(a/song.rawData.length, b/song.rawData.length, song.playbackDivider);
-					*/
-				}
-			}
+
 			if (CLICK_DRAG.equals(command)){
 				s.setClickDrag(clickDrag.isSelected());
 				
 			}
+			
+			
+			
+			if (STEREOMODE_COMMAND.equals(command)) {
+				song.setStereoMode(stereoMode.getSelectedIndex());
+				replot();
+				
+			}
+			
+			if (STEREOMODE_GP_COMMAND.equals(command)) {
+				song.setStereoModeGP(stereoModeGP.getSelectedIndex());
+				s.makeGuidePanel(d.getWidth()-20, guidePanelMaxFrequency);
+				gp.draw();
+				
+			}
+			
+			if (MIC_ARRAY_COMMAND.equals(command)) {
+				song.setMicArrayMode(micArray.getSelectedIndex());
+				replot();
+			}
+			
+			
 		}
 		
 		if (DISPLAY_MODE.equals(command)) {
@@ -2274,20 +2554,38 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 				s.paintFrame();
 				s.paintFound();
 			}
-			else{
-				s.displayMode=0;
-				displayMode.setText("Display mode: spectrogram");
-				if (s.syllable=false){
+			else if (s.displayMode==2) {
+				s.displayMode=3;
+				displayMode.setText("Display mode: enhanced spec");
+				if (s.syllable==false){
 					resetBrush();
 					brush.setEditable(true);
 					brush.setEnabled(true);
 				}
-				s.updatePixelVals(s.im);
+				song.spectEnhance=true;
+				s.relocate(s.location);
+				//s.updatePixelVals(s.im);
+				
+				s.paintFrame();
+				s.paintFound();
+			}
+			else{
+				s.displayMode=0;
+				displayMode.setText("Display mode: spectrogram");
+				if (s.syllable==false){
+					resetBrush();
+					brush.setEditable(true);
+					brush.setEnabled(true);
+				}
+				song.spectEnhance=false;
+				s.relocate(s.location);
+				//s.updatePixelVals(s.im);
 				s.paintFrame();
 				s.paintFound();
 			}
 		
 		}
+		
 		
 		if (PLAY_ALL_COMMAND.equals(command)) {
 			if (player){
@@ -2321,13 +2619,18 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 				stopDrawingProgress();
 			}
 		}
+		
+		if (SHOW_BEAM_FORM_COMMAND.equals(command)) {
+			s.showBeamFormOffset=showBeamForm.isSelected();
+			s.relocate(s.location);
+		}
 
 		if (UNDO_COMMAND.equals(command)) {
 			System.out.println("undo1 "+undoList.size());
 			int a=undoList.size();
 			LinkedList p=undoList.get(a-2);
 			song.setEleList((LinkedList)p.get(0));
-			song.setSyllList((LinkedList)p.get(1));
+			song.setSylList((LinkedList)p.get(1));
 			LinkedList q=undoList.get(a-1);
 			redoList.add(q);
 			undoList.removeLast();
@@ -2346,7 +2649,7 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 			System.out.println("redo"+undoList.size());
 			LinkedList<LinkedList<Object>> p=redoList.get(redoList.size()-1);
 			song.setEleList((LinkedList)p.get(0));
-			song.setSyllList((LinkedList)p.get(1));
+			song.setSylList((LinkedList)p.get(1));
 			redoList.removeLast();
 			undoList.add(p);
 			s.paintFound();
@@ -2420,6 +2723,10 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		}
 		if (ERASE_COMMAND.equals(command)){
 			s.erase=erase.isSelected();
+		}
+		
+		if (FIND_HARMONICS_COMMAND.equals(command)){
+			s.findHarmonics=findHarmonics.isSelected();
 		}
 		if (SAVE_COMMAND.equals(command)) {
 			boolean proceed = writeResults();
@@ -2521,7 +2828,12 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 			s.paintFound();
 		}
 		if (DEFAULT_COMMAND.equals(command)) {
-			defaults.getSongParameters(song);
+			if (editMode) {
+				defaults.getSongParameters(song);
+			}
+			else {
+				defaults.getSongParametersRec(song);
+			}
 			setValues();
 			resetSpect=true;
 			replot();
@@ -2532,8 +2844,14 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 			defaults.setDoubleProperty("stretchY", s.stretchY, 1000);
 			defaults.setIntProperty("GPMAXF", guidePanelMaxFrequency);
 			defaults.setBooleanProperty("clickdrag", s.clickDrag);
-			defaults.setSongParameters(song);
+			if (editMode) {
+				defaults.setSongParameters(song);
+			}
+			else {
+				defaults.setSongParametersRec(song);
+			}
 			defaults.setParameterViews(s);
+			defaults.setDetectParams(this);
 			defaults.writeProperties();
 		}
 		
@@ -2545,6 +2863,7 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		
 		if (PREVIOUS_COMMAND.equals(command)) {
 			defaults.getSongDetails(song);
+			nameField.setText(song.getName());
 			equipmentField.setText(song.getRecordEquipment());
 			recordistField.setText(song.getRecordist());
 			locationField.setText(song.getLocation());
@@ -2705,7 +3024,28 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		if (F_BACKWARD_COMMAND.equals(command)){
 			s.moveBackward(1);
 		}
+		if(DETECT_COMMAND.equals(command)) {
+			detectSongs();
+		}
+		if (FILE_NAME_TIME_DATE.equals(command)) {
+			song.parseFileNameForTimeDate();
+			
+			
+			cal.setTimeInMillis(song.getTDate());
+			Date initDate = cal.getTime();
+			
+			dateModel.setValue(initDate);
+			timeModel.setValue(initDate);
+		}
 	}
+	
+	void playSyllable(int a) {
+		Syllable sy=song.getSyllable(a);
+		int[] syll=sy.getLoc();
+		double[] x=song.prepPlayback(syll);
+		drawProgress(x[0], x[1], song.getPlaybackDivider());
+	}
+		
 	
 	void resetBrush(){
 		int c= brush.getSelectedIndex();
@@ -2861,15 +3201,13 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 	}
 	
 	public void populateDeleteS(){
-		int size=song.getNumSyllables();
+		int size=song.getSyllList().size();
 		deleteModelS.addElement("  ");
-		playModel.addElement(" ");
 		deleteModelS.addElement("         ALL");
 		for (int i=1; i<=size; i++){
 			int j=size+1-i;
 			String st="   "+j;
 			deleteModelS.addElement(st);
-			playModel.addElement(st);
 		}
 		if (deleteS!=null){
 			deleteS.setSelectedIndex(-1);
@@ -2898,7 +3236,6 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 	
 	public void updateSyllableLists(){
 		LISTEN_TO_DROP_DOWNS=false;
-		playModel.removeAllElements();
 		deleteModelS.removeAllElements();
 		populateDeleteS();
 		LISTEN_TO_DROP_DOWNS=true;
@@ -3189,6 +3526,29 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 				song.setLowerLoop(te);
 				lowerLoop.setValue(te);
 			}
+			if (source==dminfreq){
+				int s = (int)((Number)dminfreq.getValue()).intValue();
+				if (s>=detectMaxFreq){s=detectMaxFreq-1;}
+				if (s<1){s=1;}
+				detectMinFreq=s;
+			}
+			if (source==dmaxfreq){
+				int s = (int)((Number)dmaxfreq.getValue()).intValue();
+				if (s>song.getMaxF()){s=(int)song.getMaxF();}
+				if (s<=detectMinFreq){s=detectMinFreq+1;}
+				detectMaxFreq=s;
+			}
+			if (source==dthresh){
+				double s = ((Number)dthresh.getValue()).doubleValue();
+				if (s<=1){s=1;}
+				detectThresh=s;
+			}
+			if (source==dwindow){
+				int s = (int)((Number)dwindow.getValue()).intValue();
+				if (s>song.getNx()){s=(int)song.getNx();}
+				if (s<=1){s=1;}
+				detectWindow=s;
+			}
 			started=true;
 		}
 	}
@@ -3204,11 +3564,16 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		}
 		temp.addLast(temp1);
 		LinkedList<Object> temp2=new LinkedList<Object>();
-		int ns=song.getNumSyllables();
+		LinkedList<Syllable> syls=song.getSyllList();
+		for (Syllable sy:syls){
+			temp2.addLast(sy);
+		}
+		/*
 		for (int i=0; i<ns; i++){
 			int[] syl=(int[])song.getSyllable(i);
 			temp2.addLast(syl);
 		}
+		*/
 		temp.addLast(temp2);
 		undoList.addLast(temp);
 		if (undoList.size()>maxUndoListSize){undoList.remove(0);}
@@ -3285,6 +3650,7 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		dateCal.add(Calendar.MINUTE, timeCal.get(Calendar.MINUTE)-dateCal.get(Calendar.MINUTE));
 		dateCal.add(Calendar.SECOND, timeCal.get(Calendar.SECOND)-dateCal.get(Calendar.SECOND));
 		dateCal.add(Calendar.MILLISECOND, timeCal.get(Calendar.MILLISECOND)-dateCal.get(Calendar.MILLISECOND));
+		song.setName(nameField.getText());
 		song.setTDate(dateCal.getTimeInMillis());
 		song.setLocation(locationField.getText());
 		song.setNotes(notesField.getText());
@@ -3306,7 +3672,7 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 			dbv.refreshTree();
 		}
 		else{
-			Song[] songs=song.splitSong();
+			Song[] songs=song.splitSong(false);
 			LinkedList ustore=new LinkedList();
 			int[] sonq={1,2,3};
 			//dbc.writeToDataBase("INSERT INTO songdata (name, IndividualID) VALUES ('"+nam+"' , "+par.dex+")");
@@ -3556,10 +3922,22 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 		else if (c=='e'){
 			erase.doClick();
 		}
+		else if (c=='h'){
+			findHarmonics.doClick();
+		}
+		else if (c=='['){
+			int q=brush.getSelectedIndex();
+			if (q>0){brush.setSelectedIndex(q-1);}
+		}
+		else if (c==']'){
+			int q=brush.getSelectedIndex();
+			if (q<brushSizes.length-1){brush.setSelectedIndex(q+1);}
+		}
 	}
 
 	@Override
 	public void keyPressed(KeyEvent e) {
+
 		// TODO Auto-generated method stub
 		
 	}
@@ -3567,6 +3945,24 @@ public class MainPanel extends JPanel implements PropertyChangeListener, ChangeL
 	@Override
 	public void keyReleased(KeyEvent e) {
 		// TODO Auto-generated method stub
+		
+	}
+	
+	public void detectSongs() {
+
+		song.clearSyllables();
+		SongDetector sd=new SongDetector(s);
+		sd.detectFreqRange(detectMinFreq, detectMaxFreq, detectWindow, detectThresh);
+		
+		defaults.setDetectParams(this);
+		
+		defaults.getDetectParams(this);
+		System.out.println("Defaults detect2: "+detectThresh+" "+detectMaxFreq+" "+detectMinFreq+" "+detectWindow);
+		
+		
+		defaults.writeProperties();
+		s.restart();
+		
 		
 	}
 

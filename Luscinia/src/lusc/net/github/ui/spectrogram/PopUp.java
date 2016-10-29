@@ -17,6 +17,7 @@ public class PopUp implements ActionListener{
 	JMenuItem delete=new JMenuItem("Delete");
 	JMenuItem mergeLeft=new JMenuItem("Merge with previous");
 	JMenuItem mergeRight=new JMenuItem("Merge with next");
+	JMenuItem play=new JMenuItem("Play syllable");
 	
 	public PopUp(MainPanel mp, int x, int y, Component component, int id, int type, int ne){
 		this.mp=mp;
@@ -30,7 +31,7 @@ public class PopUp implements ActionListener{
 		delete.addActionListener(this);	
 		mergeLeft.addActionListener(this);
 		mergeRight.addActionListener(this);
-		
+		play.addActionListener(this);
 		System.out.println("POPUP"+type+" "+id+" "+ne);
 		
 		pop.add(delete);
@@ -42,6 +43,9 @@ public class PopUp implements ActionListener{
 				pop.add(mergeRight);
 			}
 		}	
+		if (type==1) {
+			pop.add(play);
+		}
 		pop.show(component, x,y);
 	}
 
@@ -60,6 +64,9 @@ public class PopUp implements ActionListener{
 		}
 		else if (e.getSource()==mergeRight){
 			mp.s.merge(id);
+		}
+		else if (e.getSource()==play) {
+			mp.playSyllable(id);
 		}
 		
 	}

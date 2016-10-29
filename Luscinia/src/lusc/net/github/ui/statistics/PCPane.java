@@ -1,3 +1,4 @@
+
 package lusc.net.github.ui.statistics;
 //
 //  PCPane.java
@@ -75,12 +76,16 @@ public class PCPane extends JPanel implements MouseInputListener{
 	
 	int fontSize=12;
 	
+	int multiplier;
+	
 	public PCPane(int w, int h, DisplayPC dpc, Defaults defaults){
 		scaler=(float)defaults.getScaleFactor();
 		this.width=(int)scaler*w;
 		this.height=(int)scaler*h;
 		this.dpc=dpc;
 		this.defaults=defaults;
+		
+		multiplier=defaults.getScaleFactor();
 		
 		dim=new Dimension(width, height);
 		
@@ -833,7 +838,8 @@ public class PCPane extends JPanel implements MouseInputListener{
 					g.setColor(new Color(0.25f, 0.25f, 0.25f, 0.25f));
 				}
 				boolean toDraw=false;
-				if ((dataType<4)&&(labels[i]>0)){toDraw=true;}
+				//if ((labels!=null)&&(dataType<4)&&(labels[i]>0)){toDraw=true;}
+				if (dataType<4){toDraw=true;}
 				if (toDraw){
 					Line2D.Double line=new Line2D.Double(location[i-1][0], location[i-1][1], location[i][0], location[i][1]);
 					g.draw(line);
@@ -1073,8 +1079,8 @@ public class PCPane extends JPanel implements MouseInputListener{
 			selectedPoint=true;
 			selectedArea=false;
 			selectionStarted=false;
-			int x=e.getX()*2;
-			int y=e.getY()*2;
+			int x=e.getX()*multiplier;
+			int y=e.getY()*multiplier;
 			double min=100000000;
 			int loc=0;
 			for (int i=0; i<location.length; i++){
@@ -1109,8 +1115,8 @@ public class PCPane extends JPanel implements MouseInputListener{
 		selectedArea=false;
 		if (enabled){
 			
-			endx=e.getX()*2;
-			endy=e.getY()*2;
+			endx=e.getX()*multiplier;
+			endy=e.getY()*multiplier;
 			
 			if ((Math.abs(startx-endx)>5)||(Math.abs(starty-endy)>5)){
 				
@@ -1179,8 +1185,8 @@ public class PCPane extends JPanel implements MouseInputListener{
 		
 		if (enabled){
 			selectionStarted=true;
-			startx=e.getX()*2;
-			starty=e.getY()*2;
+			startx=e.getX()*multiplier;
+			starty=e.getY()*multiplier;
 
 		}	
 	}
@@ -1188,8 +1194,8 @@ public class PCPane extends JPanel implements MouseInputListener{
 		//System.out.println("Dragged");
 		if (selectionStarted){
 			selectedArea=true;
-			endx=e.getX()*2;
-			endy=e.getY()*2;
+			endx=e.getX()*multiplier;
+			endy=e.getY()*multiplier;
 			minx=Math.min(startx, endx);
 			maxx=Math.max(startx, endx);
 			miny=Math.min(starty, endy);

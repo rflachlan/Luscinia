@@ -17,12 +17,19 @@ package lusc.net.github;
 //import java.sql.SQLException;
 import java.util.LinkedList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.awt.Component;
 import java.io.*;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 
 import javax.sound.sampled.*;
 //import javax.sound.sampled.Mixer.Info;
 import javax.swing.JOptionPane;
+import uk.me.berndporr.iirj.*;
+import org.apache.commons.math3.*;
+import lusc.net.github.Sound.*;
+import lusc.net.github.sound.Spectrogram;
 
 
 /**
@@ -33,15 +40,43 @@ import javax.swing.JOptionPane;
  *
  */
 public class Song {
+	
+	
+	//public int [] microphoneSpacing= {8,8,8};
+	public int [] microphoneSpacing= {5,5,5};
+	public int [][]micOrderOptions= {{0,1,2,3},{0,1,3,2},{1,0,2,3},{1,0,3,2}};
+	public int micOrderChoice=0;
+	public double beamFormingDelay=0;
+	public double[] beamFormingDelays=new double[3];
+	
+	
+	public int stereomode=6;
+	
+	public int stereomodeGP=0;
+	
+	//if stereo=2, steremode=0 means l; 1 means right; 2 means combine
+	//if stereo=4, 0 means t1, 1 means t2, 2 means t3, 3 means t4, 4 means t1 & t2, 5 means t3&t4, 6 means all four
+	
+	int maxDelay=30;
+	int expansionFactor=10;
 
+	public boolean spectEnhance=false;
+	//public boolean useFileNameForDateTime=true;
+	boolean guideSpect=false;
+	boolean twochan=false;
 	boolean updateFFT=true;
 	boolean loaded=false;
 	boolean running=false;
 	boolean setRangeToMax=true; 
 	boolean relativeAmp=true; 
 	float data[]; 
+	float directionArray[];
 	float maxAmp, maxAmp2; 
 	double [] phase; 
+	public double[] offsetDirection;
+	public boolean recordOffset;
+	public double bfminfreq=2000;
+	public double bfmaxfreq=6000;
 	int minFreq=5; 
 	double octstep=10; 
 	private static final int EXTERNAL_BUFFER_SIZE = 128000; 
@@ -49,14 +84,14 @@ public class Song {
 	int [] places1,  places2,  places3,  places4; 
 	int bitTab[][]; 
 	float window[]; 
-	double[] filtl, filtu; 
+	//double[] filtl, filtu; 
 	int counter=0; 
 	int counter2=0; 
 	int rangef=0; 
 	int overallSize=0; 
 	int overallLength=0; 
 	byte []rawData, rawData2, stereoRawData; 
-	float [][] out, out1, envelope;
+	float [][] out, out1, envelope, phasesp;
 	int startTime=0; 
 	int endTime=0; 
 	int dynEqual=0;
@@ -79,6 +114,7 @@ public class Song {
 	double dx, dy, step; 
 	int nx, ny, anx, frame, framePad, place; 
 	int individualID=0; 
+	int individualDayID=0;
 	int songID=0; 
 	long tDate=0;
 	int numSylls=0;
@@ -125,8 +161,10 @@ public class Song {
 	String sx, sy;
 	//Analysis stored data
 	LinkedList<Element> eleList;
-	LinkedList<int[]> syllList;
-	LinkedList<int[][]> phrases; 
+	LinkedList<Element> eleList2;
+	//LinkedList<int[]> syllList;
+	LinkedList<Syllable> sylList;
+	//LinkedList<int[][]> phrases; 
 	boolean[] phraseId;
 	SourceDataLine  line = null;
 	AudioFormat af;
@@ -150,6 +188,11 @@ public class Song {
 			
 			tDate=f.lastModified();
 			
+			//if (useFileNameForDateTime) {
+				
+			//}
+			
+			
 			
 			AudioInputStream AFStreamA = AudioSystem.getAudioInputStream(f);
 			AudioFormat afFormat = AFStreamA.getFormat();
@@ -164,7 +207,7 @@ public class Song {
 					afFormat=targetFormat;
 			}
 			
-			System.out.println("ORIGINAL: "+AFStreamA.getFrameLength()+" "+afFormat.getEncoding()+" "+afFormat.getFrameRate());
+			//System.out.println("ORIGINAL: "+AFStreamA.getFrameLength()+" "+afFormat.getEncoding()+" "+afFormat.getFrameRate());
 			
 			
 			AudioInputStream AFStream=AudioSystem.getAudioInputStream(afFormat, AFStreamA);
@@ -173,6 +216,7 @@ public class Song {
 			stereo=AFStream.getFormat().getChannels();
 			
 			int process=0;
+			/*
 			if (stereo>1){
 				Object[] possibleValues = { "Use left channel", "Use right channel", "Merge channels" };
 				Object selectedValue = JOptionPane.showInputDialog(null, "Choose one", "This is a stereo file. How would you like Luscinia to process it?", JOptionPane.INFORMATION_MESSAGE, null, possibleValues, possibleValues[0]);
@@ -186,6 +230,7 @@ public class Song {
 					process=3;
 				}
 			}
+			*/
 			
 			frameSize=AFStream.getFormat().getFrameSize();
 			
@@ -193,14 +238,14 @@ public class Song {
 			
 			
 			long length=(long)(AFStream.getFrameLength()*frameSize);
-			System.out.println(length+" "+Integer.MAX_VALUE+" "+frameSize+" "+AFStream.getFrameLength());
+			//System.out.println(length+" "+Integer.MAX_VALUE+" "+frameSize+" "+AFStream.getFrameLength());
 			bigEnd=AFStream.getFormat().isBigEndian();
 			AudioFormat.Encoding afe=AFStream.getFormat().getEncoding();
 			signed=false;
 			if (afe.toString().startsWith("PCM_SIGNED")){signed=true;}
 			ssizeInBits=AFStream.getFormat().getSampleSizeInBits();
 			
-			System.out.println("READ SONG: "+ sampleRate+" "+stereo+" "+frameSize+" "+length+" "+afe.toString()+" "+ssizeInBits);
+			//System.out.println("READ SONG: "+ sampleRate+" "+stereo+" "+frameSize+" "+length+" "+afe.toString()+" "+ssizeInBits);
 			
 			int xl=(int)Math.round(1000*AFStream.getFrameLength()/(sampleRate));
 			
@@ -209,8 +254,9 @@ public class Song {
 			//where there is a bug with the nio creation time attribute. I should revisit this when I move
 			//to Java 8...
 			
-			
-			tDate-=xl;
+			//if (!useFileNameForDateTime) {
+				tDate-=xl;
+			//}
 			
 			if (length>0){
 				rawData=new byte[(int)length];
@@ -220,7 +266,7 @@ public class Song {
 				LinkedList<byte[]> bl=new LinkedList<byte[]>();
 				byte[] temp=new byte[frameSize];
 				while (AFStream.read(temp)>0){
-					System.out.println(bl.size());
+					//System.out.println(bl.size());
 					bl.add(temp);
 				}
 				length=bl.size()*frameSize;
@@ -231,7 +277,8 @@ public class Song {
 					x+=frameSize;
 				}
 			}
-			syllList=new LinkedList<int[]>();
+			//syllList=new LinkedList<int[]>();
+			sylList=new LinkedList<Syllable>();
 			eleList=new LinkedList<Element>();
 			individualID=indid;
 			name=f.getName();
@@ -253,6 +300,31 @@ public class Song {
 		catch (Exception e){
 			e.printStackTrace();
 		}
+	}
+	
+	public void parseFileNameForTimeDate() {
+		String[] sp=name.split("_");
+		String[]sq=sp[6].split("[.]");
+		Calendar cal=Calendar.getInstance();
+		System.out.println(sp[1]);
+		System.out.println(sp[2]);
+		System.out.println(sp[3]);
+		System.out.println(sp[4]);
+		System.out.println(sp[5]);
+		System.out.println(sp[6]);
+		
+		
+		
+		cal.set(Calendar.YEAR, Integer.parseInt(sp[1]));
+		cal.set(Calendar.MONTH, Integer.parseInt(sp[2])-1);
+		cal.set(Calendar.DAY_OF_MONTH, Integer.parseInt(sp[3]));
+		cal.set(Calendar.HOUR_OF_DAY, Integer.parseInt(sp[4]));
+		cal.set(Calendar.MINUTE, Integer.parseInt(sp[5]));
+		cal.set(Calendar.SECOND, Integer.parseInt(sq[0]));
+		cal.set(Calendar.MILLISECOND, 0);
+		tDate=cal.getTimeInMillis();
+		
+		
 	}
 	
 	
@@ -822,6 +894,14 @@ public class Song {
 	}
 	
 	/**
+	 * gets the spectrogram
+	 * @return a float[][] array, frequency x time, with intensity indicated in the cells.
+	 */
+	public float[][] getPhaseSP(){
+		return phasesp;
+	}
+	
+	/**
 	 * sets the spectrogram
 	 * @param a float[][] array, frequency x time, with intensity indicated in the cells.
 	 */
@@ -885,6 +965,24 @@ public class Song {
 	 */
 	public int getIndividualID(){
 		return individualID;
+	}
+	
+	/**
+	 * Sets the individual/date ID for this song
+	 * @param a value for individualDayID
+	 * @see Individual
+	 */
+	public void setIndividualDayID(int a){
+		individualDayID=a;
+	}
+	
+	/**
+	 * Gets the individual/date ID for this song
+	 * @return value for individualDayID
+	 * @see Individual
+	 */
+	public int getIndividualDayID(){
+		return individualDayID;
 	}
 	
 	/**
@@ -1111,6 +1209,42 @@ public class Song {
 	public long getTDate(){
 		return tDate;
 	}
+	
+	
+	public long getDay() {
+		Calendar cal=Calendar.getInstance();
+		cal.setTimeInMillis(tDate);
+		Calendar cal2=Calendar.getInstance();
+		cal2.set(cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH),0,0,0);
+		cal2.set(Calendar.MILLISECOND, 0);
+		long x=cal2.getTimeInMillis();
+		//System.out.println(name+" "+x);
+		return(x);	
+	}
+	
+	public long getWeek() {
+		Calendar cal=Calendar.getInstance();
+		cal.setTimeInMillis(tDate);
+		Calendar cal2=Calendar.getInstance();
+		cal2.set(Calendar.YEAR, cal.get(Calendar.YEAR));
+		cal2.set(Calendar.WEEK_OF_YEAR, cal.get(Calendar.WEEK_OF_YEAR));
+		//cal2.set(Calendar.DAY_OF_WEEK_IN_MONTH, 0);
+		cal2.set(Calendar.HOUR, 0);
+		cal2.set(Calendar.MINUTE, 0);
+		cal2.set(Calendar.SECOND, 0);
+		cal2.set(Calendar.MILLISECOND, 0);
+		
+		//System.out.println(cal.get(Calendar.WEEK_OF_YEAR));
+		
+		long x=cal2.getTimeInMillis();
+		//DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+		//String s=dateFormat.format(cal.getTime());
+		//String s2=dateFormat.format(cal2.getTime());
+		//System.out.println(name+" "+x+" "+s+" "+s2);
+		return(x);	
+	}
+	
+	
 
 	/**
 	 * sets the time and date of the recording
@@ -1362,6 +1496,15 @@ public class Song {
 		return rawData.length;
 	}
 
+	
+	/**
+	 * * sets whether or not it's a guide spectrogram - affects stereo processing
+	 */
+	
+	public void setGuideSpect(boolean x) {
+		guideSpect=x;
+	}
+	
 	/**
 	 * gets the raw data - byte array of audio data
 	 * @return byte array of audio data
@@ -1418,6 +1561,26 @@ public class Song {
 		frame=a;
 	}
 
+	
+	
+	public int getStereoMode() {
+		return stereomode;
+	}
+	
+	public void setStereoMode(int a) {
+		stereomode=a;
+	}
+	
+	public void setStereoModeGP(int a) {
+		stereomodeGP=a;
+	}
+	
+	public void setMicArrayMode(int a) {
+		micOrderChoice=a;
+	}
+	
+	
+	
 	/**
 	 * sets the overall size of the sound, in terms of the number of samples
 	 */
@@ -1451,6 +1614,8 @@ public class Song {
 		playbackDivider=a;
 	}
 	
+
+	
 	/**
 	 * gets the length of the raw (byte) audio data
 	 * @return an int with the length of the byte array
@@ -1481,14 +1646,17 @@ public class Song {
 	 * needs to be run first!
 	 * @return a boolean array, 'true' values represent syllables that are phrase markers
 	 */
+	/*
 	public boolean[] getPhraseID(){
 		return phraseId;
 	}
+	*/
 	
 	/**
 	 * gets the number of phrases in the song
 	 * @return number of phrases
 	 */
+	/*
 	public int getNumPhrases(){
 		if (phrases==null){
 			interpretSyllables();
@@ -1498,36 +1666,41 @@ public class Song {
 		}
 		return phrases.size();
 	}
+	*/
 
 	/**
 	 * gets a specified phrase
 	 * @param a index of the phrase to get from the phrase list
 	 * @return an int[][] specifying the elements in a particular phrase
 	 */
+	/*
 	public int[][] getPhrase(int a){
 		//System.out.println("getting phrase "+a+" out of "+phrases.size());
 		if (phrases==null){
-			System.out.println("WARNING NULL PHRASES");
+			//System.out.println("WARNING NULL PHRASES");
 			interpretSyllables();
 		}
 		return phrases.get(a);
 	}
+	*/
 
 	/**
 	 * sets the whole set of phrases for this Song
 	 * @param a an int[][] object specifiying phrase structure
 	 */
+	/*
 	public void setPhrases(LinkedList<int[][]> a){
 		phrases=a;
 	}
+	*/
 
 	/**
 	 * Sets the whole syllList to an external list of syllables
 	 * @param a a LinkedList of int[]s specifying syllables
 	 */
-	public void setSyllList(LinkedList<int[]> a){
-		syllList=a;
-	}
+	//public void setSyllList(LinkedList<int[]> a){
+		//syllList=a;
+	//}
 	
 	/**
 	 * This method overrides making the FFT. It may be useful in some cases to save redoing
@@ -1542,8 +1715,9 @@ public class Song {
 	/**
 	 * This is a legacy function to update syllable measurements for old versions of the db.
 	 */
+	/*
 	public void updateSyllableList(){
-		System.out.println("UPDATING!!!");
+		//System.out.println("UPDATING!!!");
 		for(int i=0; i<syllList.size(); i++){
 			int[] s=syllList.get(i);
 			int[]t=new int[2];
@@ -1553,39 +1727,107 @@ public class Song {
 			syllList.add(t);
 		}
 	}
+	*/
 
 	/**
 	 * get a specified syllable
 	 * @param a index of the syllable to get
 	 * @return an int[] specifying a syllable
 	 */
+	/*
 	public int[] getSyllable(int a){
 		if (a>=syllList.size()){
 			return null;
 		}
 		return syllList.get(a);
 	}
+	*/
 
+	public void setSylList(LinkedList<Syllable> syl){
+		sylList=syl;
+	}
+	
+	
 	/**
 	 * get the number of syllables in the syllList
 	 * @return the size of syllList
+	 * @param type sets the type of syllables returned. 0 returns all syllables; 1 returns all base-line syllables (not phrases); 2 returns phrases.
 	 */
-	public int getNumSyllables(){
-		if (syllList==null){
+	
+	public int getNumSyllables(int type){
+		if (sylList==null){
 			return 0;
 		}
-		return syllList.size();
+		if (type==0){
+			return sylList.size();
+		}
+		else if (type==1){
+			return getBaseLevelSyllables().size();
+		}
+		return getPhrases().size();
 	}
+	
+	
+	
+	public LinkedList<Syllable> getBaseLevelSyllables(){
+		
+		LinkedList<Syllable> base=new LinkedList<Syllable>();
+		
+		for (Syllable sy: sylList){
+			if (sy.getNumChildren()==0){
+				base.add(sy);
+			}
+		}
+		return base;
+		
+	}
+	
+	public Syllable getBaseLevelSyllable(int a){
+		
+		LinkedList<Syllable> base=getBaseLevelSyllables();
+		
+		
+		return base.get(a);
+		
+	}
+	
+	public LinkedList<Syllable> getPhrases(){
+		
+		LinkedList<Syllable> phrases=new LinkedList<Syllable>();
+		
+		for (Syllable sy: sylList){
+			if (sy.getNumParents()==0){
+				phrases.add(sy);
+			}
+		}
+		return phrases;
+		
+	}
+	
+	public Syllable getPhrase(int a){
+		LinkedList<Syllable> phrases=getPhrases();
+		return phrases.get(a);
+	}
+	
+	
+	
 
 	/**
 	 * removes a specified syllable from the syllList
 	 * @param a location of the syllable to be removed from the syllList
 	 */
+	
 	public void removeSyllable(int a){
-		if (a<syllList.size()){
-			syllList.remove(a);
+		if (a<sylList.size()){
+			Syllable syll=sylList.get(a);
+			sylList.remove(a);
+			for (Syllable sy: sylList){
+				sy.children.remove(syll);
+				sy.parents.remove(syll);
+			}
 		}
 	}
+	
 	
 	public void setNumSylls(int a){
 		numSylls=a;
@@ -1594,14 +1836,19 @@ public class Song {
 	public int getNumSylls(){
 		return numSylls;
 	}
-
+	
 	/**
 	 * adds a new syllable at a specific location in the syllList
 	 * @param a location to add the new syllable
 	 * @param syl an int[] specifying a syllable
 	 */
 	public void addSyllable(int a, int[] syl){
-		syllList.add(a, syl);
+		
+		Syllable syllable=new Syllable(syl, songID);
+		syllable.addFamily(sylList, eleList);
+		syllable.checkMaxLevel();
+		sylList.add(a, syllable);
+		//syllList.add(a, syl);
 	}
 
 	/**
@@ -1609,14 +1856,19 @@ public class Song {
 	 * @param syl an int[] specifying a syllable
 	 */
 	public void addSyllable(int[] syl){
-		syllList.add(syl);
+		Syllable syllable=new Syllable(syl, songID);
+		syllable.addFamily(sylList, eleList);
+		syllable.checkMaxLevel();
+		sylList.add(syllable);
+		//syllList.add(syl);
 	}
 
 	/**
 	 * Empties the whole list of syllables
 	 */
 	public void clearSyllables(){
-		syllList.clear();
+		sylList.clear();
+		//syllList.clear();
 	}
 
 	/**
@@ -1650,6 +1902,30 @@ public class Song {
 			return 0;
 		}
 		return eleList.size();
+	}
+	
+	/**
+	 * Gets the number of elements in list 2 of this Song object
+	 * @return the number of Elements
+	 * @see Element
+	 */
+	public int getNumElements2(){
+		if (eleList2==null){
+			return eleList.size();
+		}
+		return eleList2.size();
+	}
+	
+	/**
+	 * Gets the list 2 of elements of this Song object
+	 * @return Element list
+	 * @see Element
+	 */
+	public LinkedList<Element> getEleList2(){
+		if (eleList2==null){
+			return eleList;
+		}
+		return eleList2;
 	}
 
 	/**
@@ -1698,14 +1974,15 @@ public class Song {
 		rawData=null;
 		rawData2=null;
 		bitTab=null;
-		filtl=null;
-		filtu=null;
+		//filtl=null;
+		//filtu=null;
 		data=null;
 		window=null;
 		out=null;
 		out1=null;
 		eleList=null;
-		syllList=null;
+		//syllList=null;
+		sylList=null;
 		notes=null;
 		location=null;
 		recordEquipment=null;
@@ -1734,68 +2011,72 @@ public class Song {
 	 * This method splits a song object into multiple song objects by its syllables
 	 * making a set of new 'songs' that are returned in an array.
 	 */
-	public Song[] splitSong(){
-		Song[] songs=new Song[syllList.size()];
-		for (int i=0; i<syllList.size(); i++){
-			int[] syll=(int[])syllList.get(i);
-			int a=0;
-			int b=0;
+	public Song[] splitSong(boolean phraseOnly){
+		Song[] songs=new Song[sylList.size()];
+		for (int i=0; i<sylList.size(); i++){
 			
-			if (ssizeInBits<=24){
-				int p1=(int)Math.round(syll[0]-20);
-				if (p1<0){p1=0;}
-				int p2=(int)Math.round(syll[1]+20);
-				if (p2>=overallLength){
-					p2=overallLength-1;
+			Syllable sy=sylList.get(i);
+			if ((!phraseOnly)||(sy.getNumParents()==0)) {
+				int[] syll=sy.getLoc();
+				int a=0;
+				int b=0;
+			
+				if (ssizeInBits<=24){
+					int p1=(int)Math.round(syll[0]-20);
+					if (p1<0){p1=0;}
+					int p2=(int)Math.round(syll[1]+20);
+					if (p2>=overallLength){
+						p2=overallLength-1;
+					}
+					double q=sampleRate*0.001;
+					//System.out.println(q+" "+frameSize);
+					a=(int)Math.round(p1*q)*frameSize;
+					b=(int)Math.round(p2*q)*frameSize;
+					//System.out.println("NEWSONGBOUNDS: "+a+" "+b+" "+sampleRate+" "+stereo+" "+p1+" "+p2+" "+syll[0]+" "+syll[1]);
 				}
-				double q=sampleRate*0.001;
-				System.out.println(q+" "+frameSize);
-				a=(int)Math.round(p1*q)*frameSize;
-				b=(int)Math.round(p2*q)*frameSize;
-				System.out.println("NEWSONGBOUNDS: "+a+" "+b+" "+sampleRate+" "+stereo+" "+p1+" "+p2+" "+syll[0]+" "+syll[1]);
-			}
 			
 			
-			byte[] sub=new byte[b-a];
-			System.arraycopy(rawData, a, sub, 0, b-a);
-			Song s=new Song();
-			s.rawData=sub;
-			System.out.println("DATA LENGTH: "+sub.length+" "+a+" "+(b-a));
-			s.ssizeInBits=this.ssizeInBits;
-			s.signed=this.signed;
-			s.bigEnd=this.bigEnd;
-			s.stereo=this.stereo;
-			s.sampleRate=this.sampleRate;
-			s.frameSize=this.frameSize;
-			System.out.println(s.ssizeInBits);
-			String sn=this.name;
-			if (name.endsWith(".wav")){
-				sn=name.substring(0, name.length()-4);
+				byte[] sub=new byte[b-a];
+				System.arraycopy(rawData, a, sub, 0, b-a);
+				Song s=new Song();
+				s.rawData=sub;
+				//System.out.println("DATA LENGTH: "+sub.length+" "+a+" "+(b-a));
+				s.ssizeInBits=this.ssizeInBits;
+				s.signed=this.signed;
+				s.bigEnd=this.bigEnd;
+				s.stereo=this.stereo;
+				s.sampleRate=this.sampleRate;
+				s.frameSize=this.frameSize;
+				//System.out.println(s.ssizeInBits);
+				String sn=this.name;
+				if (name.endsWith(".wav")){
+					sn=name.substring(0, name.length()-4);
+				}
+				if (name.endsWith(".mp3")){
+					sn=name.substring(0, name.length()-4);
+				}
+				if (name.endsWith(".aif")){
+					sn=name.substring(0, name.length()-4);
+				}
+				if (name.endsWith(".aiff")){
+					sn=name.substring(0, name.length()-5);
+				}
+				s.name=sn+"_"+(i+1);
+				s.individualID=this.individualID;
+				s.individualName=this.individualName;
+				s.tDate=this.tDate+syll[0];
+				s.recordEquipment=this.recordEquipment;
+				s.recordist=this.recordist;
+				s.location=this.location;
+				s.notes=this.notes;
+				s.quality=this.quality;
+				s.type=this.type;
+				s.custom[0]=this.custom[0];
+				s.custom[1]=this.custom[1];
+				songs[i]=s;
 			}
-			if (name.endsWith(".mp3")){
-				sn=name.substring(0, name.length()-4);
-			}
-			if (name.endsWith(".aif")){
-				sn=name.substring(0, name.length()-4);
-			}
-			if (name.endsWith(".aiff")){
-				sn=name.substring(0, name.length()-5);
-			}
-			s.name=sn+"_"+(i+1);
-			s.individualID=this.individualID;
-			s.individualName=this.individualName;
-			s.tDate=this.tDate+syll[0];
-			s.recordEquipment=this.recordEquipment;
-			s.recordist=this.recordist;
-			s.location=this.location;
-			s.notes=this.notes;
-			s.quality=this.quality;
-			s.type=this.type;
-			s.custom[0]=this.custom[0];
-			s.custom[1]=this.custom[1];
-			songs[i]=s;
 		}
-		System.out.println("A list of "+syllList.size()+" songs has been made and returned");
+		//System.out.println("A list of "+syllList.size()+" songs has been made and returned");
 		return songs;
 	}
 	
@@ -1886,6 +2167,93 @@ public class Song {
 		return odata;
 	}
 	
+	private byte[] makeByteArray(float[] x, int start, int end) {
+		
+		int frameSizeC=frameSize;
+		int n1=end-start;
+		int n2=n1*frameSize;
+		
+		byte[] audio=new byte[n2];
+		
+		for (int i=0; i<n1; i++) {
+			audio[i*2] = (byte) x[i];
+			audio[i*2+1] = (byte)((int)x[i] >> 8 );
+		}
+		return audio;
+	}
+	
+	private byte[] makeStereoByteArray(float[] x, int start, int end) {
+		
+		int n1=end-start;
+		int n2=n1*4;		//In this case frameSize must be 2 for 16bit and stereo
+		
+		byte[] audio=new byte[n2];
+		
+		for (int i=0; i<n1; i++) {
+			short p=(short)(x[i]*Short.MAX_VALUE);
+			
+			
+			audio[i*4] = (byte) p;
+			audio[i*4+1] = (byte)(p >> 8 & 0xFF);
+			audio[i*4+2] = audio[i*4];
+			audio[i*4+3] = audio[i*4+1];
+			
+		}
+		
+		//System.out.println(start+" "+end+" "+n1+" "+n2+" "+audio.length);
+		return audio;
+	}
+	
+	private float[] parseSoundA(byte[] rawData, int start, int end){
+		System.out.println("Parse Sound started");
+		
+		int frameSizeC=frameSize/stereo;
+		
+		System.out.println(frameSizeC+" "+frameSize+" "+stereo);
+		
+		float[][]look=new float[256][frameSizeC];
+		float divider=(float)(0.5*Math.pow(256, frameSizeC));
+		
+		float[]mult=new float[frameSizeC];
+		for (int i=0; i<frameSizeC; i++){mult[i]=(float)Math.pow(256, i);}
+		int k=0;
+		for (int i=0; i<frameSizeC; i++){
+			for (int j=0; j<256; j++){
+				k=j;
+				if ((frameSizeC>1)&&(i==frameSizeC-1)&&(j>127)){k-=256;}
+				look[j][i]=k*mult[i];
+			}
+		}
+		int numb=frameSizeC-1;
+		int size=end-start;
+		//data=null;
+		float[] data=new float[size];
+		end*=frameSizeC;
+		start*=frameSizeC;
+		int i=start;
+		int n=0;
+		int p;
+		while (i<end){
+			for (int j=0; j<numb; j++){
+				p=rawData[i];
+				if (p<0){p+=256;}
+				data[n]+=look[p][j];
+				i++;
+			}
+			
+			p=rawData[i];
+			if (p<0){p+=256;}
+			data[n]+=look[p][numb];
+			data[n]/=divider;
+			//System.out.println(data[n]);
+			i++;
+			n++;
+			
+			
+		}
+		look=null;
+		return data;
+	}
 	
 	
 	/**
@@ -1894,7 +2262,14 @@ public class Song {
 	 * @param end end point in the sound.
 	 */
 	private void parseSound(byte[] rawData, int start, int end){
+		
+		
+		System.out.println("Parse Sound started");
+		
 		int frameSizeC=frameSize/stereo;
+		
+		System.out.println(frameSizeC+" "+frameSize+" "+stereo);
+		
 		float[][]look=new float[256][frameSizeC];
 		float divider=(float)(0.5*Math.pow(256, frameSizeC));
 		
@@ -1929,10 +2304,185 @@ public class Song {
 			if (p<0){p+=256;}
 			data[n]+=look[p][numb];
 			data[n]/=divider;
+			//System.out.println(data[n]);
 			i++;
 			n++;
+			
+			
 		}
 		look=null;
+		
+		
+		if (stereo!=1){
+			if (guideSpect==true) {
+				float[]out2=new float[data.length/stereo];
+				
+				
+				
+				for (i=0; i<out2.length; i++) {
+					for (int j=0; j<stereo; j++) {
+						out2[i]+=data[i*stereo+j];
+					}
+				}
+				data=new float[out2.length];
+				System.arraycopy(out2, 0, data, 0, out2.length);
+				out2=null;
+			}
+			
+			else {
+				configureBeamFormingParameters();
+				double sr=sampleRate*expansionFactor;
+				double fco=200;
+			
+				float[]out2=new float[data.length/stereo];
+				float[] direc=new float[out2.length];
+				
+				if (stereo==2) {
+					if (stereomode==0){
+						float[] s1=extractOffset(data, 0, stereo);
+						out2=s1;	
+					}
+					
+					else if (stereomode==1) {
+						float[] s1=extractOffset(data, 1, stereo);
+						out2=s1;
+					}
+					
+					else {
+						float[]data2=expand(data, stereo, expansionFactor);
+						float[][] out3=merge(data2, stereo, 0,1, sr);
+						out2=contract(out3[0], 1, expansionFactor);	
+						direc=contract(out3[1], 1, expansionFactor);
+						//System.out.println(stereo+" "+data.length+" "+out3.length+" "+data2.length+" "+out2.length);
+						
+					}
+					
+					
+					
+					
+				}
+				else if (stereo==4) {
+					if (stereomode==0){
+						float[] s1=extractOffset(data, 0, stereo);
+						out2=s1;	
+					}
+					
+					else if (stereomode==1) {
+						float[] s1=extractOffset(data, 1, stereo);
+						out2=s1;
+					}
+					else if (stereomode==2){
+						float[] s1=extractOffset(data, 2, stereo);
+						out2=s1;	
+					}
+					
+					else if (stereomode==3) {
+						float[] s1=extractOffset(data, 3, stereo);
+						out2=s1;
+					}
+					else {
+						
+						FFTBFanalysis(data, stereo);
+						
+						
+						float[]data2=expand(data, stereo, expansionFactor);
+						
+						System.out.println(data.length+" "+data2.length+" "+expansionFactor);
+						
+						float[][] out3=null;
+						float[] y=null;
+						if (stereomode==4) {
+							out3=merge(data2, stereo, 0,1, sr);
+							y=out3[1];
+						}
+						else if (stereomode==5) {
+							out3=merge(data2, stereo, 2,3, sr);
+							y=out3[1];
+						}
+						
+						else {
+							float[][] t1=merge(data2, stereo, 0,1, sr);
+							float[][] t2=merge(data2, stereo, 2,3, sr);
+							
+							out3=new float[2][t1[0].length];
+							int[] x=mindifference(t1[0],t2[0], sr);
+							for (i =0; i<out3[0].length; i++) {
+								out3[0][i]=(t1[0][i]+t2[0][i+x[i]])/2;
+							}
+							
+							y=averageScore(t1[1], t2[1]);
+							
+						}						
+						out2=contract(out3[0], 1, expansionFactor);
+						direc=contract(y, 1, expansionFactor);
+					}
+					
+				}
+				else {
+					float[]data2=expand(data, stereo, expansionFactor);
+					float[] out3=new float[out2.length*expansionFactor];
+					int stereo1=stereo-1;
+					float[][] xd=new float[stereo][];
+					for (i=0; i<stereo; i++) {
+						xd[i]=extractChannel(data2, 0, stereo);
+						xd[i]=removeOffset(xd[i]);
+					}
+					int[][]x=new int[stereo1][];
+					for (i=0; i<stereo1; i++) {
+						x[i]=mindifference(xd[0], xd[i+1], sr);
+					}
+					
+					
+					for (i=0; i<out3.length; i++){
+						
+						out3[i]=data2[i*stereo];
+						for (int j=0; j<stereo1; j++) {
+							out3[i]+=data2[(i+x[j][i])*stereo+j+1];
+						}
+					
+						out3[i]/=stereo;
+					}
+					
+				}
+				
+				
+				/*
+				
+				float[] x1=extractChannel(data2, 0, stereo);
+				x1=removeOffset(x1);
+				for (i=1; i<stereo; i++) {
+					float[] x2=extractChannel(data2, i, stereo);
+					x2=removeOffset(x2);
+					//x[i-1]=crosscorrelate(x1,x2);
+					x[i-1]=mindifference(x1,x2);
+				}
+				*/
+				
+			
+			
+				//for (i=1; i<stereo; i++) {
+				//	x[i-1]=crosscorrelate(data2, stereo, i);
+				//}
+			
+			//int[][]x=crosscorrelate(data, stereo);
+				
+				
+				data=new float[out2.length];
+				System.arraycopy(out2, 0, data, 0, out2.length);
+				
+				
+				directionArray=new float[out2.length];
+				System.arraycopy(direc, 0, directionArray, 0, direc.length);
+				//for (int ii=0; ii<directionArray.length; ii+=100) {
+				//	System.out.println(ii+" "+directionArray[ii]);
+				//}
+				//System.out.println("Parse Sound done");
+				
+				out2=null;
+			}
+		}
+		
+		/*
 		if (stereo!=1){
 			float[]out2=new float[data.length/stereo];
 			for (i=0; i<out2.length; i++){
@@ -1947,13 +2497,1032 @@ public class Song {
 				if (data[i*2]+data[i*2+1]<=0){out2[i]=0;}
 				*/
 				//out2[i]=(data[i*2])/(Math.abs(data[i*2])+Math.abs(data[i*2+1]));
-			}
+			/*}
 			data=new float[out2.length];
 			System.arraycopy(out2, 0, data, 0, out2.length);
 			out2=null;
 		}
+	*/
 	}
 	
+	void FFTBFanalysis(float[] x, int stereo) {
+		
+		out=new float[ny][anx];
+		out1=new float[ny][anx];
+		phasesp=new float[ny][anx];
+		
+		
+		
+	}
+	
+	void configureBeamFormingParameters() {
+		expansionFactor=5;
+		
+		bfmaxfreq=6000;
+		bfminfreq=2000;
+		
+		double micSpacing=0.06;  //m
+		double soundSpeed=340;   // ms-1
+		
+		double maxBeamFreq=soundSpeed/micSpacing;	//Hz
+		
+		double samplesPerpendicular=sampleRate/maxBeamFreq;
+		
+		maxDelay=(int)Math.round(expansionFactor*samplesPerpendicular*0.5);
+	}
+	
+	
+	float[] averageScore(float[] x, float[] y) {
+		int n=x.length;
+		float[] out=new float[n];
+		for (int i=0; i<n; i++) {
+			out[i]=(x[i]+y[1])*0.5f;
+		}
+		
+		return out;
+	}
+	
+	float[][] merge(float[] d, int stereo, int t1, int t2, double sr) {
+		
+		
+		long time1=System.currentTimeMillis();
+		//System.out.println("EXTRACT OFFSETS: ");
+		float[] s1=extractOffset(d, t1, stereo);
+		float[] s2=extractOffset(d, t2, stereo);
+		
+		long time2=System.currentTimeMillis();
+		//System.out.println("MINDIFFS:");
+		int[] x=mindifference(s1,s2, sr);
+		long time3=System.currentTimeMillis();
+		//System.out.println(d.length+" "+s1.length+" "+s2.length+" "+x.length);
+		
+		float[][] out=new float[2][s1.length];
+		
+		float maxd=1/(maxDelay*1.0f);
+		for (int i =0; i<s1.length; i++) {
+			out[0][i]=(s1[i]+s2[i+x[i]])*0.5f;
+			out[1][i]=x[i]*maxd;
+		}
+		
+		long time4=System.currentTimeMillis();
+		
+		System.out.println("MERGETIMES: "+(time2-time1)+" "+(time3-time2)+" "+(time4-time3));
+		//for (int i =0; i<s1.length; i+=100) {
+		//	System.out.println(i+" "+x[i]+" "+maxd+" "+out[1][i]);
+		//}
+		
+		return out;
+		
+	}
+	
+	float[] normalise(float[] d, float targetMax) {
+		int n=d.length;
+		double max=0;
+		for (int i=0; i<n; i++) {
+			double x=Math.abs(d[i]);
+			if (x>max) {max=x;}
+		}
+		
+		float mult=(float)(targetMax/max);
+		float[] out=new float[n];
+		for (int i=0; i<n; i++) {
+			out[i]=d[i]*mult;
+		}
+		
+		return out;
+	}
+	
+	
+	float[] expand(float[] d, int st, int f) {
+		
+		//for (int i=0; i<200; i++) {
+		//	System.out.println(d[i]);
+		//}
+		//System.out.println();
+		
+		int n=d.length;
+		int m=n*f;
+		float[] out=new float[m];
+		
+		
+		double[][]fb=new double[f][];
+		for (int i=0; i<f; i++) {
+			fb[i]=fractional(i/(f+0.0));
+		}
+		int q=n/st;
+		
+		for (int i=0; i<q; i++) {
+			for (int b=0; b<st; b++) {
+				for (int j=0; j<f; j++) {
+					if (j==0) {
+						out[i*st*f+b]=d[i*st+b];
+					}
+					else {
+						double x=0;
+						for (int k=0; k<11; k++) {
+							int p=i*st+b+(k-5)*st;
+							if ((p>=0)&&(p<n)) {
+								x+=fb[j][k]*d[p];
+							}
+						}
+						out[i*st*f+b+j*st]=(float)x;
+					}
+				}
+			}
+		}
+		//for (int i=0; i<500; i++) {
+		//	System.out.println(out[i]);
+		//}
+		//System.out.println();
+		
+		return out;
+	}
+	
+	float[] contract(float[] d, int st, int f) {
+		int n=d.length;
+		int m=n/f;
+		int p=m/st;
+		
+		float[] out=new float[m];
+		int a=0;
+		for (int i=0; i<p; i++) {
+			int b=i*f*st;
+			for (int j=0; j<st; j++) {
+				out[a]=d[b];
+				a++;
+				b++;
+			}
+			
+		}
+		//System.out.println("Output...");
+		//for (int i=0; i<100; i++) {
+		//	System.out.println(d[i]);
+		//}
+		//System.out.println();
+		//for (int i=0; i<500; i++) {
+		//	System.out.println(out[i]);
+		//}
+		
+		return out;
+		
+	}
+	
+	
+	
+	double[] fractional(double delay) {
+		//double delay = 0.25;               // Fractional delay amount
+		int filterLength = 11;             // Number of FIR filter taps (should be odd)
+		int centreTap = filterLength / 2;  // Position of centre FIR tap
+		double[] tapWeight=new double[filterLength];
+		for (int t=0 ; t<filterLength ; t++){
+			// Calculated shifted x position
+			double x = t - delay;
+
+			// Calculate sinc function value
+			double sinc = Math.sin(Math.PI * (x-centreTap)) / (Math.PI * (x-centreTap));
+
+			// Calculate (Hamming) windowing function value
+			double window = 0.54 - 0.46 * Math.cos(2.0 * Math.PI * (x+0.5) / filterLength);
+
+			// Calculate tap weight
+			tapWeight[t] = window * sinc;
+		}
+		return tapWeight;  
+	}
+	
+	float[] extractOffset(float[] d, int ch, int st) {
+		float[] out=extractChannel(d,ch,st);
+		return removeOffset(out);
+	}
+	
+	float[] extractChannel(float[] d, int ch, int st) {
+		int n=d.length/st;
+		
+		float[] out=new float[n];
+		
+		for (int i=0; i<n; i++) {
+			out[i]=d[i*st+ch];
+		}
+		
+		return out;
+		
+	}
+	
+	float[] removeOffset(float[] d) {
+		int n=d.length;
+		double tot=0;
+		for (int i=0; i<n; i++) {
+			tot+=d[i];
+		}
+		float x=(float)(tot/(n+0.0));
+		//System.out.println("OFFSET: "+x);
+		float[] out=new float[n];
+		for (int i=0; i<n; i++) {
+			out[i]=d[i]-x;
+			
+		}
+		
+		return out;
+	}
+	
+	
+	
+	int[] crosscorrelate(float[] d1, float[] d2) {
+		int n=d1.length;
+		int[] c=new int[n];
+		int maxDelay=30;
+		int md=maxDelay*2+1;
+		int windowlength=1000;
+		int wl2=windowlength/2;
+		
+		float[][]buffer=new float[n][md];
+		for (int i=0; i<n; i++) {
+			for (int j=-maxDelay; j<=maxDelay; j++) {
+				int k=i+j;
+				if ((k>=0)&&(k<n)) {
+					buffer[i][j+maxDelay]=d1[i]*d2[k];
+				}
+			}
+		}
+		float[]buf2=new float[md];
+		
+		for (int i=0; i<windowlength; i++) {
+			for (int j=0; j<md; j++) {
+				buf2[j]+=buffer[i][j];
+			}
+		}
+		int sc=0;
+		float bsc=Float.MIN_VALUE;
+		for (int i=0; i<md; i++) {
+			if (buf2[i]>bsc) {
+				bsc=buf2[i];
+				sc=i;
+			}
+		}
+		for (int i=0; i<wl2; i++) {
+			c[i]=sc-maxDelay;
+			if (c[i]+i<0) {c[i]=-i;}
+		}
+		
+		//System.out.println("Done stage 1");
+		
+		int loc1=wl2;
+		int loc2=windowlength;
+		int loc3=0;
+		float[]bsco=new float[n];
+		while (loc2<n-1) {
+			sc=0;
+			bsc=Float.MIN_VALUE;
+			for (int i=0; i<md; i++) {
+				if (buf2[i]>bsc) {
+					bsc=buf2[i];
+					sc=i;
+				}
+			}
+			c[loc1]=sc-maxDelay;
+			if (bsc<0) {bsc=0;}
+			bsco[loc1]=bsc;
+			loc1++;
+			loc2++;
+			for (int i=0; i<md; i++) {
+				buf2[i]-=buffer[loc3][i];
+				buf2[i]+=buffer[loc2][i];
+			}
+			loc3++;
+			
+			//if (loc3<10000) {
+			//	System.out.println(loc1+" "+bsc+" "+sc);
+			//}
+			
+			
+		}
+		for (int i=loc2; i<n; i++) {
+			c[i]=sc-maxDelay;
+			if (c[i]+i>=n) {c[i]=n-1-i;}
+		}
+		
+		
+		//for (int i=n/2; i<(n/2)+500; i++) {
+		//	System.out.println(c[i]+" "+d1[i]+" "+d2[i]);
+		//}
+		
+		
+		return c;
+		
+	}
+	
+	float[] calculatePeaks(float[] d, int window) {
+		int n=d.length; 
+		int w=window/2;
+		float[] out=new float[n];
+		
+		for (int i=0; i<n; i++) {
+			float max=-1000;
+			float min=1000;
+			for (int j=i-w; j<=i+w; j++) {
+				if ((j>=0)&&(j<n)){
+					
+					if (d[j]>max) {max=d[j];}
+					if (d[j]<min) {min=d[j];}
+				}			
+			}
+			//System.out.println(min+" "+max);
+			out[i]=max-min;	
+		}
+		
+		return out;
+
+	}
+	
+	
+	int[] mindifferenceX(float[] d1, float[] d2) {
+		int n=d1.length;
+		int[] c=new int[n];
+		int maxDelay=30;
+		int md=maxDelay*2+1;
+		
+		int globalDelayWindow=500;
+		int gd=globalDelayWindow*2+1;
+		
+		
+		float[] pwindow1=calculatePeaks(d1, 200);
+		float[] pwindow2=calculatePeaks(d2,200);
+		
+		
+		float[] globalsum=new float[gd];
+		float x=0;
+		for (int i=0; i<n; i++) {
+			for (int j=-globalDelayWindow; j<=globalDelayWindow; j++) {
+				int k=i+j;
+				if ((k>=0)&&(k<n)) {
+					x=d1[i]-d2[k];
+					//System.out.println(pwindow1[i]+" "+pwindow2[i]);
+					globalsum[j+globalDelayWindow]+=Math.abs(x)/(pwindow1[i]+pwindow2[k]);
+					//globalsum[j+globalDelayWindow]+=Math.abs(x);
+				}
+			}
+		}
+		
+		float bgd=Float.MAX_VALUE;
+		int gloc=-1;
+		
+		for (int i=0; i<gd; i++) {
+			if (globalsum[i]<bgd) {
+				bgd=globalsum[i];
+				gloc=i;
+			}
+			//System.out.println(globalsum[i]);
+		}
+		gloc-=globalDelayWindow;
+		//System.out.println("GLOBAL: "+gloc+" "+bgd);
+
+		for (int i=0; i<n; i++) {
+			c[i]=gloc;
+			if (i>gloc) {
+				c[i]=-i;
+			}
+			if (i+gloc>=n) {
+				c[i]=n-i-1;
+			}
+		}
+		
+		
+		return c;
+		
+	}
+	
+	
+	
+	int[] mindifferenceX2(float[] d1, float[] d2) {
+		int n=d1.length;
+		int[] c=new int[n];
+		int maxDelay=30;
+		int md=maxDelay*2+1;
+		
+		int globalDelayWindow=500;
+		int gd=globalDelayWindow*2+1;
+		
+		int windowlength=100000;
+		if (windowlength>=n) {windowlength=n-1;}
+		int wl2=windowlength/2;
+		
+		
+		float[] pwindow1=calculatePeaks(d1, 200);
+		float[] pwindow2=calculatePeaks(d2,200);
+		
+		
+		float[] globalsum=new float[gd];
+		float x=0;
+		for (int i=0; i<n; i++) {
+			for (int j=-globalDelayWindow; j<=globalDelayWindow; j++) {
+				int k=i+j;
+				if ((k>=0)&&(k<n)) {
+					x=d1[i]-d2[k];
+					globalsum[j+globalDelayWindow]+=Math.abs(x);
+				}
+			}
+		}
+		
+		float bgd=Float.MAX_VALUE;
+		int gloc=-1;
+		
+		for (int i=0; i<gd; i++) {
+			if (globalsum[i]<bgd) {
+				bgd=globalsum[i];
+				gloc=i;
+			}
+			//System.out.println(globalsum[i]);
+		}
+		gloc-=globalDelayWindow;
+		//System.out.println("GLOBAL: "+gloc+" "+bgd);
+		
+		float[] delaywindow=new float[md];
+		for (int i=-maxDelay; i<=maxDelay; i++) {
+			//delaywindow[i+maxDelay]=(float)Math.pow(i*i, 0.2);
+			delaywindow[i+maxDelay]=(float)Math.abs(i)+maxDelay*10;
+			//System.out.println(delaywindow[i+maxDelay]);
+		}
+		
+		
+		float[][]buffer=new float[n][md];  //big memory demand
+
+		
+		x=0;
+		for (int i=0; i<n; i++) {
+			for (int j=-maxDelay; j<=maxDelay; j++) {
+				int k=i+j+gloc;
+				if ((k>=0)&&(k<n)) {
+					x=d1[i]-d2[k];
+					buffer[i][j+maxDelay]=Math.abs(x)* delaywindow[j+maxDelay]/(pwindow1[i]+pwindow2[k]);
+					//buffer[i][j+maxDelay]=Math.abs(x)* delaywindow[j+maxDelay];
+				}
+			}
+		}
+		
+		
+		//calculate global delay for phase diffs between mics
+		
+		pwindow1=null;
+		pwindow2=null;
+		
+		
+		float[]buf2=new float[md];
+		
+		for (int i=0; i<windowlength; i++) {
+			for (int j=0; j<md; j++) {
+				buf2[j]+=buffer[i][j];
+			}
+		}
+		int sc=0;
+		float bsc=Float.MAX_VALUE;
+		for (int i=0; i<md; i++) {
+			if (buf2[i]<bsc) {
+				bsc=buf2[i];
+				sc=i;
+			}
+		}
+		for (int i=0; i<wl2; i++) {
+			c[i]=sc-maxDelay+gloc;
+			if (c[i]+i<0) {c[i]=-i;}
+		}
+		
+		//System.out.println("Done stage 1");
+		
+		int loc1=wl2;
+		int loc2=windowlength;
+		int loc3=0;
+		float[]bsco=new float[n];
+		while (loc2<n-1) {
+			sc=0;
+			bsc=Float.MAX_VALUE;
+			for (int i=0; i<md; i++) {
+				if (buf2[i]<bsc) {
+					bsc=buf2[i];
+					sc=i;
+				}
+			}
+			c[loc1]=sc-maxDelay+gloc;
+			if (bsc<0) {bsc=0;}
+			bsco[loc1]=bsc;
+			loc1++;
+			loc2++;
+			for (int i=0; i<md; i++) {
+				buf2[i]-=buffer[loc3][i];
+				buf2[i]+=buffer[loc2][i];
+			}
+			loc3++;
+			
+			//if (loc3<10000) {
+			//	System.out.println(loc1+" "+bsc+" "+sc);
+			//}
+			
+			
+		}
+		for (int i=loc2; i<n; i++) {
+			c[i]=sc-maxDelay+gloc;
+			if (c[i]+i>=n) {c[i]=n-1-i;}
+		}
+		
+		/*
+		for (int i=n/2; i<(n/2)+500; i++) {
+			System.out.println(c[i]+" "+d1[i]+" "+d2[i]);
+		}
+		*/
+		
+		buffer=null;
+		buf2=null;
+		bsco=null;
+		
+		return c;
+		
+	}
+	
+	int[] mindifference(float[] d1x, float[] d2x, double sr) {
+		long time1=System.currentTimeMillis();
+		float[] d1=filter(0, d1x.length, d1x, sr, bfminfreq, true);
+		float[] d2=filter(0, d2x.length, d2x, sr, bfminfreq, true);
+		d1=filter(0, d1.length, d1, sr, bfmaxfreq, false);
+		d2=filter(0, d2.length, d2, sr, bfmaxfreq, false);
+		
+		//System.out.println(d1.length+" "+d2.length);
+		
+		//for (int i=0; i<d1.length; i++) {
+		//	System.out.println(i+" "+d1[i]+" "+d2[i]+" "+d1x[i]+" "+d2x[i]);
+		//}
+		long time2=System.currentTimeMillis();
+		
+		int n=d1.length;
+		int[] c=new int[n];
+		
+		int md=maxDelay*2+1;
+		
+		int globalDelayWindow=500;
+		int gd=globalDelayWindow*2+1;
+		
+		int windowlength=10000;
+		if (windowlength>=n) {windowlength=n-1;}
+		int wl2=windowlength/2;
+		
+		//System.out.println("pwindow calc");
+		float[] pwindow1=calculatePeaks(d1, 200);
+		float[] pwindow2=calculatePeaks(d2,200);
+		
+		
+		long time3=System.currentTimeMillis();
+		//System.out.println("globalsum");
+		
+		int ncores=Runtime.getRuntime().availableProcessors();
+		
+		GlobalDelay[] gdy=new GlobalDelay[ncores];
+		float[] globalsum=new float[gd];
+		
+		for (int i=0; i<ncores; i++) {
+			gdy[i]=new GlobalDelay(i, ncores, n, globalDelayWindow, d1, d2, gd);
+			gdy[i].start();
+		}
+		
+		try{
+			for (int i=0; i<ncores; i++) {
+				gdy[i].join();
+				for (int j=0; j<gd; j++) {
+					globalsum[j]+=gdy[i].out[j];
+				}
+			}
+		}
+		catch (Exception g){
+			g.printStackTrace();
+		}
+
+		
+		float bgd=Float.MAX_VALUE;
+		int gloc=-1;
+		
+		for (int i=0; i<gd; i++) {
+			if (globalsum[i]<bgd) {
+				bgd=globalsum[i];
+				gloc=i;
+			}
+			//System.out.println(globalsum[i]);
+		}
+		gloc-=globalDelayWindow;
+		System.out.println("GLOBAL: "+gloc+" "+bgd+" "+gd);
+		
+		long time4=System.currentTimeMillis();
+		
+		float[] delaywindow=new float[md];
+		for (int i=-maxDelay; i<=maxDelay; i++) {
+			//delaywindow[i+maxDelay]=(float)Math.pow(i*i, 0.2);
+			delaywindow[i+maxDelay]=(float)Math.abs(i)+maxDelay*10;
+			//System.out.println(delaywindow[i+maxDelay]);
+		}
+		
+		
+		//System.out.println("main calc");
+		float[][]buffer=new float[windowlength][md];
+		
+		float[]buf2=new float[md];
+				
+		for (int i=0; i<windowlength; i++) {
+			
+			updateBuffer(buffer[i], i, maxDelay, gloc, n, d1, d2, delaywindow, pwindow1, pwindow2);
+
+			for (int j=0; j<md; j++) {
+				buf2[j]+=buffer[i][j];
+			}
+		}
+		int sc=0;
+		float bsc=Float.MAX_VALUE;
+		for (int i=0; i<md; i++) {
+			if (buf2[i]<bsc) {
+				bsc=buf2[i];
+				sc=i;
+			}
+		}
+		for (int i=0; i<wl2; i++) {
+			c[i]=sc-maxDelay+gloc;
+			if (c[i]+i<0) {c[i]=-i;}
+		}
+		
+		//System.out.println("Done stage 1");
+		
+		int loc1=wl2;
+		int loc2=windowlength;
+		int loc3=0;
+		float[]bsco=new float[n];
+		while (loc2<n-1) {
+			sc=0;
+			bsc=Float.MAX_VALUE;
+			for (int i=0; i<md; i++) {
+				if (buf2[i]<bsc) {
+					bsc=buf2[i];
+					sc=i;
+				}
+			}
+			c[loc1]=sc-maxDelay+gloc;
+			if (bsc<0) {bsc=0;}
+			bsco[loc1]=bsc;
+			loc1++;
+			
+			
+			for (int i=0; i<md; i++) {
+				buf2[i]-=buffer[loc3][i];
+			}
+			
+			updateBuffer(buffer[loc3], loc2, maxDelay, gloc, n, d1, d2, delaywindow, pwindow1, pwindow2);
+			
+			for (int i=0; i<md; i++) {
+				buf2[i]+=buffer[loc3][i];
+			}
+			
+			loc3++;
+			if (loc3==windowlength) {loc3=0;}
+			loc2++;
+			
+			
+		}
+		
+		
+		//System.out.println("wrap up");
+		for (int i=loc2; i<n; i++) {
+			c[i]=sc-maxDelay+gloc;
+			if (c[i]+i>=n) {c[i]=n-1-i;}
+		}
+		
+		/*
+		for (int i=n/2; i<(n/2)+500; i++) {
+			System.out.println(c[i]+" "+d1[i]+" "+d2[i]);
+		}
+		*/
+		
+		buffer=null;
+		buf2=null;
+		bsco=null;
+		
+		long time5=System.currentTimeMillis();
+		
+		
+		System.out.println("MINDIFFTIMES: "+(time2-time1)+" "+(time3-time2)+" "+(time4-time3)+" "+(time5-time4));
+		
+		return c;
+		
+	}
+	
+	public int[][] measureGlobalDiffs(float[] d, int stereo){
+		int globalDelayWindow=20;
+		int gd=2*globalDelayWindow+1;
+		int ncores=Runtime.getRuntime().availableProcessors();
+		
+		float[] dd=expand(d, stereo, 5);
+		
+		int[][] out=new int[stereo][stereo];
+		for (int i=0; i<stereo; i++) {
+			float[] d1=extractOffset(d, i, stereo);
+			int n=d1.length;
+			for (int j=0; j<stereo; j++) {
+				if (j!=i) {
+					float[] d2=extractOffset(d, j, stereo);
+					GlobalDelay[] gdy=new GlobalDelay[ncores];
+					float[] globalsum=new float[gd];
+					
+					for (int k=0; k<ncores; k++) {
+						gdy[k]=new GlobalDelay(k, ncores, n, globalDelayWindow, d1, d2, gd);
+						gdy[k].start();
+					}
+					
+					try{
+						for (int k=0; k<ncores; k++) {
+							gdy[k].join();
+							for (int jj=0; jj<gd; jj++) {
+								globalsum[jj]+=gdy[k].out[jj];
+							}
+						}
+					}
+					catch (Exception g){
+						g.printStackTrace();
+					}
+					float bgd=Float.MAX_VALUE;
+					int gloc=-1;
+					
+					for (int ii=0; ii<gd; ii++) {
+						if (globalsum[ii]<bgd) {
+							bgd=globalsum[ii];
+							gloc=ii;
+						}
+						//System.out.println(globalsum[i]);
+					}
+					gloc-=globalDelayWindow;
+					out[i][j]=gloc;
+					System.out.print("GLOBAL: "+i+" "+j+" "+gloc+" "+bgd+" "+gd);
+				}
+			}
+			System.out.println();
+		}
+		
+		return out;
+	}
+	
+	
+	public class GlobalDelay extends Thread{
+		
+		public float[] out=null;
+		int q=0;
+		int ncores=0;
+		int n=0;
+		int globalDelayWindow=0;
+		float[]d1, d2;
+		
+		
+		public GlobalDelay(int q, int ncores, int n, int globalDelayWindow, float[] d1, float[] d2, int gd) {
+			out=new float[gd];
+			this.q=q;
+			this.ncores=ncores;
+			this.n=n;
+			this.globalDelayWindow=globalDelayWindow;
+			this.d1=d1;
+			this.d2=d2;
+		}
+		
+		public synchronized void run(){
+			
+			int p=n/ncores;
+			
+			int start=p*q;
+			int end=start+p;
+			
+			
+			float x=0;
+			for (int i=start; i<end; i++) {
+				for (int j=-globalDelayWindow; j<=globalDelayWindow; j++) {
+					int k=i+j;
+					if ((k>=0)&&(k<n)) {
+						x=d1[i]-d2[k];
+						if (x>0) {out[j+globalDelayWindow]+=x;}
+						else {out[j+globalDelayWindow]-=x;}
+					}
+				}
+			}
+		}
+		
+	}
+	
+	
+	
+	public void updateBuffer(float[] buf, int i, int maxDelay, int gloc, int n, float[] d1, float[] d2, float[] delaywindow, float[] pwindow1, float[] pwindow2) {
+		float x=0;
+		for (int j=-maxDelay; j<=maxDelay; j++) {
+			int k=i+j+gloc;
+			if ((k>=0)&&(k<n)) {
+				x=d1[i]-d2[k];
+				buf[j+maxDelay]=Math.abs(x)* delaywindow[j+maxDelay]/(pwindow1[i]+pwindow2[k]);
+			}
+		}
+		
+	}
+	
+	
+	
+	
+	
+	
+	int[] crosscorrelate(float[] d, int st, int ch) {
+		
+		//System.out.println("NUMBER OF TRACKS: "+st+" "+d.length);
+		
+		int n=d.length/st;
+		
+		int[] c=new int[n];
+		int maxDelay=30;
+		int md=maxDelay*2+1;
+		int windowlength=1000;
+		int wl2=windowlength/2;
+		
+	
+		float[][]buffer=new float[n][md];
+		for (int i=0; i<n; i++) {
+			for (int j=-maxDelay; j<=maxDelay; j++) {
+				int k=i+j;
+				if ((k>=0)&&(k<n)) {
+					buffer[i][j+maxDelay]=d[st*i]*d[st*k+ch];
+				}
+			}
+		}
+		
+		float[]buf2=new float[md];
+		
+		for (int i=0; i<windowlength; i++) {
+			for (int j=0; j<md; j++) {
+				buf2[j]+=buffer[i][j];
+			}
+		}
+		int sc=0;
+		float bsc=Float.MIN_VALUE;
+		for (int i=0; i<md; i++) {
+			if (buf2[i]>bsc) {
+				bsc=buf2[i];
+				sc=i;
+			}
+		}
+		for (int i=0; i<wl2; i++) {
+			c[i]=sc-maxDelay;
+			if (c[i]+i<0) {c[i]=-i;}
+		}
+		
+		//System.out.println("Done stage 1");
+		
+		int loc1=wl2;
+		int loc2=windowlength;
+		int loc3=0;
+		float[]bsco=new float[n];
+		while (loc2<n-1) {
+			sc=0;
+			bsc=Float.MIN_VALUE;
+			for (int i=0; i<md; i++) {
+				if (buf2[i]>bsc) {
+					bsc=buf2[i];
+					sc=i;
+				}
+			}
+			c[loc1]=sc-maxDelay;
+			if (bsc<0) {bsc=0;}
+			bsco[loc1]=bsc;
+			loc1++;
+			loc2++;
+			for (int i=0; i<md; i++) {
+				buf2[i]-=buffer[loc3][i];
+				buf2[i]+=buffer[loc2][i];
+			}
+			loc3++;
+			
+			//if (loc3<10000) {
+			//	System.out.println(loc1+" "+bsc+" "+sc);
+			//}
+			
+			
+		}
+		for (int i=loc2; i<n; i++) {
+			c[i]=sc-maxDelay;
+			if (c[i]+i>=n) {c[i]=n-1-i;}
+		}
+		
+		
+		return c;
+		
+	}
+	
+	int[] delayestimatebysubtraction(float[] d, int st, int ch) {
+		
+		//System.out.println("NUMBER OF TRACKS: "+st+" "+d.length);
+		
+		int n=d.length/st;
+		
+		int[] c=new int[n];
+		int maxDelay=30;
+		int md=maxDelay*2+1;
+		int windowlength=1000;
+		int wl2=windowlength/2;
+		
+	
+		float[][]buffer=new float[n][md];
+		float x;
+		for (int i=0; i<n; i++) {
+			for (int j=-maxDelay; j<=maxDelay; j++) {
+				int k=i+j;
+				if ((k>=0)&&(k<n)) {
+					x=d[st*i]-d[st*k+ch];
+					buffer[i][j+maxDelay]=x*x;
+				}
+			}
+		}
+		
+		float[]buf2=new float[md];
+		
+		for (int i=0; i<windowlength; i++) {
+			for (int j=0; j<md; j++) {
+				buf2[j]+=buffer[i][j];
+			}
+		}
+		int sc=0;
+		float bsc=Float.MAX_VALUE;
+		for (int i=0; i<md; i++) {
+			if (buf2[i]<bsc) {
+				bsc=buf2[i];
+				sc=i;
+			}
+		}
+		for (int i=0; i<wl2; i++) {
+			c[i]=sc-maxDelay;
+			if (c[i]+i<0) {c[i]=-i;}
+		}
+		
+		//System.out.println("Done stage 1");
+		
+		int loc1=wl2;
+		int loc2=windowlength;
+		int loc3=0;
+		float[]bsco=new float[n];
+		while (loc2<n-1) {
+			sc=0;
+			bsc=Float.MAX_VALUE;
+			for (int i=0; i<md; i++) {
+				if (buf2[i]<bsc) {
+					bsc=buf2[i];
+					sc=i;
+				}
+			}
+			c[loc1]=sc-maxDelay;
+			if (bsc<0) {bsc=0;}
+			bsco[loc1]=bsc;
+			loc1++;
+			loc2++;
+			for (int i=0; i<md; i++) {
+				buf2[i]-=buffer[loc3][i];
+				buf2[i]+=buffer[loc2][i];
+			}
+			loc3++;
+			
+			//if (loc3<10000) {
+			//	System.out.println(loc1+" "+bsc+" "+sc);
+			//}
+			
+			
+		}
+		for (int i=loc2; i<n; i++) {
+			c[i]=sc-maxDelay;
+			if (c[i]+i>=n) {c[i]=n-1-i;}
+		}
+		
+		
+		return c;
+		/*
+		int[]c3=new int[n];
+		float c1=0;
+		float c2=0;
+		for (int i=0; i<n; i++) {
+			
+			c2+=c[i]*bsco[i];
+			c1+=bsco[i];
+			if (c1>0) {
+				c3[i]=Math.round(c2/c1);
+				while (c3[i]+i<0) {c3[i]++;}
+				while (c3[i]+i>=n) {c3[i]--;}
+			}
+			
+			if (i>=20000) {
+				int j=i-20000;
+				c2-=c[j]*bsco[j];
+				c1-=bsco[j];
+			}
+			
+			//System.out.println(c[i]+" "+bsco[i]+" "+c3[i]);
+			
+		}
+		
+		
+	
+		return c3;
+		*/
+	}
+
 	/**
 	 * This organizes calculation of the spectrogram, breaking the sound into chunks
 	 * that will not overwhelm the memory limits of java
@@ -1963,9 +3532,13 @@ public class Song {
 		place=0;
 		int eTime, sTime;
 		int overSize=overallSize;
+		
+		//System.out.println("CHUNKY FFT: "+chunks);
+		
+		
 		for (int i=0; i<=chunks; i++){
-			sTime=startTime+i*20000;
-			eTime=sTime+20000;
+			sTime=startTime+i*10000;
+			eTime=sTime+10000;
 			if (eTime>endTime){eTime=endTime;}
 			
 			//System.out.println("BOUNDS 1: "+i+" "+sTime+" "+eTime);
@@ -1989,19 +3562,913 @@ public class Song {
 				if (adEndTime>overSize){adEndTime=overSize;}
 				//int adStartTime=sTime;
 				//int adEndTime=eTime;
-				//System.out.println("PARSESOUND "+adStartTime+" "+adEndTime);
+				System.out.println("PARSESOUND "+i+" "+adStartTime+" "+adEndTime);
+				
 				parseSound(rawData, adStartTime*stereo, adEndTime*stereo);
-				//System.out.println("a: "+data.length+" "+adEndTime+" "+adStartTime+" "+rawData.length);
-				//System.out.println("FILTERSOUND "+(sTime-adStartTime)+" "+(eTime-adStartTime));
-				filter(sTime-adStartTime, eTime-adStartTime);
-				//System.out.println("b: "+data.length);
-				//System.out.println("FFTSOUND");
-				calculateFFT(L);
-				//System.out.println("DONECHUNK");
+				data=filter(sTime-adStartTime, eTime-adStartTime, data, sampleRate, frequencyCutOff, true);
+				calculateFFT(L, false);
+
+			}
+		}
+		//System.out.println("Chunks all done");
+	}
+
+
+/**
+ * This organizes calculation of the spectrogram, not breaking the sound into chunks
+ * @param chunks number of chunks
+ */
+	void nonChunkyFFT(){
+		place=0;
+		int eTime, sTime;
+		int overSize=overallSize;
+	
+		
+		sTime=(int)Math.round(startTime*step);
+		eTime=(int)Math.round(endTime*step+frame);
+		
+		int L=eTime-frame-sTime;
+		
+		if (eTime>overSize){eTime=overSize;}
+				
+		if (sTime<eTime){
+			int adStartTime=sTime-rangef;
+			if (adStartTime<0){adStartTime=0;}
+			int adEndTime=eTime+rangef;
+			if (adEndTime>overSize){adEndTime=overSize;}
+			//int adStartTime=sTime;
+			//int adEndTime=eTime;
+			System.out.println("PARSESOUND "+adStartTime+" "+adEndTime);
+			
+			float[] dd=parseSoundA(rawData, adStartTime*stereo, adEndTime*stereo);
+			
+			if (stereo==1) {
+				data=filter(sTime-adStartTime, eTime-adStartTime, dd, sampleRate, frequencyCutOff, true);
+				calculateFFT(L, false);
+			}
+			else{
+				if (guideSpect==true) {
+					/*
+					float[]out2=new float[dd.length/stereo];
+
+					for (int i=0; i<out2.length; i++) {
+						for (int j=0; j<stereo; j++) {
+							out2[i]+=dd[i*stereo+j];
+						}
+					}
+					data=new float[out2.length];
+					System.arraycopy(out2, 0, data, 0, out2.length);
+					out2=null;
+					*/
+					
+					data=extractOffset(dd, stereomodeGP, stereo);
+					data=filter(sTime-adStartTime, eTime-adStartTime, data, sampleRate, frequencyCutOff, true);
+					calculateFFT(L, false);
+					
+					
+				}
+				
+				else {
+					
+					if (stereo==2) {
+						if (stereomode==0){
+							data=extractOffset(dd, 0, stereo);
+							data=filter(sTime-adStartTime, eTime-adStartTime, data, sampleRate, frequencyCutOff, true);
+							calculateFFT(L, false);
+						}
+						
+						else if (stereomode==1) {
+							data=extractOffset(dd, 1, stereo);
+							data=filter(sTime-adStartTime, eTime-adStartTime, data, sampleRate, frequencyCutOff, true);
+							calculateFFT(L, false);
+						}
+						
+						else {
+							data=extractOffset(dd, 0, stereo);
+							data=filter(sTime-adStartTime, eTime-adStartTime, data, sampleRate, frequencyCutOff, true);
+							calculateFFT(L, true);
+							
+							float[][] phtemp=recordPhase(phasesp);
+							
+							
+							data=extractOffset(dd, 1, stereo);
+							data=filter(sTime-adStartTime, eTime-adStartTime, data, sampleRate, frequencyCutOff, true);
+							calculateFFT(L, true);
+							
+							phasesp=comparePhase(phtemp, phasesp);								
+						}
+						
+						
+						
+						
+					}
+					else if (stereo==4) {
+						
+						int[] order=micOrderOptions[micOrderChoice];
+						
+						/*
+						int[][] global=measureGlobalDiffs(dd, stereo);
+						int[] gtot=new int[stereo];
+						for (int i=0; i<stereo; i++) {
+							for (int j=0; j<stereo; j++) {
+								gtot[i]+=global[i][j];
+							}
+							
+						}
+						int[] order=new int[stereo];
+						for (int i=0; i<stereo; i++) {
+							int max=-1000000;
+							int loc=-1;
+							for (int j=0; j<stereo; j++) {
+								if (gtot[j]>max) {
+									max=gtot[j];
+									loc=j;
+								}
+								
+							}
+							order[i]=loc;
+							gtot[loc]=-1000000;
+						}
+						
+						System.out.println(order[0]+" "+order[1]+" "+order[2]+" "+order[3]);
+						*/
+						
+						if (stereomode==0){
+							data=extractOffset(dd, order[0], stereo);
+							data=filter(sTime-adStartTime, eTime-adStartTime, data, sampleRate, frequencyCutOff, true);
+							calculateFFT(L, false);	
+						}
+						
+						else if (stereomode==1) {
+							data=extractOffset(dd, order[1], stereo);
+							data=filter(sTime-adStartTime, eTime-adStartTime, data, sampleRate, frequencyCutOff, true);
+							calculateFFT(L, false);
+						}
+						else if (stereomode==2){
+							data=extractOffset(dd, order[2], stereo);
+							data=filter(sTime-adStartTime, eTime-adStartTime, data, sampleRate, frequencyCutOff, true);
+							calculateFFT(L, false);	
+						}
+						
+						else if (stereomode==3) {
+							data=extractOffset(dd, order[3], stereo);
+							data=filter(sTime-adStartTime, eTime-adStartTime, data, sampleRate, frequencyCutOff, true);
+							calculateFFT(L, false);
+						}
+						else {
+							
+							
+							if (stereomode==4) {
+								
+								data=extractOffset(dd, order[0], stereo);
+								
+								
+								
+								data=filter(sTime-adStartTime, eTime-adStartTime, data, sampleRate, frequencyCutOff, true);
+								calculateFFT(L, true);
+								float[][] phtemp=recordPhase(phasesp);
+
+								place=0;
+								
+								data=extractOffset(dd, order[1], stereo);
+								data=filter(sTime-adStartTime, eTime-adStartTime, data, sampleRate, frequencyCutOff, true);
+								calculateFFT(L, true);
+								
+								phasesp=comparePhase(phtemp, phasesp);	
+								
+								double delay=estimateDelay(phasesp, out, microphoneSpacing[0]);
+								System.out.println("ESTIMATED DELAY IS: "+delay);
+								beamFormingDelay=delay;
+								place=0;
+								
+								int[] ch= {order[0],order[1]};
+								data=delayAndSum(dd, ch, stereo, delay);
+								data=filter(sTime-adStartTime, eTime-adStartTime, data, sampleRate, frequencyCutOff, true);
+								calculateFFT(L, false);
+								
+								
+							}
+							else if (stereomode==5) {
+								data=extractOffset(dd, order[2], stereo);
+								data=filter(sTime-adStartTime, eTime-adStartTime, data, sampleRate, frequencyCutOff, true);
+								calculateFFT(L, true);
+								
+								float[][] phtemp=recordPhase(phasesp);
+								
+								place=0;
+								
+								data=extractOffset(dd, order[3], stereo);
+								data=filter(sTime-adStartTime, eTime-adStartTime, data, sampleRate, frequencyCutOff, true);
+								calculateFFT(L, true);
+								
+								phasesp=comparePhase(phtemp, phasesp);	
+								
+								double delay=estimateDelay(phasesp, out, microphoneSpacing[2]);
+								System.out.println("ESTIMATED DELAY IS: "+delay);
+								beamFormingDelay=delay;
+								place=0;
+								
+								int[] ch= {order[2],order[3]};
+								data=delayAndSum(dd, ch, stereo, delay);
+								data=filter(sTime-adStartTime, eTime-adStartTime, data, sampleRate, frequencyCutOff, true);
+								calculateFFT(L, false);
+							}
+							
+							else {
+								
+								long time0=System.currentTimeMillis();
+								
+								MakePhaseSpect[]mps=new MakePhaseSpect[4];
+								//, sTime-adStartTime, eTime-adStartTime
+								for (int k=0; k<4; k++) {
+									mps[k]=new MakePhaseSpect(dd, order[k], L);
+									mps[k].start();
+								}
+								
+								try{
+									for (int k=0; k<4; k++) {
+										mps[k].join();
+										
+									}
+								}
+								catch (Exception g){
+									g.printStackTrace();
+								}
+								
+								/*
+								long time1=System.currentTimeMillis();
+								
+								data=extractOffset(dd, order[0], stereo);
+								Spectrogram spect1=new Spectrogram();
+								data=spect1.filter(sTime-adStartTime, eTime-adStartTime, data, sampleRate, frequencyCutOff, true);
+								spect1.calculateFFT(data, L, true, frame, step, ny, anx, windowMethod);
+								float[][] phtemp1=spect1.phase;
+								
+								data=extractOffset(dd, order[1], stereo);
+								Spectrogram spect2=new Spectrogram();
+								data=spect2.filter(sTime-adStartTime, eTime-adStartTime, data, sampleRate, frequencyCutOff, true);
+								spect2.calculateFFT(data, L, true, frame, step, ny, anx, windowMethod);
+								float[][] phtemp2=spect2.phase;
+								
+								data=extractOffset(dd, order[2], stereo);
+								Spectrogram spect3=new Spectrogram();
+								data=spect3.filter(sTime-adStartTime, eTime-adStartTime, data, sampleRate, frequencyCutOff, true);
+								spect3.calculateFFT(data, L, true, frame, step, ny, anx, windowMethod);
+								float[][] phtemp3=spect3.phase;
+								
+								data=extractOffset(dd, order[3], stereo);
+								Spectrogram spect4=new Spectrogram();
+								data=spect4.filter(sTime-adStartTime, eTime-adStartTime, data, sampleRate, frequencyCutOff, true);
+								spect4.calculateFFT(data, L, true, frame, step, ny, anx, windowMethod);
+								float[][] phtemp4=spect4.phase;
+								
+								
+								long time2=System.currentTimeMillis();
+								
+								
+								
+								data=extractOffset(dd, order[0], stereo);
+								data=filter(sTime-adStartTime, eTime-adStartTime, data, sampleRate, frequencyCutOff, true);
+								calculateFFT(L, true);
+								float[][] phtemp1a=recordPhase(phasesp);
+								
+								place=0;
+								
+								data=extractOffset(dd, order[1], stereo);
+								data=filter(sTime-adStartTime, eTime-adStartTime, data, sampleRate, frequencyCutOff, true);
+								calculateFFT(L, true);
+								float[][] phtemp2a=recordPhase(phasesp);
+								
+								place=0;
+								
+								data=extractOffset(dd, order[2], stereo);
+								data=filter(sTime-adStartTime, eTime-adStartTime, data, sampleRate, frequencyCutOff, true);
+								calculateFFT(L, true);
+								
+								float[][] phtemp3a=recordPhase(phasesp);
+								
+								place=0;
+								
+								data=extractOffset(dd, order[3], stereo);
+								data=filter(sTime-adStartTime, eTime-adStartTime, data, sampleRate, frequencyCutOff, true);
+								calculateFFT(L, true);
+								
+								float[][] phtemp4a=recordPhase(phasesp);
+								
+								place=0;
+								
+								
+								long time3=System.currentTimeMillis();
+								*/
+								
+								
+								
+								
+								
+								//float[][] phx=comparePhase(phtemp1, phtemp2);
+								float[][] phx=comparePhase(mps[0].phase, mps[1].phase);
+								
+								
+								beamFormingDelays[0]=estimateDelay(phx, mps[0].spect, microphoneSpacing[0]);
+								System.out.println("ESTIMATED DELAY 1 IS: "+beamFormingDelays[0]);
+							
+								
+								float[][] phy=comparePhase(mps[2].phase, mps[3].phase);
+								
+								
+								
+								
+								beamFormingDelays[1]=estimateDelay(phy, mps[2].spect, microphoneSpacing[2]);
+								System.out.println("ESTIMATED DELAY 2 IS: "+beamFormingDelays[1]);
+								
+								
+								
+								/*
+								
+								
+								int[] a1= {order[0], order[1]};
+								float[] data1=delayAndSum(dd, a1, stereo, beamFormingDelays[0]);
+								Spectrogram spect1=new Spectrogram();
+								spect1.timeStep=timeStep;
+								spect1.frameLength=frameLength;
+								spect1.frame=frame;
+								spect1.windowMethod=windowMethod;
+								spect1.maxf=maxf;
+								
+								
+								data1=filter(data1, sampleRate, frequencyCutOff, true);
+								spect1.setFFTParameters(true, sampleRate);
+								spect1.calculateFFT(data1, true);
+								
+								
+								int[] a2= {order[2], order[3]};
+								float[] data2=delayAndSum(dd, a2, stereo, beamFormingDelays[1]);
+								Spectrogram spect2=new Spectrogram();
+								spect2.timeStep=timeStep;
+								spect2.frameLength=frameLength;
+								spect2.frame=frame;
+								spect2.windowMethod=windowMethod;
+								spect2.maxf=maxf;
+								
+								
+								data2=filter(data2, sampleRate, frequencyCutOff, true);
+								spect2.setFFTParameters(true, sampleRate);
+								spect2.calculateFFT(data2, true);
+								
+								
+								
+								
+								float[][] phz=comparePhase(spect1.phase, spect2.phase);
+								beamFormingDelays[2]=estimateDelay(phz, spect1.spectrogram, microphoneSpacing[1]+(microphoneSpacing[0]+microphoneSpacing[2])/2);
+								System.out.println("ESTIMATED DELAY F IS: "+beamFormingDelays[2]);
+								
+								float[] dd2=new float[2*data1.length];
+								for (int i=0; i<data1.length; i++) {
+									dd2[2*i]=data1[i];
+									dd2[2*i+1]=data2[i];
+								}
+								int[] ord= {0,1};
+								data=delayAndSum(dd2, ord, 2, beamFormingDelays[2]);
+								
+								
+								
+								
+								*/
+								
+								
+								
+								
+								
+								
+								
+								
+								
+								
+								
+								
+								
+								//phx=averagePhase(phtemp1, phtemp2);
+								//phy=averagePhase(phtemp3, phtemp4);
+								
+								//phx=averagePhase(mps[0].phase, mps[1].phase);
+								//phy=averagePhase(mps[2].phase, mps[3].phase);
+								
+								
+								//phtemps=null;
+								//phtemp1=null;
+								//phtemp2=null;
+								//phtemp3=null;
+								//phtemp4=null;
+								//phasesp=averagePhase(phx, phy);
+								//phasesp=comparePhase(phx, phy);
+								
+								//phx=null;
+								//phy=null;
+								
+								//beamFormingDelays[2]=estimateDelay(phasesp, mps[0].spect, microphoneSpacing[1]+(microphoneSpacing[0]+microphoneSpacing[2])/2);
+								
+								
+								float[][] phz=comparePhase(mps[1].phase, mps[2].phase);
+								beamFormingDelays[2]=estimateDelay(phz, mps[1].spect, microphoneSpacing[1]);
+								
+								
+								System.out.println("ESTIMATED DELAY 3 IS: "+beamFormingDelays[2]);
+								
+								//beamFormingDelays[2]=beamFormingDelays[0]+beamFormingDelays[1];
+								//phasetemp4=null;
+								
+								
+								mps=null;
+								
+								//System.out.println("ESTIMATED DELAY F IS: "+beamFormingDelays[2]);
+								
+								long time4=System.currentTimeMillis();
+								
+								//data=delayAndSumAll(dd, stereo, beamFormingDelays, order);
+								data=delayAndSum3(dd, stereo, beamFormingDelays, order);
+								
+								
+								//System.out.println(phasesp.length+" "+phx.length+" "+phy.length+" "+phz.length);
+								//System.out.println(phasesp[0].length+" "+phx[0].length+" "+phy[0].length+" "+phz[0].length);
+								
+								phasesp=new float[phz.length][phz[0].length];
+								for (int i=0; i<phz.length; i++) {
+									for (int j=0; j<phz[i].length; j++) {
+										phasesp[i][j]=(phx[i][j]+phy[i][j]+phz[i][j])/3f;
+									}
+								}
+								
+								
+								
+								
+								
+								
+								
+								data=filter(sTime-adStartTime, eTime-adStartTime, data, sampleRate, frequencyCutOff, true);
+								calculateFFT(L, false);
+								
+								
+								//Spectrogram spectF=new Spectrogram();
+								//data=spectF.filter(sTime-adStartTime, eTime-adStartTime, data, sampleRate, frequencyCutOff, true);
+								//spectF.calculateFFT(data, L, false, frame, step, ny, anx, windowMethod);
+								//phasesp=spect1.phase;
+								//out1=spectF.spectrogram;
+								//makeOut();
+								//calculateMaxAmp();
+								
+								long time5=System.currentTimeMillis();
+								
+								//System.out.println("SPECTROGRAM TIMING: "+(time1-time0)+" "+(time2-time1)+" "+(time3-time2)+" "+(time4-time3)+" "+(time5-time4));
+								
+								
+							}						
+						}
+						
+					}
+				}
 			}
 		}
 	}
+	
+	public class MakePhaseSpect extends Thread{
+		
+		public float[][] phase=null;
+		public float[][] spect=null;
+		float[] input=null;
+		int order=0;
+		int t1, t2, L;
+		
+		public MakePhaseSpect(float[]input, int order, int L) {
+			this.input=input;
+			this.order=order;
+			this.t1=t1;
+			this.t2=t2;
+			this.L=L;
+		}
+		
+		public synchronized void run(){
+			
+			float[] data=extractOffset(input, order, stereo);
+			Spectrogram spect1=new Spectrogram();
+			spect1.timeStep=timeStep;
+			spect1.frameLength=frameLength;
+			spect1.frame=frame;
+			spect1.windowMethod=windowMethod;
+			spect1.maxf=maxf;
+			
+			
+			data=filter(data, sampleRate, frequencyCutOff, true);
+			spect1.setFFTParameters(true, sampleRate);
+			spect1.calculateFFT(data, true);
+			
+			spect=spect1.spectrogram;
+			phase=spect1.phase;
+			
+		}
+		
+	}
+	
+	public float[] filter(float[]x, double sr, double fco, boolean highPass) {
+		Butterworth bwfilter=new Butterworth();
+		if (highPass) {
+			bwfilter.highPass(6, sr, fco);
+		}
+		else {
+			bwfilter.lowPass(6, sr, fco);
+		}
+		//bwfilter.highPass(6, sampleRate, frequencyCutOff);
+		
+		int size=x.length;
+		float[] data2=new float[size];
+		if (fco>0){
+			for (int i=0; i<size; i++) {
+				data2[i]=(float)bwfilter.filter(x[i]);
+			}
+			//data=data2;
+		}
+		else {
+			for (int i=0; i<size; i++){
+				data2[i]=x[i];
+			}
+			//data=data1;
+		}
+		return data2;
+	}
+	
+	private float[] filterCh(float[] x, double sr, double fco, boolean highPass) {
+		ChebyshevII chfilter=new ChebyshevII();
+		if (highPass) {
+			chfilter.highPass(2, sr, fco, 1);
+		}
+		else {
+			chfilter.lowPass(2, sr, fco, 1);
+		}
+		
+		
+		int size=x.length;
+		float[] data2=new float[size];
+		if (fco>0){
+			for (int i=0; i<size; i++) {
+				data2[i]=(float)chfilter.filter(x[i]);
+			}
+		}
+		else {
+			for (int i=0; i<size; i++){
+				data2[i]=x[i];
+			}
 
+		}	
+		return data2;
+	}
+	
+	
+	public void checkInvert(float[][] x, float[][]y) {
+		int n=x.length;
+		int m=x[0].length;
+		
+		
+		
+		double meanx=0;
+		double meany=0;
+		double xy=0;
+		double xx=0;
+		double yy=0;
+		
+		for (int i=0; i<n; i++) {
+			for (int j=0; j<m; j++) {
+				meanx+=x[i][j];
+				meany+=y[i][j];
+				xy+=x[i][j]*y[i][j];
+				xx+=x[i][j]*x[i][j];
+				yy+=y[i][j]*y[i][j];
+			}
+		}
+		
+		double cor=(n*m*xy-(meanx*meany))/(Math.sqrt(n*m*xx-meanx*meanx)*Math.sqrt(n*m*yy-meany*meany));
+		System.out.println("BOARD CORRELATION: "+cor);
+	}
+	
+	public float[] delayAndSumAll(float[] x, int stereo, double[] delays, int[] order) {
+		
+		float[]y=expand(x, stereo, expansionFactor);
+		
+		float[] a1=extractOffset(y, order[0], stereo);
+		float[] b1=extractOffset(y, order[1], stereo);
+		float[] a2=extractOffset(y, order[2], stereo);
+		float[] b2=extractOffset(y, order[3], stereo);
+		
+		int n=a1.length;
+		
+		int d1=(int)Math.round(delays[0]*expansionFactor);
+		int d2=(int)Math.round(delays[1]*expansionFactor);
+		int d3=(int)Math.round(delays[2]*expansionFactor);
+		
+		float[]c1=new float[n];
+		float[]c2=new float[n];
+		float[] c=new float[n];
+		for (int i=0; i<n; i++) {
+			int f=i+d1;
+			if (f<0) {f=0;}
+			if (f>=n) {f=n-1;}
+			
+			int g=i+d2;
+			if (g<0) {g=0;}
+			if (g>=n) {g=n-1;}
+			
+			c1[i]=a1[i]+b1[f];
+			c2[i]=a2[i]+b2[g];
+			
+			
+		}
+		
+		
+		
+		for (int i=0; i<n; i++) {
+			int f=i+d3;
+			if (f<0) {f=0;}
+			if (f>=n) {f=n-1;}
+			
+			c[i]=c2[i]+c1[f];
+		}
+		
+
+		float[] out=contract(c, 1, expansionFactor);
+		
+		//System.out.println(out.length+" "+x.length+" "+a.length+" "+expansionFactor+" "+d);
+		return out;
+	}
+	
+	public float[] delayAndSum3(float[] x, int stereo, double[] delays, int[] order) {
+		
+		float[]y=expand(x, stereo, expansionFactor);
+		
+		float[] a1=extractOffset(y, order[0], stereo);
+		float[] b1=extractOffset(y, order[1], stereo);
+		float[] a2=extractOffset(y, order[2], stereo);
+		float[] b2=extractOffset(y, order[3], stereo);
+		
+		int n=a1.length;
+		
+		int d1=(int)Math.round(delays[0]*expansionFactor);
+		int d2=(int)Math.round(delays[1]*expansionFactor);
+		int d3=(int)Math.round(delays[2]*expansionFactor);
+		
+		float[] c=new float[n];
+		for (int i=0; i<n; i++) {
+			int f=i+d1;
+			if (f<0) {f=0;}
+			if (f>=n) {f=n-1;}
+			
+			int g=i+d3+d1;
+			if (g<0) {g=0;}
+			if (g>=n) {g=n-1;}
+			
+			int h=i+d1+d2+d3;
+			if (h<0) {h=0;}
+			if (h>=n) {h=n-1;}
+			
+			c[i]=a1[i]+b1[f]+a2[g]+b2[h];
+
+		}
+		
+
+		float[] out=contract(c, 1, expansionFactor);
+		
+		//System.out.println(out.length+" "+x.length+" "+a.length+" "+expansionFactor+" "+d);
+		return out;
+	}
+	
+	
+	
+	
+	public float[] delayAndSum(float[] x, int[]ch, int stereo, double delay) {
+		
+		float[]y=expand(x, stereo, expansionFactor);
+		
+		float[] a=extractOffset(y, ch[0], stereo);
+		float[] b=extractOffset(y, ch[1], stereo);
+		int n=a.length;
+		int d=(int)Math.round(delay*expansionFactor);
+		
+		float[]c=new float[n];
+		
+		for (int i=0; i<n; i++) {
+			int f=i+d;
+			if (f<0) {f=0;}
+			if (f>=n) {f=n-1;}
+			
+			c[i]=a[i]+b[f];
+		}
+
+		float[] out=contract(c, 1, expansionFactor);
+		
+		//System.out.println(out.length+" "+x.length+" "+a.length+" "+expansionFactor+" "+d);
+		return out;
+	}
+	
+	
+	public double estimateDelayX(float[][] x, float[][] y) {
+		
+		int n=x.length;
+		int m=x[0].length;
+		
+		double[] sc=new double[1000];
+		
+		
+		int minFreq=(int)Math.round(bfminfreq/dy);
+		int maxFreq=(int)Math.round(bfmaxfreq/dy);
+		//System.out.println(minFreq+" "+maxFreq+" "+n+" "+dy);
+		
+		
+		for (int i=0; i<m; i++) {
+			
+			int loc=-1;
+			
+			double max=-100000000;
+			
+			for (int j=minFreq; j<maxFreq; j++) {
+				if (y[j][i]>max) {
+					max=y[j][i];
+					loc=j;
+				}	
+			}
+			
+			int xx=(int)Math.round((x[loc][i]*loc)/(Math.PI));	
+
+			sc[xx+500]+=max;
+			
+			
+			
+		}
+		
+		
+		int loc=-1;
+		double max=-100000000;
+		
+		for (int i=0; i<sc.length; i++) {
+			if (sc[i]>max) {
+				max=sc[i];
+				loc=i;
+			}
+				
+		}
+		
+		loc-=500;
+		
+		return loc/dy;
+	}
+	
+	
+	public double estimateDelay(float[][] x, float[][] y, int maxDelay) {
+		
+		int n=x.length;
+		int m=x[0].length;
+		
+		double[] sc=new double[1000];
+		
+		
+		int minFreq=(int)Math.round(bfminfreq/dy);
+		int maxFreq=(int)Math.round(bfmaxfreq/dy);
+		//System.out.println(minFreq+" "+maxFreq+" "+n+" "+dy);
+		
+		
+		for (int i=0; i<m; i++) {
+			
+			int loc=-1;
+			
+			double max=-100000000;
+			
+			for (int j=minFreq; j<maxFreq; j++) {
+				if (y[j][i]>max) {
+					max=y[j][i];
+					loc=j;
+				}	
+			}
+			
+			double yy=framePad/(loc+0.0);
+			yy*=expansionFactor;
+			
+			int xx=(int)Math.round((x[loc][i]*yy)/(Math.PI));
+			
+			//System.out.println(j+" "+framePad+" "+yy+" "+x[j][i]);
+			if ((xx>=-500)&&(xx<500)){
+				sc[xx+500]+=y[loc][i];
+			}
+			
+			
+			/*
+			xx=(int)Math.round(((x[loc][i]+2*Math.PI)*yy)/(Math.PI));
+			if ((xx>=-500)&&(xx<500)){
+				sc[xx+500]+=y[loc][i];
+			}
+			
+			xx=(int)Math.round(((x[loc][i]-2*Math.PI)*yy)/(Math.PI));
+			if ((xx>=-500)&&(xx<500)){
+				sc[xx+500]+=y[loc][i];
+			}
+					*/
+			
+			
+			/*
+			for (int j=minFreq; j<maxFreq; j++) {
+				
+				
+				
+				double yy=framePad/(j+0.0);
+				
+				int xx=(int)Math.round((x[j][i]*yy)/(Math.PI));
+				
+				//System.out.println(j+" "+framePad+" "+yy+" "+x[j][i]);
+				
+				sc[xx+500]+=y[j][i];
+				
+				xx=(int)Math.round(((x[j][i]+2*Math.PI)*yy)/(Math.PI));
+				sc[xx+500]+=y[j][i];
+				
+				xx=(int)Math.round(((x[j][i]-2*Math.PI)*yy)/(Math.PI));
+				sc[xx+500]+=y[j][i];
+				
+			}	
+			*/
+				
+		}
+		
+		
+		int loc=-1;
+		double max=-100000000;
+		
+		for (int i=500-maxDelay*expansionFactor; i<=500+maxDelay*expansionFactor; i++) {
+			//System.out.println(i+" "+sc[i]);
+			if (sc[i]>max) {
+				max=sc[i];
+				loc=i;
+			}
+				
+		}
+		
+		loc-=500;
+		double l2=loc/(expansionFactor+0.0);
+		return l2;
+	}
+	
+	
+	
+	
+	public float[][] comparePhase(float[][] x, float[][]y){
+		int n=x.length;
+		int m=x[0].length;
+		
+		float[][] out=new float[n][m];
+		for (int i=0; i<n; i++) {
+			for (int j=0; j<m; j++) {
+				double p=x[i][j]-y[i][j];
+				
+				if (p< -Math.PI) {
+					p+= 2*Math.PI;
+				}
+				if (p> Math.PI) {
+					p-= 2*Math.PI;
+				}
+				out[i][j]=(float)p;
+				//if (j==100) {
+				//	System.out.println(j+" "+x[i][j]+" "+y[i][j]+" "+p);
+				//}
+			}
+		}
+		return out;
+	}
+	
+	
+	
+	public float[][] averagePhase(float[][] x, float[][]y){
+		int n=x.length;
+		int m=x[0].length;
+		
+		float[][] out=new float[n][m];
+		for (int i=0; i<n; i++) {
+			for (int j=0; j<m; j++) {
+				double p=(x[i][j]+y[i][j])*0.5;
+				out[i][j]=(float)p;
+			}
+		}
+		return out;
+	}
+	
+	public float[][] recordPhase(float[][]x){
+		int n=x.length;
+		int m=x[0].length;
+		
+		float[][] out=new float[n][m];
+		for (int i=0; i<n; i++) {
+			for (int j=0; j<m; j++) {
+				out[i][j]=x[i][j];
+			}
+		}
+		return out;
+	}
+	
+
+	
 	
 	/**
 	 * This organizes the calculation of a spectrographic representation of the sound
@@ -2031,16 +4498,22 @@ public class Song {
 			*/
 		
 		if (updateFFT){
+			
+			
 			this.startTime=startTime;
 			this.endTime=endTime;
-		
-			double chunks=(endTime-startTime)/20000.0;
-			System.out.println("Sampling FFT");
+			double chunks=(endTime-startTime)/10000.0;
+			//double chunks=(endTime-startTime)/20000.0;
+			//System.out.println("Sampling FFT");
 			calculateSampleFFT();
 
-			System.out.println("Chunky FFT");
-			chunkyFFT(chunks);
-			System.out.println("Done FFT");
+			//System.out.println("Chunky FFT");
+			//chunkyFFT(chunks);
+			
+			nonChunkyFFT();
+			
+			
+			//System.out.println("Done FFT");
 		/*
 		int pframe=frame;
 		float[][]o1=new float[ny][anx];
@@ -2077,11 +4550,15 @@ public class Song {
 			}
 		}
 		*/
-			System.out.println("Dyn Equal");
+			//System.out.println("Dyn Equal");
+			
+			
+			
+			
 			if (dynEqual>0){
 				dynamicEqualizer(out);
 			}
-			System.out.println("Dyn Range");
+			//System.out.println("Dyn Range");
 			if (relativeAmp){
 				dynamicRange(out, maxAmp);
 			}
@@ -2098,7 +4575,7 @@ public class Song {
 				out=m2o.medianFilterNR1(noiseLength2, 0.75f, 0, out, 0);
 			}
 		//out=m2o.accentuateLines(out, 2, 1);
-			System.out.println("Dereverb");
+			//System.out.println("Dereverb");
 			if ((echoComp>0)&&(echoRange>0)){
 			
 			
@@ -2130,9 +4607,15 @@ public class Song {
 			
 			//out=m2o.medianFilterNR(20, 0.25f, 10, out, 0);
 			}
-			System.out.println("Equalize");
+			
+			if (spectEnhance) {
+				spectrogramEnhancement();
+			}
+			
+			
+			//System.out.println("Equalize");
 			equalize(out);	
-			System.out.println("FInished");
+			//System.out.println("FInished");
 		}
 	}
 	
@@ -2152,8 +4635,8 @@ public class Song {
 		int adEndTime=e+rangef;
 		if (adEndTime>overSize){adEndTime=overSize;}
 		
-		parseSound(rawData, adStartTime*stereo, adEndTime*stereo);
-		filter(s-adStartTime, e-s);
+		//parseSound(rawData, adStartTime*stereo, adEndTime*stereo);
+		//filter(s-adStartTime, e-s);
 		
 		//if (steps<data.length){
 			
@@ -2164,21 +4647,21 @@ public class Song {
 				
 				int a=(int)Math.round(r*i);
 				int b=(int)Math.round(r*(i+1));
-				float maxAmp=-1000;
-				float minAmp=1000;
+				if (b>=data.length){b=data.length-1;}
+				float maxAmp=data[a];
+				float minAmp=data[a];
 				//System.out.println(data.length+" "+a+" "+b+" "+r+" "+i+" "+steps);
 				for (int j=a; j<=b; j++){
-					if (b<data.length){
-						if (data[j]>maxAmp){
-							maxAmp=data[j];
-						}
-						if (data[j]<minAmp){
-							minAmp=data[j];
-						}
+					if(data[j]>maxAmp){
+						maxAmp=data[j];
+					}
+					if (data[j]<minAmp){
+						minAmp=data[j];
 					}
 				}
 				envelope[i][0]=maxAmp;
 				envelope[i][1]=minAmp;
+				//System.out.println(i+" "+envelope[i][0]+" "+envelope[i][1]);
 			}
 		//}
 		/*
@@ -2227,24 +4710,23 @@ public class Song {
 		sampRate=sampleRate;
 		//step=(int)Math.round(timeStep*sampRate*0.001);	//step is the time-step of the spectrogram expressed in samples
 		step=timeStep*sampRate*0.001;
-		System.out.println(timeStep+" "+step);
+		//System.out.println(timeStep+" "+step);
 		
 		frame=(int)Math.round(frameLength*sampRate*0.001);	//frame is the frame-size of the spectrogram expressed in samples
-		
-		overlap=1-(timeStep/frameLength);
-		
 		framePad=2;
 		int p2=1;
 		while (framePad<frame){p2++; framePad=(int)Math.pow(2, p2);}
-		framePad=(int)Math.pow(2, p2+2);								//framePad is the frame-size of the spectrogram, padded out to the next integer power of 2
+		framePad=(int)Math.pow(2, p2+2);
+		overlap=1-(timeStep/frameLength);
+		
+										//framePad is the frame-size of the spectrogram, padded out to the next integer power of 2
 		makeWindow(frame);
-		makeTrigTables(framePad);
-		makeBitShiftTables(framePad);
-		filtl=makeFilterBank(frequencyCutOff, 1);
-		filtu=makeFilterBank(0.9*(sampRate/2.0), 0);
+
+		//filtl=makeFilterBank(frequencyCutOff, 1);
+		//filtu=makeFilterBank(0.9*(sampRate/2.0), 0);
 		dy=sampRate/(framePad+0.0);
 		dx=timeStep;
-		System.out.println(songID+" "+name);
+		//System.out.println(songID+" "+name);
 		overallSize=(rawData.length/(frameSize));
 		overallLength=(int)Math.round(overallSize/(sampRate*0.001));
 		
@@ -2267,15 +4749,27 @@ public class Song {
 	 */
 	public void  setFFTParameters2(int dist){
 		double start=0;
-		anx=0;
-		while (start+frame<dist*step+frame){start+=step; anx++;}
+		if (stereomode>=stereo) {
+			recordOffset=true;
+		}
+		//anx=0;
+		
+		//while (start+frame<dist*step+frame){start+=step; anx++;}
+		anx=dist+1;
+		
+		System.out.println("SFFT2"+dist+" "+anx);
+		
 		if (updateFFT){
 			out=null;
 			out1=null;
 			out=new float[ny][anx];
 			out1=new float[ny][anx];
+			phasesp=new float[ny][anx];
+			if (recordOffset) {
+				offsetDirection=new double[anx];
+			}
 		}
-		System.out.println("out dims: "+ny+" "+anx);
+		//System.out.println("out dims: "+ny+" "+anx);
 	}
 	
 	/**
@@ -2319,7 +4813,7 @@ public class Song {
 		byte[] rd=new byte[n];
 		
 		int q=ssizeInBits/8;
-		System.out.println("Bytes: "+q);
+		//System.out.println("Bytes: "+q);
 		//int p=rawData.length;
 
 		
@@ -2351,7 +4845,7 @@ public class Song {
 		byte[] rd=new byte[n];
 		
 		int q=ssizeInBits/8;
-		System.out.println("Bytes: "+q);
+		//System.out.println("Bytes: "+q);
 		//int p=rawData.length;
 
 		
@@ -2389,14 +4883,14 @@ public class Song {
 	 * @param signed is the sound format signed?
 	 * @param resample should it resample the sound?
 	 */
-	void makeStereoCopy(int ssizeInBits, int channel, boolean signed, boolean resample){
+	void makeStereoCopy(byte[] d, int ssizeInBits, int channel, boolean signed, boolean resample){
 		
 		int q=ssizeInBits/8;
-		System.out.println("Bytes: "+q);
-		int p=rawData.length*2;
+		//System.out.println("Bytes: "+q);
+		int p=d.length*2;
 		if (resample){p/=2;}
 		stereoRawData=new byte[p];
-		System.out.println("Size: "+rawData.length*2);
+		//System.out.println("Size: "+rawData.length*2);
 		byte silenceChar=-128;
 		
 		if (signed){
@@ -2411,13 +4905,13 @@ public class Song {
 			for (int j=0; j<q; j++){
 				
 				if ((channel==0)||(channel==1)){				
-					stereoRawData[i*q*2+j]=rawData[ii*q+j];
+					stereoRawData[i*q*2+j]=d[ii*q+j];
 				}
 				else{
 					stereoRawData[i*q*2+j]=silenceChar;
 				}
 				if ((channel==0)||(channel==2)){
-					stereoRawData[i*q*2+q+j]=rawData[ii*q+j];
+					stereoRawData[i*q*2+q+j]=d[ii*q+j];
 				}
 				else{
 					stereoRawData[i*q*2+q+j]=silenceChar;
@@ -2425,6 +4919,29 @@ public class Song {
 			}
 		}
 	}
+	
+	public void makeStereoDataFromRawData(int start, int end) {
+		float[]x=parseSoundA(rawData, start, end);
+		float[] y=null;
+		if (stereo>1) {
+			y=extractOffset(x, 0, stereo);
+		}
+		else {
+			y=x;
+		}
+		y=normalise(y, 0.5f);
+		y=expand(y,1, playbackDivider);
+		stereoRawData=makeStereoByteArray(y, 0, y.length);
+	}
+	
+	public void makeStereoDataFromProcessedData(int start, int end) {
+		float[] y=new float[end-start];
+		System.arraycopy(data, start, y, 0, y.length);
+		y=normalise(y, 0.5f);
+		y=expand(y,1, playbackDivider);
+		stereoRawData=makeStereoByteArray(y, 0, y.length);
+	}
+	
 		
 		
 	
@@ -2433,42 +4950,17 @@ public class Song {
 	 */
 	public void setUpPlayback(){
 		try{
-			//af=new AudioFormat((float)sampleRate, ssizeInBits, stereo, signed, bigEnd);
-			float p=(float)(sampleRate/playbackDivider);
-			boolean resample=false;
-			if (p>48000){
-				resample=true;
-				p/=2;
-			}
-	
-			System.out.println("Stereo: "+stereo);
-							   
-			
-			if (stereo==1){
-				makeStereoCopy(ssizeInBits, 0, signed, resample);
-			}
-			else{
-				stereoRawData=rawData;
-			}
-			
-			if (ssizeInBits!=16){
-				stereoRawData=reSetSoundDepth(stereoRawData, ssizeInBits, 16);
-			}
-			
-			af=new AudioFormat((float)p, 16, 2, signed, bigEnd);
+
+			af=new AudioFormat((float)sampleRate, 16, 2, signed, bigEnd);
 			
 			DataLine.Info   info = new DataLine.Info(SourceDataLine.class, af);
-			
-			//MixerChooser mc=new MixerChooser();
-			//mc.getMixerInfo(info);
 			
 			if (line!=null){line.close();}
 			line = null;
 			line = (SourceDataLine) AudioSystem.getLine(info);
 			line.open(af);
-			//FloatControl fc=(FloatControl)line.getControl(FloatControl.Type.PAN);
-			//FloatControl fc=(FloatControl)line.getControl(FloatControl.Type.BALANCE);
-			//fc.setValue(1f);
+			
+			System.out.println("READY TO PLAYBACK: "+line.isOpen());
 			
 		} 
 		catch (Exception e) {
@@ -2476,28 +4968,6 @@ public class Song {
 		}
 	}
 	
-	/**
-	 * This prepares the java sound system for playback
-	 * @param mixer a Mixer object
-	 */
-	public void setUpPlayback(Mixer mixer){
-		try{
-			af=new AudioFormat((float)sampleRate, ssizeInBits, stereo, signed, bigEnd);
-			
-			
-			Mixer.Info minfo=mixer.getMixerInfo();
-			
-			line=AudioSystem.getSourceDataLine(af, minfo);
-			line.open(af);
-			//line.start();
-			
-			
-		} 
-		catch (Exception e) {
-			System.out.println(e);
-			//System.exit(0);
-		}//
-	}
 	
 	/**
 	 * This shuts down playback on quitting.
@@ -2513,24 +4983,7 @@ public class Song {
 		catch(Exception e){}
 	}
 	
-	/**
-	 * This method is called to arrange playback of a region of a song (normally the screen view)
-	 * @param x start point for playback
-	 * @param y end point for playback
-	 */
 	
-	public void prepPlaybackScreen(int x, int y){
-		//int a=(int)(2*x*Math.round(dx*sampleRate*stereo*0.001));
-		//int b=(int)(2*y*Math.round(dx*sampleRate*stereo*0.001));
-		//int m=(int)(frameSize*Math.round(dx*0.001*sampleRate));
-		int m=(int)(2*Math.round(dx*0.001*sampleRate)); //playback file converted to 16bit
-		if (stereo==1){m*=2;}
-		int a=(int)x*m;
-		int b=(int)y*m;
-		//System.out.println(m+" "+x+" "+y+" "+a+" "+b+" "+stereoRawData.length);
-		//System.out.println(x+" "+y+" "+dx+" "+a+" "+b+" "+sampleRate+" "+ssizeInBits+" "+stereo+" "+stereoRawData.length);
-		playSound(a, b);
-	}
 	
 	/**
 	 * This method is called to arrange playback from a point in the song until the end
@@ -2538,25 +4991,22 @@ public class Song {
 	 */
 	
 	public void prepPlaybackFrom(int x){
-		//int a=(int)(2*x*Math.round(dx*sampleRate*stereo*0.001));
-		//int b=(int)(2*y*Math.round(dx*sampleRate*stereo*0.001));
-		//int m=(int)(frameSize*Math.round(dx*0.001*sampleRate));
-		int m=(int)(2*Math.round(dx*0.001*sampleRate));	//playback sound converted to 16bit
-		if (stereo==1){m*=2;}
-		int a=(int)x*m;
-		int b=stereoRawData.length;
-		//System.out.println(m+" "+x+" "+y+" "+a+" "+b+" "+stereoRawData.length);
-		//System.out.println(x+" "+y+" "+dx+" "+a+" "+b+" "+sampleRate+" "+ssizeInBits+" "+stereo+" "+stereoRawData.length);
-		playSound(a, b);
+		
+		int a=(int)(x*step*stereo);
+		int b=stereo*rawData.length/frameSize;
+		makeStereoDataFromRawData(a,b);
+		
+		System.out.println("PREPARTING TO PLAYBACK FROM: "+x+" "+a+" "+rawData.length+" "+out.length+" "+out[0].length);
+		
+		playSound();
 	}
 	
 	
 	public void prepPlaybackAll(){
 		int a=0;
-		int b=stereoRawData.length;
-		//System.out.println(a+" "+b+" "+sampleRate+" "+ssizeInBits+" "+stereo+" "+stereoRawData.length);
-		playSound(a,b);
-		
+		int b=stereo*rawData.length/frameSize;
+		makeStereoDataFromRawData(a,b);
+		playSound();
 	}
 	
 	/**
@@ -2566,65 +5016,44 @@ public class Song {
 	 */
 	public double[] prepPlayback(int[] syll){
 		
-		int a=0;
-		int b=0;
-		
-		
-		//int m=(int)(frameSize*Math.round(sampleRate*0.001));
-		int m=(int)(2*Math.round(sampleRate*0.001)); //songs for playback are converted to 16bit
-		if (stereo==1){m*=2;}
-		if (ssizeInBits<=24){
-			int p1=syll[0]-7;
-			if (p1<0){p1=0;}
-			int p2=syll[1]+7;
-			if (p2>=overallLength){
-				p2=overallLength-1;
-			}
-			//a=(int)(p1*Math.round(sampleRate*stereo*0.002));
-			//b=(int)(p2*Math.round(sampleRate*stereo*0.002));
-			a=(int)(p1*m);
-			b=(int)(p2*m);
-			System.out.println(m+" "+syll[0]+" "+syll[1]+" "+a+" "+b+" "+stereoRawData.length);
+		int p1=syll[0]-7-startTime;
+		if (p1<0) {p1=0;}
+		int p2=syll[1]+7-startTime;
+		if (p2>=anx) {
+			p2=anx-1;
 		}
 		
-		if(stereoRawData.length<=b){
-			b=a;
-		}	
+		int a=(int)(p1*0.001*sampleRate);
+		int b=(int)(p2*0.001*sampleRate);
 		
-		playSound(a, b);
+		//out.println("Prepared to play back syllable: "+syll[0]+" "+syll[1]+" "+a+" "+b+" "+data.length+" "+anx);
 		
-		double[] c={a/rawData.length, b/rawData.length};
+		makeStereoDataFromProcessedData(a,b);
+		playSound();
+		
+		double d=1/(overallLength+0.0);
+		p1+=startTime;
+		p2+=startTime;
+		
+		double[] c={p1*d, p2*d};
 		return c;
 	}
 	
+	
 	/**
-	 * This method organizes playback of the song. It creates a PlaySound instance to actually
-	 * carry out the playback.
-	 * @param a
-	 * @param b
+	 * This method is called to arrange playback of a region of a song (normally the screen view)
+	 * @param x start point for playback
+	 * @param y end point for playback
 	 */
-	public void playSound (int a, int b, double pan){
-		try{
-			//af=new AudioFormat((float)sampleRate, ssizeInBits, stereo, signed, bigEnd);
-			//DataLine.Info   info = new DataLine.Info(SourceDataLine.class, af);
-			//line = null;
-			//line = (SourceDataLine) AudioSystem.getLine(info);
-			//line.open(af);
-			//line.start();
-			
-			if ((line==null)||(!line.isOpen())){setUpPlayback();}
-			
-			line.start();
-			
-			Thread play=new Thread(new PlaySound(a, b));
-			play.setPriority(Thread.MIN_PRIORITY);
-			play.start();
-		} 
-		catch (Exception e) {
-			System.out.println(e);
-			System.exit(0);
-		}//
+	
+	public void prepPlaybackScreen(int x, int y){
+
+		makeStereoDataFromProcessedData(0,data.length);
+		
+		playSound();
 	}
+	
+	
 		
 	
 		
@@ -2634,20 +5063,17 @@ public class Song {
 	 * @param a
 	 * @param b
 	 */
-	public void playSound (int a, int b){
+	public void playSound (){
 		try{
-			//af=new AudioFormat((float)sampleRate, ssizeInBits, stereo, signed, bigEnd);
-			//DataLine.Info   info = new DataLine.Info(SourceDataLine.class, af);
-			//line = null;
-			//line = (SourceDataLine) AudioSystem.getLine(info);
-			//line.open(af);
-			//line.start();
 			
-			if ((line==null)||(!line.isOpen())){setUpPlayback();}
+			
+			System.out.println("Playing sound");
+			setUpPlayback();
+			//if ((line==null)||(!line.isOpen())){}
 			
 			line.start();
 			
-			Thread play=new Thread(new PlaySound(a, b));
+			Thread play=new Thread(new PlaySound());
 			play.setPriority(Thread.MIN_PRIORITY);
 			play.start();
 		} 
@@ -2664,40 +5090,18 @@ public class Song {
 	 */
 	class PlaySound extends Thread{
 		
-		int start, end;
-		//byte data[] = new byte[10000];
 		
-		public PlaySound(int start, int end){
-			this.start=start;
-			this.end=end;
+		public PlaySound(){
+
 		}
 
 		public void run(){
-			//System.out.println(stereo+" "+bigEnd+" "+signed+" "+sampleRate);
-			
-			
-			//int start2=start/(stereo*2);
-			//int end2=end/(stereo*2);
-			//double size=rawData.length;
-			//double size2=rawData.length/(stereo*2.0);
-			//byte[]  abData = new byte[EXTERNAL_BUFFER_SIZE];
-			//System.out.println(EXTERNAL_BUFFER_SIZE+" "+start+" "+end);
 			try{
-				
-				
-				
-				line.write(stereoRawData, start, (end-start));
-				//int a=line.write(stereoRawData, start, (end-start));
-			
-				//while ((line.isOpen())&&(start+EXTERNAL_BUFFER_SIZE<end)){
-				//	System.arraycopy(rawData, start, abData, 0, EXTERNAL_BUFFER_SIZE);
-				//	int a=line.write(abData, 0, EXTERNAL_BUFFER_SIZE);
-				//	start+=EXTERNAL_BUFFER_SIZE;
-				//}
-							}
+				line.write(stereoRawData, 0, stereoRawData.length);
+			}
 			catch (Exception e) {
 				e.printStackTrace();
-				System.out.println("OWWW: "+stereoRawData.length+" "+start+" "+end);
+				System.out.println("OWWW: "+stereoRawData.length);
 			}
 		}
 	}
@@ -2718,25 +5122,74 @@ public class Song {
 		}
 	}
 	
+	private float[] filter(int startd, int endd, float[]x, double sr, double fco, boolean highPass) {
+		Butterworth bwfilter=new Butterworth();
+		if (highPass) {
+			bwfilter.highPass(6, sr, fco);
+		}
+		else {
+			bwfilter.lowPass(6, sr, fco);
+		}
+		//bwfilter.highPass(6, sampleRate, frequencyCutOff);
+		
+		int size=endd-startd;
+		float[] data2=new float[size];
+		if (fco>0){
+			for (int i=0; i<size; i++) {
+				data2[i]=(float)bwfilter.filter(x[startd+i]);
+			}
+			//data=data2;
+		}
+		else {
+			for (int i=0; i<size; i++){
+				data2[i]=x[i+startd];
+			}
+			//data=data1;
+		}
+		return data2;
+	}
+	
+	private void filterCh(int startd, int endd) {
+		ChebyshevII chfilter=new ChebyshevII();
+		//Butterworth bwfilter=new Butterworth();
+		chfilter.highPass(2, sampleRate, frequencyCutOff, 1);
+		
+		int size=endd-startd;
+		float[] data2=new float[size];
+		if (frequencyCutOff>0){
+			for (int i=0; i<size; i++) {
+				data2[i]=(float)chfilter.filter(data[startd+i]);
+			}
+			data=data2;
+		}
+		else {
+			float data1[]=new float[size];
+			for (int i=0; i<size; i++){
+				data1[i]=data[i+startd];
+			}
+			data=data1;
+		}
+	}
+	
 	/**
 	 * Another part of the filter function. This calls fir up to twice: once
 	 * a low-pass for aliases, then optionally a high-pass for frequency cut-off
 	 * @param startd start point of signal
 	 * @param endd end point of signal
 	 */
-	private void filter(int startd, int endd){
+	private void filterOld(int startd, int endd){
 		int size=endd-startd;
 		//System.out.println("SIZE: "+size+" "+endd+" "+startd);
 		if (frequencyCutOff>0){
-			float[] data1=fir(filtu, data);
-			float[] data2=fir(filtl, data1);
+			//float[] data1=fir(filtu, data);
+			//float[] data2=fir(filtl, data1);
 			//for (int i=0; i<data.length; i++){
 				//data1[i]=data2[i];
 			//}
 
 			data=new float[size];
 			for (int i=0; i<size; i++){
-				data[i]=data2[i+startd];
+				//data[i]=data2[i+startd];
 			}
 		}
 		else{
@@ -2820,7 +5273,7 @@ public class Song {
 	 * This is the FFT method
 	 * @param L indicates where in the signal to start from
 	 */
-	private void calculateFFT(int L){
+	private void calculateFFT(int L, boolean recordPhase){
 		int L2=data.length;
 		double[] datr=new double[framePad];
 		double[] dati=new double[framePad];
@@ -2832,10 +5285,16 @@ public class Song {
 		if (py>framePad){py=framePad;}				//py is calculated in case the user picks a max freq that is above the resolving power of the other spectrogram
 		float tempr, tempi;							//settings. If that happens, the spectrogram only plots up to the max. resolving power.
 		int a,b,c,d;
+		double offsetCounter=0;
 		
 		FFTbase fft=new FFTbase(framePad, true);
 		
 		while(istart<L){
+			
+			
+			if (recordOffset) {
+				offsetCounter=0;
+			}
 			//System.out.println(L+" "+start+" "+frame+" "+place);
 			for (i=0; i<frame; i++){
 				d=i+istart;
@@ -2845,9 +5304,20 @@ public class Song {
 				else{
 					datr[i]=0;
 				}
+				/*
+				if ((recordOffset)&&(d<L2)) {
+					if (place<offsetDirection.length) {offsetDirection[place]+=directionArray[d];}
+					offsetCounter++;
+				}
+				*/
+				
 				//dati[i]=0;
 			}
-			
+			/*
+			if (recordOffset) {
+				if (place<offsetDirection.length) {offsetDirection[place]/=offsetCounter;}
+			}
+			*/
 			//System.out.println(datr.length+" "+dati.length+" "+frame+" "+framePad);
 			
 			
@@ -2861,6 +5331,8 @@ public class Song {
 					out1[i][place]=(float)(dat[a]*dat[a]+dat[b]*dat[b]);						//This is the production of the power spectrum
 					if (out1[i][place]>maxAmp){maxAmp=out1[i][place];}
 					out[i][place]=out1[i][place];
+					if (recordPhase) {phasesp[i][place]=(float)(Math.atan2(dat[a], dat[b]));}
+					//System.out.println(i+" "+place+" "+phasesp[i][place]);
 				}
 				
 			}
@@ -3123,14 +5595,14 @@ public class Song {
 	private void makeWindow(int N){			//produces various windowing functions
 		window=new float[N];
 		if (windowMethod==2){
-			System.out.println("Hamming window "+N);
+			//System.out.println("Hamming window "+N);
 			for (int i=0; i<N; i++){
 				window[i]=(float)(1-(0.5+0.5*Math.cos((2*Math.PI*i)/(N-1.0))));
 				//System.out.println(window[i]);
 			}
 		}
 		if (windowMethod==3){
-			System.out.println("Hanning window "+N);
+			//System.out.println("Hanning window "+N);
 			for (int i=0; i<N; i++){
 				window[i]=(float)(1-(0.54+0.46*Math.cos((2*Math.PI*(i+1))/(N+1.0))));
 				//System.out.println(window[i]);
@@ -3141,7 +5613,7 @@ public class Song {
 			double sigma=0.4;
 			double N12=0.5*(N-1);
 			
-			System.out.println("Gaussian window "+N);
+			//System.out.println("Gaussian window "+N);
 			float max=0;
 			float min=1;
 			for (int i=0; i<N; i++){
@@ -3159,7 +5631,7 @@ public class Song {
 		if (windowMethod==4){
 			
 			double sigma=0.14*N;
-			System.out.println("confined Gaussian window");
+			//System.out.println("confined Gaussian window");
 			for (int i=0; i<N; i++){
 				
 				double Gn=calcG(sigma, i, N);
@@ -3288,6 +5760,343 @@ public class Song {
 		}
 	}
 	
+	
+	private float[][] spectrogramEnhancement1d(){
+		int wi=5;
+		int nreps=10;
+		double enhp=0.5;
+		float enhp2=0.5f;
+		
+		float[]t=new float[ny];
+		
+		
+		
+		
+		for (int i=0; i<anx; i++){
+			float max=0;
+			for (int j=0; j<ny; j++) {
+				
+				t[j]=out[j][i];
+				if (t[j]>max) {max=t[j];}
+			}
+			for (int reps=0; reps<nreps; reps++) {
+				
+				for (int j=0; j<ny; j++) {
+					t[j]=out[j][i];
+				}
+				
+				for (int j=0; j<ny; j++) {
+					if (out[j][i]>0) {
+						double sx=0;
+						double sxx=0;
+						double sxy=0;
+						double sy=0;
+						double c=0;
+				
+						for (int jj=j-wi; jj<j+wi+1; jj++) {
+							if ((jj>=0)&&(jj<ny)) {
+								sx+=jj;
+								sxx+=jj*jj;
+								sxy+=jj*out[jj][i];
+								sy+=out[jj][i];
+								c++;
+							}
+						}
+						double b=(c*sxy-sx*sy)/(c*sxx-sx*sx);
+					//System.out.println(b+" "+i+" "+j+" "+c+" "+sxy+" "+sx+" "+sy+" "+sxx);
+						float x=(float)(t[j]*Math.abs(b)*enhp);
+						if (t[j]<0) {x*=-1f;}
+						t[j]-=x;
+						x*=enhp2;
+						if ((b>0)&&(j<ny-1)) {t[j+1]+=x;}
+						else if ((b<0)&&(j>0)) {t[j-1]+=x;}
+					}
+					
+				}
+				
+			}
+			float max2=0;
+			for (int j=0; j<ny; j++) {
+				if (t[j]>max2) {max2=t[j];}
+			}
+			max-=max2;
+			for (int j=0; j<ny; j++) {
+				out[j][i]=t[j]+max;
+			}
+			
+		}
+		
+		
+		return out;
+	}
+	
+	private float[][] spectrogramEnhancement2(){
+		int wi=5;
+		int nreps=5;
+		double enhp=0.25;
+		
+		float[][]t=new float[ny][anx];
+		
+		float[] maxes=new float[anx];
+		for (int i=0; i<anx; i++){
+			float max=0;
+			for (int j=0; j<ny; j++) {
+				if (out[j][i]>max) {max=out[j][i];}
+			}
+			maxes[i]=max;
+		}
+		
+		int q=0;
+		
+		double[] di=new double[(wi*2+1)*(wi*2+1)];
+		
+		for (int i= -wi; i<wi+1; i++) {
+			for (int j= -wi; j<wi+1; j++) {
+				di[q]=1/(1+Math.sqrt(i*i+j*j));
+				q++;
+			}
+		}
+		
+		
+		for (int reps=0; reps<nreps; reps++) {
+			for (int i=0; i<anx; i++){				
+				
+				for (int j=0; j<ny; j++) {
+					if (out[j][i]>0) {
+						double sx=0;
+						double sxx=0;
+						double sxy=0;
+						double sy=0;
+						double c=0;
+						double sz=0;
+						double szz=0;
+						double szy=0;
+						double sxz=0;
+						double p=0;
+						q=0;
+						for (int jj=j-wi; jj<j+wi+1; jj++) {
+							for (int kk=i-wi; kk<i+wi+1; kk++) {
+								if ((jj>=0)&&(jj<ny)&&(kk>=0)&&(kk<anx)){
+									p=di[q];
+									//p=1/(1+Math.sqrt((kk-i)*(kk-i)+(jj-j)*(jj-j)));
+									sx+=jj*p;
+									sxx+=jj*jj*p;
+									sxy+=jj*out[jj][kk]*p;
+									sy+=out[jj][kk]*p;
+									sz+=kk*p;
+									szz+=kk*kk*p;
+									szy+=kk*out[jj][kk]*p;
+										
+									sxz+=kk*jj*p;
+									c+=p;
+									
+								}
+								q++;
+							}
+						}
+						
+						c=1/c;
+						
+						sxx=sxx-(sx*sx*c);
+						szz=szz-(sz*sz*c);
+						sxy=sxy-(sx*sy*c);
+						szy=szy-(sz*sy*c);
+						sxz=sxz-(sx*sz*c);
+						
+						
+						double b1=(szz*sxy-sxz*szy)/(sxx*szz-sxz*sxz);
+						double b2=(sxx*szy-sxz*sxy)/(sxx*szz-sxz*sxz);
+						
+						double b=Math.sqrt(b1*b1+b2*b2);
+
+						
+						
+						float x=(float)(out[j][i]*b*enhp);
+						
+						float mean=(float)(sy*c*0.25);
+						
+						if (out[j][i]<0) {x*=-1f;}
+						t[j][i]=out[j][i]-x+mean;
+					}
+					
+				}
+				
+			}
+			for (int i=0; i<anx; i++){
+				float max2=0;
+			
+				for (int j=0; j<ny; j++) {
+					if (t[j][i]>max2) {max2=t[j][i];}
+				}
+				float max=maxes[i]-max2;
+				for (int j=0; j<ny; j++) {
+					//out[j][i]=t[j][i]+max;
+					out[j][i]=t[j][i];
+				}
+			}
+			
+		}
+		
+		
+		return out;
+	}
+	
+	
+	private float[][] spectrogramEnhancement(){
+		int wi=5;
+		int nreps=10;
+		double enhp=0.1;
+		
+		float[][]t=new float[ny][anx];
+		
+		float[] maxes=new float[anx];
+		for (int i=0; i<anx; i++){
+			float max=0;
+			for (int j=0; j<ny; j++) {
+				if (out[j][i]>max) {max=out[j][i];}
+			}
+			maxes[i]=max;
+		}
+		
+		int q=0;
+		
+		double[] di=new double[(wi*2+1)*(wi*2+1)];
+		
+		for (int i= -wi; i<wi+1; i++) {
+			for (int j= -wi; j<wi+1; j++) {
+				di[q]=1/(1+Math.sqrt(i*i+j*j));
+				q++;
+			}
+		}
+		
+		
+		for (int reps=0; reps<nreps; reps++) {
+			for (int i=0; i<anx; i++){				
+				
+				for (int j=0; j<ny; j++) {
+					if (out[j][i]>0) {
+						double max=-100000;
+						for (int jj=j-wi; jj<j+wi+1; jj++) {
+							for (int kk=i-wi; kk<i+wi+1; kk++) {
+								if ((jj!=j)||(kk!=i)) {
+									if ((jj>=0)&&(jj<ny)&&(kk>=0)&&(kk<anx)){
+										if (out[jj][kk]>max) {
+											max=out[jj][kk];
+										}
+									}
+								}
+							}
+						}
+						
+						
+						
+						
+						
+						
+						float x=(float)((max-out[j][i])*enhp);
+						
+						//float mean=(float)(sy*c*0.25);
+						
+						//if (out[j][i]<0) {x*=-1f;}
+						t[j][i]=out[j][i]-x;
+					}
+					
+				}
+				
+			}
+			for (int i=0; i<anx; i++){
+				float max2=0;
+			
+				for (int j=0; j<ny; j++) {
+					if (t[j][i]>max2) {max2=t[j][i];}
+				}
+				float max=maxes[i]-max2;
+				for (int j=0; j<ny; j++) {
+					//out[j][i]=t[j][i]+max;
+					out[j][i]=t[j][i];
+				}
+			}
+			
+		}
+		
+		
+		return spectrogramEnhancement2();
+	}
+	
+	private double[] signalToNoise(int min, int max) {
+		
+		double[] snr=new double[anx];
+		int sigrange=3;
+		
+		for (int i=0; i<anx; i++) {
+			
+			double maxp=-100;
+			int maxloc=-1;
+			for (int j=min; j<max; j++) {
+				if (out[j][i]>maxp){
+					maxloc=i;
+					maxp=out[j][i];
+				}
+			}
+			
+			double sig=0;
+			double noi=0;
+			
+			for (int j=min; j<max; j++) {
+				if (Math.abs(j-maxloc)<sigrange) {
+					sig+=out[j][i];
+					
+				}
+				else {
+					noi+=out[j][i];
+				}
+			}
+			
+			snr[i]=sig-noi;	
+		}
+		
+		return snr;
+		
+	}
+	
+	
+	/**
+	 * Method to measure Wiener Entropy
+	 * @param tList input signal location
+	 * @param results output WE trajectories
+	 */
+	private double[] measureWienerEntropy(){
+	
+		//Calculates the Wiener Entropy (ratio of Geometric:Arithmetic means of the power spectrum).
+		//Uses the fact that spectrogram is already in decibel format to speed-up calculation of the geometric mean.
+
+		
+		double[] wienerEntropy=new double[anx];
+		double logd=10/(Math.log(10));
+		double maxC=dynRange-Math.log(maxPossAmp)*logd;
+
+		double minPower=Math.pow(10, -1);
+		
+		
+		for (int i=0; i<anx; i++){
+			double scoreArith=0;
+			double scoreGeom=0;
+			for (int j=0; j<ny; j++){
+				double amp=out[j][i];
+				scoreArith+=Math.pow(10, (amp-1));
+				scoreGeom+=amp;
+					
+			}
+			scoreArith/=ny+0.0;
+			scoreGeom=Math.pow(10, ((scoreGeom/(ny+0.0))-1));
+			wienerEntropy[i]=-1*Math.log(scoreGeom/scoreArith);
+		}
+		return wienerEntropy;
+	}
+	
+	
+	
+	
 	/**
 	 * This is an algorithm for dereverberation in a spectrogram.
 	 * Algorithm looks for maximum in previous echorange time-steps. 
@@ -3299,7 +6108,7 @@ public class Song {
 		int echoRange2=(int)(echoRange/dx);
 		if (echoRange2>anx){echoRange2=anx;}
 		
-		System.out.println("ECHO: "+echoRange+" "+echoRange2+" "+anx);
+		//System.out.println("ECHO: "+echoRange+" "+echoRange2+" "+anx);
 		
 		double minWeight=5;
 		double decayFactor=(minWeight)/(echoRange2+0.0);
@@ -3385,7 +6194,7 @@ public class Song {
 			}
 			Arrays.sort(buffer);
 			results[i]=buffer[medLoc];
-			System.out.println(results[i]);
+			//System.out.println(results[i]);
 		}
 		return results;
 		
@@ -3441,23 +6250,25 @@ public class Song {
 	 * This method sorts syllables into chronological order
 	 */
 	public void sortSylls(){
-		if (syllList!=null){
-			int num=syllList.size();
+		if (sylList!=null){
+			int num=sylList.size();
 			int [] dat;
 			while (num>0){
 				int min=10000000;
 				int loc=0;
 				for (int i=0; i<num; i++){
-					dat=syllList.get(i);
+					dat=sylList.get(i).getLoc();
 					if (dat[0]<min){
 						loc=i;
 						min=dat[0];
 					}
 				}
-			
-				dat=syllList.get(loc);
-				syllList.remove(loc);
-				syllList.addLast(dat);
+				Syllable sy=sylList.get(loc);
+				sylList.remove(loc);
+				sylList.addLast(sy);
+				//dat=sylList.get(loc);
+				//syllList.remove(loc);
+				//syllList.addLast(dat);
 				num--;
 			}
 			dat=null;
@@ -3502,11 +6313,13 @@ public class Song {
 	 * This method imposes quite strict limits on patterns of hierarchical organization in song. It is
 	 * used extensively by analysis methods, but it would be better to revise it to be more flexible.
 	 */
+	
+	/*
 	public void interpretSyllables(){
 		phrases=new LinkedList<int[][]>();
 		
 		//syllList=new LinkedList();
-		System.out.println(name);
+		//System.out.println(name);
 		if (syllList.size()==0){
 			//System.out.println("HERE WE ARE!");
 			for (int i=0; i<eleList.size(); i++){
@@ -3613,11 +6426,13 @@ public class Song {
 					System.out.println();
 				}
 				*/
-				phrases.add(eletable);
+				//phrases.add(eletable);
 				//System.out.println(phrases.size()+" "+eletable.length+" "+maxlength);
-			}
-		}
-	}
+			//}
+		//}
+	//}
+	
+	
 	
 	/**
 	 * gets a phase matrix, indicating the support of a given input frequency for a 
@@ -3739,24 +6554,303 @@ public class Song {
 			ele2.setTimeBefore(ele1.getTimeAfter());	
 		}	
 	}
-	
-	public boolean checkSong(Component parentComponent){
-		
-		LinkedList<Syllable> syls=new LinkedList<Syllable>();
-		
-		for (int i=0; i< syllList.size(); i++){
-			int [] syl=syllList.get(i);
-			Syllable sy=new Syllable(syl, i);
-			sy.addFamily(syls, eleList);
-			sy.checkMaxLevel();
-			syls.add(sy);
-		}		
-		
-		for (Syllable sy : syls){
-			System.out.println("SYLLABLE: "+sy.id+" "+sy.maxLevel+" "+sy.eles.size()+" "+sy.parents.size()+" "+sy.children.size());
+	/*
+	public boolean checkElements(){
+		System.out.println("Checking: "+name);
+		for (Element ele : eleList){
+			
+			int a=ele.checkValues(this);
 			
 			
 		}
+		
+		
+		return true;
+	}
+	*/
+	
+	public LinkedList<String[]> checkElements(){
+		System.out.println("Checking: "+name);
+		
+		LinkedList<String[]> output=new LinkedList<String[]>();
+		
+		for (int i=0; i<eleList.size(); i++){
+			Element ele=eleList.get(i);
+			String[] a=ele.checkValues(this);
+			
+			if (a!=null){
+				String[] x=new String[5];		
+				x[0]=individualName;
+				x[1]=name;
+				x[2]=(i+1)+"";
+				x[3]=a[0];
+				x[4]=a[1];
+				output.add(x);
+			}
+			
+		}
+		
+		
+		return output;
+	}
+	
+	/*
+	public LinkedList<Syllable> getSyllList(int level){
+		LinkedList<Syllable> sy=new LinkedList<Syllable>();
+		
+		for (Syllable syl : sylList){
+			if (syl.maxLevel==level){
+				sy.add(syl);
+			}
+		}		
+		return sy;
+	}
+	*/
+	
+	public Syllable getSyllable(int a){
+		return sylList.get(a);
+	}
+	
+	public LinkedList<Syllable> getSyllList(){		
+		return sylList;
+	}
+	
+	/*
+	public void makeSylList(){
+		//System.out.println("MAKING SYLL LIST");
+		sylList=new LinkedList<Syllable>();
+		for (Element ele: eleList){
+			ele.syls=new LinkedList<Syllable>();
+		}
+		
+		for (int i=0; i< syllList.size(); i++){
+			int [] syl=syllList.get(i);
+			Syllable sy=new Syllable(syl, i, songID);
+			sy.addFamily(sylList, eleList);
+			sy.checkMaxLevel();
+			sylList.add(sy);
+			//System.out.println(i+" "+syllList.size()+" "+syl[0]+" "+syl[1]+" "+sy.children.size());
+		}
+	}
+	*/
+	
+	public void addPhrase(){
+		int min=Integer.MAX_VALUE;
+		int max=Integer.MIN_VALUE;
+		
+		for (Syllable s: sylList){
+			if (s.start<min){min=s.start;}
+			if (s.end>max){max=s.end;}
+		}
+		int[] p={min-1, max+1};
+		Syllable s=new Syllable(p, songID);
+		
+		s.addFamily(sylList, eleList);
+		s.checkMaxLevel();
+		sylList.add(s);
+							
+	}
+	
+	public void mergeEleList(double threshold){
+		//System.out.println(name+" "+individualName);
+		eleList2=new LinkedList<Element>();
+		//int a=0;
+		for (Syllable s : sylList){
+			if (s.maxLevel==1){
+				//System.out.println("merge");
+				s.mergeElements(threshold);
+				eleList2.addAll(s.eles2);
+			}
+			//a++;
+		}
+		//System.out.println("Syllable merging: "+eleList.size()+" "+threshold+" "+eleList2.size());
+	}
+	
+	public void compressElements(double reductionFactor, int minPoints, boolean logFrequencies, double slopeATanTransform){
+		for (Element ele: eleList){
+			ele.compressElements(reductionFactor, minPoints, logFrequencies, slopeATanTransform);
+		}
+	}
+	
+	public void makeEveryElementASyllable(){
+		
+		sylList=new LinkedList<Syllable>();
+		
+		for (Element ele : eleList){
+			LinkedList<Element>el=new LinkedList<Element>();
+			el.add(ele);
+			Syllable syl=new Syllable(el, songID);
+			syl.addFamily(sylList, eleList);
+			sylList.add(syl);
+		}
+		
+		for (Syllable syl : sylList){
+			syl.checkMaxLevel();
+		}
+
+	}
+	
+	/**
+	 * This method re-segments songs into syllables based on a simple time gap threshold
+	 * @param thresh a threshold in ms
+	 */
+	public void segmentSyllableBasedOnThreshold(double thresh){
+		
+		sylList=new LinkedList<Syllable>();
+		
+		int currentStart=Integer.MIN_VALUE;
+		LinkedList<Element>el=new LinkedList<Element>();
+		boolean start=true;
+		for (Element ele : eleList){
+			
+			
+			if ((start)||((ele.getTimeAfter()<thresh)&&(ele.getTimeAfter()>-10000))){
+				el.add(ele);
+			}
+			else{
+				Syllable sy=new Syllable(el, songID);
+				sy.addFamily(sylList, eleList);
+				sylList.add(sy);
+				el=new LinkedList<Element>();
+			}
+			if (start){start=false;}
+		}
+		
+		for (Syllable syl : sylList){
+			syl.checkMaxLevel();
+		}
+	}
+	
+	public void loadSyllables(LinkedList<int[]> ds){
+		sylList=new LinkedList<Syllable>();
+		
+		for (int[] d: ds){
+			Syllable syl=new Syllable(d, songID);
+			//System.out.println("SYLL!: "+syl.getLoc()[0]+" "+syl.getLoc()[1]);
+			syl.addFamily(sylList, eleList);
+			syl.checkMaxLevel();
+			sylList.add(syl);
+		}
+		
+		sortSylls();
+		
+	}
+	
+	public LinkedList<String[]> checkSyllables(){
+		
+		LinkedList<String[]> output=new LinkedList<String[]>();
+		
+		LinkedList<Integer> oe=checkOrphanElements();
+		
+		if (oe.size()>0){
+			StringBuffer sb=new StringBuffer();
+		
+			for (Integer a: oe){
+				sb.append(a+", ");
+			}	
+			
+			
+			String[] x=new String[4];
+		
+			x[0]=individualName;
+			x[1]=name;
+			x[2]="orphaned elements: ";
+			x[3]=sb.toString();
+			output.add(x);
+
+		}
+		
+		LinkedList<Integer> me=checkMalformedPhrase(sylList);
+		
+		if (me.size()>0){
+			StringBuffer sb=new StringBuffer();
+		
+			for (Integer a: me){
+				sb.append(a+", ");
+			}	
+			
+			
+			String[] x=new String[4];
+		
+			x[0]=individualName;
+			x[1]=name;
+			x[2]="elements in malformed phrase: ";
+			x[3]=sb.toString();
+			output.add(x);
+
+		}
+		
+		LinkedList<Syllable> os=checkChildlessSyllables(sylList);
+		
+		if (os.size()>0){
+			StringBuffer sb=new StringBuffer();
+		
+			for (Syllable a: os){
+				sb.append((a.id+1)+", ");
+			}	
+			
+			
+			String[] x=new String[4];
+			
+			x[0]=individualName;
+			x[1]=name;
+			x[2]="childless syllables: ";
+			x[3]=sb.toString();
+			output.add(x);
+		}
+		
+		LinkedList<Syllable> ov=checkOverlappingSyllable(sylList);
+		
+		if (ov.size()>0){
+			StringBuffer sb=new StringBuffer();
+			
+			for (Syllable a: ov){
+				sb.append((a.id+1)+", ");
+			}	
+			
+			
+			String[] x=new String[4];
+			
+			x[0]=individualName;
+			x[1]=name;
+			x[2]="overlapping syllables: ";
+			x[3]=sb.toString();
+			output.add(x);
+		}
+		
+		LinkedList<Syllable> ls=checkSyllableLevels(sylList);
+		
+		if (ls.size()>0){
+			StringBuffer sb=new StringBuffer();
+		
+			for (Syllable a: ls){
+				sb.append((a.id+1)+", ");
+			}	
+			
+			String[] x=new String[4];
+			
+			x[0]=individualName;
+			x[1]=name;
+			x[2]="incorrect syllable hierarchy: ";
+			x[3]=sb.toString();
+			output.add(x);
+		}
+		
+		return output;
+	}
+	
+	
+	public boolean checkSong(Component parentComponent){		
+		
+		for (Syllable sy: sylList){
+			sy.checkMaxLevel();
+		}
+		
+		//for (Syllable sy : syls){
+			//System.out.println("SYLLABLE: "+sy.id+" "+sy.maxLevel+" "+sy.eles.size()+" "+sy.parents.size()+" "+sy.children.size());
+			
+			
+		//}
 		
 		LinkedList<Integer> oe=checkOrphanElements();
 		
@@ -3772,14 +6866,14 @@ public class Song {
 			int c=JOptionPane.showConfirmDialog(parentComponent, s, "Warning", JOptionPane.YES_NO_CANCEL_OPTION);
 			
 			if (c==JOptionPane.YES_OPTION){
-				adoptOrphanedElements(oe, syls);
+				adoptOrphanedElements(oe, sylList);
 			}
 			else if (c==JOptionPane.CANCEL_OPTION){
 				return false;	
 			}	
 		}
 		
-		LinkedList<Syllable> os=checkChildlessSyllables(syls);
+		LinkedList<Syllable> os=checkChildlessSyllables(sylList);
 		
 		if (os.size()>0){
 			StringBuffer sb=new StringBuffer();
@@ -3793,14 +6887,14 @@ public class Song {
 			int c=JOptionPane.showConfirmDialog(parentComponent, s, "Warning", JOptionPane.YES_NO_CANCEL_OPTION);
 			
 			if (c==JOptionPane.YES_OPTION){
-				deleteSyllables(os, syls);
+				deleteSyllables(os, sylList);
 			}
 			else if (c==JOptionPane.CANCEL_OPTION){
 				return false;	
 			}	
 		}
 		
-		LinkedList<Syllable> ls=checkSyllableLevels(syls);
+		LinkedList<Syllable> ls=checkSyllableLevels(sylList);
 		
 		if (ls.size()>0){
 			StringBuffer sb=new StringBuffer();
@@ -3814,7 +6908,7 @@ public class Song {
 			int c=JOptionPane.showConfirmDialog(parentComponent, s, "Warning", JOptionPane.YES_NO_CANCEL_OPTION);
 			
 			if (c==JOptionPane.YES_OPTION){
-				deleteSyllables(ls, syls);
+				deleteSyllables(ls, sylList);
 			}
 			else if (c==JOptionPane.CANCEL_OPTION){
 				return false;	
@@ -3837,6 +6931,21 @@ public class Song {
 		return levels;
 	}
 	
+	public LinkedList<Syllable> checkOverlappingSyllable(LinkedList<Syllable> syls){
+		LinkedList<Syllable> overlaps=new LinkedList<Syllable>();
+		
+		for (Syllable sy: syls){
+			for (Syllable sy2 : syls){
+				if ((sy.start<sy2.start)&&(sy.end>sy2.start)&&(sy.end<sy2.end)){
+					overlaps.add(sy);
+				}
+				
+			}
+		}
+		
+		return overlaps;
+	}
+	
 	public LinkedList<Syllable> checkChildlessSyllables(LinkedList<Syllable> syls){
 		
 		LinkedList<Syllable> childless=new LinkedList<Syllable>();
@@ -3851,7 +6960,7 @@ public class Song {
 	}
 	
 	public void deleteSyllables(LinkedList<Syllable> oe, LinkedList<Syllable> syls){
-		
+		/*
 		LinkedList<int[]> rlist=new LinkedList<int[]>();
 		for (Syllable sy : oe){
 			rlist.add(syllList.get(sy.id));
@@ -3860,6 +6969,8 @@ public class Song {
 		
 		syls.removeAll(oe);
 		syllList.removeAll(rlist);
+		*/
+		sylList.removeAll(oe);
 
 	}
 	
@@ -3877,6 +6988,41 @@ public class Song {
 		return orphans;
 	}
 	
+	
+	public LinkedList<Integer> checkMalformedPhrase(LinkedList<Syllable> syls){
+		LinkedList<Integer> orphans=new LinkedList<Integer>();
+		
+		for (int i=0; i<eleList.size(); i++){
+			Element ele=eleList.get(i);
+			
+			int p=ele.getMinLevel();
+			int q=ele.syls.size();
+			
+			if ((p>1)||(q>2)){
+				System.out.println(i+" "+p+" "+q+" "+syls.size());
+				for (Syllable sy: ele.syls){
+					System.out.println(sy.start+" "+sy.end);
+				}
+				orphans.add(new Integer(i+1));
+			}	
+		}
+		
+		for (Syllable sy: syls){
+			int p=-1;
+			for (Element ele : sy.eles){
+				int q=ele.syls.size();
+				
+				if (p==-1){p=q;}
+				else if (p!=q){
+					System.out.println(ele.id+" "+q+" "+ele.getMinLevel());
+					orphans.add(new Integer(ele.id));
+				}
+			}
+		}
+		
+		return orphans;
+	}
+	
 	public void adoptOrphanedElements(LinkedList<Integer> oe, LinkedList<Syllable> syls){
 		
 		for (Integer a: oe){
@@ -3884,11 +7030,14 @@ public class Song {
 			int b=a.intValue()-1;
 			
 			Element ele=eleList.get(b);
-			int start=ele.getBeginTime();
-			int end=ele.getLength()+start;
+			int start=(int)Math.round(ele.getBeginTime()*ele.getTimeStep());
+			int end=(int)Math.round((ele.getLength()*ele.getTimeStep())+start);
+			
+			System.out.println(start+" "+ele.getBeginTime()+" "+end+" "+ele.getLength());
+			
+			
 			int[] syl={start-1, end+1};
-			Syllable sy=new Syllable(syl, syllList.size());
-			syllList.add(syl);
+			Syllable sy=new Syllable(syl, songID);
 			sy.addFamily(syls, eleList);
 			sy.checkMaxLevel();
 			syls.add(sy);	
@@ -3986,6 +7135,8 @@ public class Song {
 		
 		return pout;
 	}
+	
+	
 
 	/**
 	 * This internal class calculates the 'pitch' representation of sounds. By making
@@ -4168,4 +7319,53 @@ public class Song {
 		}
 	}
 
+	
+	public void checkFreqs() {
+		
+		for (Element ele: eleList) {
+			//System.out.println(name+" "+ele.id);
+			double p=ele.checkDiff(maxf);
+			if (p>500) {
+				System.out.println("CheckFreq: "+name);
+			}
+		}
+		
+	}
+	
+	public void automaticMeasurement() {
+		System.out.println("MAKING SPECTROGRAM: "+name+" "+nx);
+		setDynEqual(0);
+		setDynRange(30);
+		minGap=5000000;
+		timeStep=2;
+		setFFTParameters();
+		setFFTParameters2(nx);
+		
+		
+		makeMyFFT(0, nx);
+		makePhase();
+		int[] pointList1=new int[nx];
+		int[] pointList2=new int[nx];
+		for (int i=1; i<nx-1; i++){
+			pointList1[i]=1;
+			pointList2[i]=ny-2;
+		}
+		SpectrogramMeasurement sm=new SpectrogramMeasurement(this);
+		LinkedList<int[][]> signals=sm.getSignal(pointList1, pointList2, nx, false);
+		sm.checkMinimumLengths(signals);
+		//sm.segment(signals, false);
+		int n=sm.measureAndAddElements(signals, null, 0);
+		
+		makeEveryElementASyllable();
+		for (Element ele: eleList) {
+			if (ele.syl==null) {
+				System.out.println("ALERT!!!");
+			}
+		}
+		
+		
+	}
+	
+	
+	
 }

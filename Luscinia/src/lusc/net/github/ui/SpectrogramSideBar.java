@@ -17,6 +17,7 @@ import java.util.*;
 
 import lusc.net.github.Element;
 import lusc.net.github.Song;
+import lusc.net.github.Syllable;
 //import lusc.net.github.analysis.SongGroup;
 import lusc.net.github.analysis.AnalysisGroup;
 import lusc.net.github.ui.spectrogram.MainPanel;
@@ -70,12 +71,15 @@ public class SpectrogramSideBar extends JPanel implements MouseInputListener{
 			drawElements(contents, true);
 		}
 		else if (dataType==2){
-			drawSyllables(contents);
+			drawSyllablesTrue(contents);
 		}
 		else if (dataType==3){
-			drawTransitions(contents);
+			drawSyllables(contents);
 		}
 		else if (dataType==4){
+			drawTransitions(contents);
+		}
+		else if (dataType==5){
 			drawSongs(contents);
 		}
 	}
@@ -101,7 +105,8 @@ public class SpectrogramSideBar extends JPanel implements MouseInputListener{
 	
 	public void drawSyllables(int[] syls){
 		int[][] sylsToDraw=new int[syls.length][2];
-		int[][] lookUp=sg.getLookUp(2);
+		int[][] lookUp=sg.getLookUp(3);
+		
 		for (int i=0; i<syls.length; i++){
 			sylsToDraw[i][0]=lookUp[syls[i]][0];
 			sylsToDraw[i][1]=lookUp[syls[i]][1];
@@ -110,10 +115,21 @@ public class SpectrogramSideBar extends JPanel implements MouseInputListener{
 		//ssb.drawPhraseEx(sylsToDraw);
 	}
 	
+	public void drawSyllablesTrue(int[] syls){
+		int[][] sylsToDraw=new int[syls.length][2];
+		int[][] lookUp=sg.getLookUp(2);
+		for (int i=0; i<syls.length; i++){
+			sylsToDraw[i][0]=lookUp[syls[i]][0];
+			sylsToDraw[i][1]=lookUp[syls[i]][1];
+		}
+		drawSyllablesTrue(sylsToDraw);
+		//ssb.drawPhraseEx(sylsToDraw);
+	}
+	
 	public void drawTransitions(int[] trans){
 		int[][] transToDraw=new int[trans.length][4];
-		int[][] lookUpSyls=sg.getLookUp(2);
-		int[][] lookUpTrans=sg.getLookUp(3);
+		int[][] lookUpSyls=sg.getLookUp(3);
+		int[][] lookUpTrans=sg.getLookUp(4);
 		for (int i=0; i<trans.length; i++){
 			transToDraw[i][0]=lookUpSyls[lookUpTrans[trans[i]][2]][0];
 			transToDraw[i][1]=lookUpSyls[lookUpTrans[trans[i]][2]][1];
@@ -243,6 +259,112 @@ public class SpectrogramSideBar extends JPanel implements MouseInputListener{
 		g.fillRect(0,ygap,300,ysize);
 		g.setColor(Color.BLACK);
 			
+		float dx=(float)(imxsize/(sg.getScores(3).getMaxLength()+0.0));
+		if (dx>1){dx=1;}
+		int x,y1,y2, ys, j2, j3, x1, x2;
+		double ny;
+		for (int i=0; i<imnum; i++){
+			if (contour.isSelected()){
+				g.setColor(Color.GRAY);
+			}
+			else{
+				g.setColor(Color.BLACK);
+			}
+
+			ys=ygap+i*imysize;
+			g.drawRect(0, ygap+i*imysize, imxsize, imysize);
+			lookUpSongs[i]=syllables[i][0];
+			
+			Syllable sy=songs[syllables[i][0]].getPhrase(syllables[i][1]);
+			
+			//int[][] p=(int[][])songs[syllables[i][0]].getPhrase(syllables[i][1]);
+			//int a=p.length/2;
+			
+			int a=sy.getNumSyllables()/2;
+			Syllable syl=sy.getSyllable(a);
+			LinkedList<Element>eles=syl.getElements();
+			//if (p[a][p[a].length-1]==-1){a--;}
+			int startPosition=0;
+			for (int j=0; j<eles.size(); j++){
+				if (contour.isSelected()){
+					g.setColor(Color.GRAY);
+				}
+				else{
+					g.setColor(Color.BLACK);
+				}
+				Element ele=eles.get(j);
+				int[][] signal=ele.getSignal();
+				int eleLength=ele.getLength();
+				int mf=ele.getMaxF();
+				double dy=ele.getDy();
+					
+				if (j==0){startPosition=ele.getBeginTime();}
+				float s=(ele.getBeginTime()-startPosition)*dx;
+				ny=imysize*dy/(mf+0.0);
+				for (int k=0; k<eleLength; k++){
+					x=(int)Math.round(0+(k*dx)+s);
+					for (int kk=1; kk<signal[k].length; kk+=2){
+						y1=(int)Math.round(ny*signal[k][kk]);
+						y2=(int)Math.round(ny*signal[k][kk+1]);
+						g.drawLine(x,ys+y1,x,ys+y2);
+					}
+				}
+				
+				if (contour.isSelected()){
+					double[][] measurements=ele.getMeasurements();
+					g.setColor(Color.RED);
+					if (logContour.isSelected()){
+						double maxf=Math.log(mf+0.0);
+						double minf=Math.log(100);
+						ny=imysize/(maxf-minf);
+						for (int k=0; k<signal.length-1; k++){
+							j2=k+5;
+							j3=k+6;
+							x1=(int)Math.round(0+(k*dx+s));
+							x2=(int)Math.round(0+((k+1)*dx)+s);
+							y1=(int)Math.round(ny*(maxf-Math.log(measurements[j2][3])));
+							y2=(int)Math.round(ny*(maxf-Math.log(measurements[j3][3])));
+							g.drawLine(x1,ys+y1,x2,ys+y2);
+						}
+					}
+					else{
+						double maxf=mf+0.0;
+						ny=imysize/maxf;
+						for (int k=0; k<signal.length-1; k++){
+							j2=k+5;
+							j3=k+6;
+							x1=(int)Math.round(0+(k*dx)+s);
+							x2=(int)Math.round(0+((k+1)*dx+s));
+							y1=(int)Math.round(ny*(maxf-measurements[j2][3]));
+							y2=(int)Math.round(ny*(maxf-measurements[j3][3]));
+							g.drawLine(x1,ys+y1,x2,ys+y2);
+						}
+					}
+				}	
+			}
+		}
+		repaint();
+		g.dispose();
+		return ims;
+	}
+	
+	public BufferedImage drawSyllablesTrue(int[][] syllables){
+		this.songs=sg.getSongs();
+		checked=-1;
+		int imnum=syllables.length;
+		imysize=100;
+		ysize=imysize*(imnum+1);
+		imxsize=300;
+		lookUpSongs=new int[imnum];
+		ims=new BufferedImage(300, ysize, BufferedImage.TYPE_INT_ARGB);
+		this.setPreferredSize(new Dimension(300, ysize));
+		this.revalidate();
+		
+		Graphics2D g=ims.createGraphics();
+		g.setColor(Color.WHITE);
+		g.fillRect(0,ygap,300,ysize);
+		g.setColor(Color.BLACK);
+			
 		float dx=(float)(imxsize/(sg.getScores(2).getMaxLength()+0.0));
 		if (dx>1){dx=1;}
 		int x,y1,y2, ys, j2, j3, x1, x2;
@@ -258,65 +380,65 @@ public class SpectrogramSideBar extends JPanel implements MouseInputListener{
 			ys=ygap+i*imysize;
 			g.drawRect(0, ygap+i*imysize, imxsize, imysize);
 			lookUpSongs[i]=syllables[i][0];
-			int[][] p=(int[][])songs[syllables[i][0]].getPhrase(syllables[i][1]);
-			int a=p.length/2;
-			//if (p[a][p[a].length-1]==-1){a--;}
+			
+			Syllable syl=songs[syllables[i][0]].getBaseLevelSyllable(syllables[i][1]);
+			
+			//int[] sy=songs[syllables[i][0]].getSyllable(syllables[i][1]);
+			LinkedList<Element> eles=syl.getElements();
 			int startPosition=0;
-			for (int j=0; j<p[a].length; j++){
+			for (int j=0; j<eles.size(); j++){
 				if (contour.isSelected()){
 					g.setColor(Color.GRAY);
 				}
 				else{
 					g.setColor(Color.BLACK);
 				}
-				if (p[a][j]!=-1){
-					Element ele=(Element)songs[syllables[i][0]].getElement(p[a][j]);
-					int[][] signal=ele.getSignal();
-					int eleLength=ele.getLength();
-					int mf=ele.getMaxF();
-					double dy=ele.getDy();
+				Element ele=eles.get(j);
+				int[][] signal=ele.getSignal();
+				int eleLength=ele.getLength();
+				int mf=ele.getMaxF();
+				double dy=ele.getDy();
 					
-					if (j==0){startPosition=ele.getBeginTime();}
-					float s=(ele.getBeginTime()-startPosition)*dx;
-					ny=imysize*dy/(mf+0.0);
-					for (int k=0; k<eleLength; k++){
-						x=(int)Math.round(0+(k*dx)+s);
-						for (int kk=1; kk<signal[k].length; kk+=2){
-							y1=(int)Math.round(ny*signal[k][kk]);
-							y2=(int)Math.round(ny*signal[k][kk+1]);
-							g.drawLine(x,ys+y1,x,ys+y2);
+				if (j==0){startPosition=ele.getBeginTime();}
+				float s=(ele.getBeginTime()-startPosition)*dx;
+				ny=imysize*dy/(mf+0.0);
+				for (int k=0; k<eleLength; k++){
+					x=(int)Math.round(0+(k*dx)+s);
+					for (int kk=1; kk<signal[k].length; kk+=2){
+						y1=(int)Math.round(ny*signal[k][kk]);
+						y2=(int)Math.round(ny*signal[k][kk+1]);
+						g.drawLine(x,ys+y1,x,ys+y2);
+					}
+				}
+				
+				if (contour.isSelected()){
+					double[][] measurements=ele.getMeasurements();
+					g.setColor(Color.RED);
+					if (logContour.isSelected()){
+						double maxf=Math.log(mf+0.0);
+						double minf=Math.log(100);
+						ny=imysize/(maxf-minf);
+						for (int k=0; k<signal.length-1; k++){
+							j2=k+5;
+							j3=k+6;
+							x1=(int)Math.round(0+(k*dx+s));
+							x2=(int)Math.round(0+((k+1)*dx)+s);
+							y1=(int)Math.round(ny*(maxf-Math.log(measurements[j2][3])));
+							y2=(int)Math.round(ny*(maxf-Math.log(measurements[j3][3])));
+							g.drawLine(x1,ys+y1,x2,ys+y2);
 						}
 					}
-				
-					if (contour.isSelected()){
-						double[][] measurements=ele.getMeasurements();
-						g.setColor(Color.RED);
-						if (logContour.isSelected()){
-							double maxf=Math.log(mf+0.0);
-							double minf=Math.log(100);
-							ny=imysize/(maxf-minf);
-							for (int k=0; k<signal.length-1; k++){
-								j2=k+5;
-								j3=k+6;
-								x1=(int)Math.round(0+(k*dx+s));
-								x2=(int)Math.round(0+((k+1)*dx)+s);
-								y1=(int)Math.round(ny*(maxf-Math.log(measurements[j2][3])));
-								y2=(int)Math.round(ny*(maxf-Math.log(measurements[j3][3])));
-								g.drawLine(x1,ys+y1,x2,ys+y2);
-							}
-						}
-						else{
-							double maxf=mf+0.0;
-							ny=imysize/maxf;
-							for (int k=0; k<signal.length-1; k++){
-								j2=k+5;
-								j3=k+6;
-								x1=(int)Math.round(0+(k*dx)+s);
-								x2=(int)Math.round(0+((k+1)*dx+s));
-								y1=(int)Math.round(ny*(maxf-measurements[j2][3]));
-								y2=(int)Math.round(ny*(maxf-measurements[j3][3]));
-								g.drawLine(x1,ys+y1,x2,ys+y2);
-							}
+					else{
+						double maxf=mf+0.0;
+						ny=imysize/maxf;
+						for (int k=0; k<signal.length-1; k++){
+							j2=k+5;
+							j3=k+6;
+							x1=(int)Math.round(0+(k*dx)+s);
+							x2=(int)Math.round(0+((k+1)*dx+s));
+							y1=(int)Math.round(ny*(maxf-measurements[j2][3]));
+							y2=(int)Math.round(ny*(maxf-measurements[j3][3]));
+							g.drawLine(x1,ys+y1,x2,ys+y2);
 						}
 					}
 				}	
@@ -326,8 +448,8 @@ public class SpectrogramSideBar extends JPanel implements MouseInputListener{
 		g.dispose();
 		return ims;
 	}
-	
-	public BufferedImage drawTransitions2(int[][] transitions){
+	/*
+	public BufferedImage drawTransitions2X(int[][] transitions){
 		this.songs=sg.getSongs();
 		checked=-1;
 		int imnum=transitions.length;
@@ -358,15 +480,19 @@ public class SpectrogramSideBar extends JPanel implements MouseInputListener{
 			
 			int p2=transitions[i][1]+1;
 			if (p1==-2){
-				p2=songs[songT].getNumPhrases()-1;
+				p2=songs[songT].getNumSyllables(2)-1;
 			}
-			int[][]q1=new int[1][1];
-			int[][]q2=new int[1][1];
+			//int[][]q1=new int[1][1];
+			//int[][]q2=new int[1][1];
 			int a1=0;
 			int a2=0;
 			int startPosition=0;
 			int endPosition=0;
 			if (p1>=0){
+				
+				Syllable ph1=songs[songT].getPhrase(p1);
+				
+				
 				q1=(int[][])songs[songT].getPhrase(p1);
 				a1=q1.length-1;
 				if (q1[a1][q1[a1].length-1]==-1){a1--;}
@@ -438,6 +564,8 @@ public class SpectrogramSideBar extends JPanel implements MouseInputListener{
 		g.dispose();
 		return ims;
 	}
+	*/
+	
 	
 	public BufferedImage drawTransitions(int[][] transitions){
 		this.songs=sg.getSongs();
@@ -456,7 +584,7 @@ public class SpectrogramSideBar extends JPanel implements MouseInputListener{
 		g.fillRect(0,0,300,ysize);
 		g.setColor(Color.BLACK);
 			
-		float dx=(float)(imxsize/(3*sg.getScores(2).getMaxLength()+0.0));
+		float dx=(float)(imxsize/(3*sg.getScores(3).getMaxLength()+0.0));
 		if (dx>1){dx=1;}
 		int x,x1, x2, j2, j3, y1,y2, ys;
 		double ny;
@@ -495,19 +623,32 @@ public class SpectrogramSideBar extends JPanel implements MouseInputListener{
 				lookUpSongs[i]=tsong;
 				//int[][] p=(int[][])sg.songs[tsong].phrases.get(j);
 				
-				int[][] p=(int[][])songs[tsong].getPhrase(tphrase);
+				Syllable ph=songs[tsong].getPhrase(tphrase);
 				
-				int w=p.length-1;
-				if (p[w][p[w].length-1]==-1){w--;}
+				//int[][] p=(int[][])songs[tsong].getPhrase(tphrase);
 				
-				for (int k=0; k<p[w].length; k++){
+				//int w=p.length-1;
+				int w=1;
+				Syllable sy=ph.getSyllable(ph.getNumSyllables()-w);
+				while (sy.getNumEles2()<sy.getMaxSyllLength()){
+					w--;
+					sy=ph.getSyllable(ph.getNumSyllables()-w);
+				}
+				
+				//int w=ph.getNumChildren()-1;
+				
+				//if (p[w][p[w].length-1]==-1){w--;}
+				
+				LinkedList<Element>eles=sy.getElements2();
+				
+				for (int k=0; k<eles.size(); k++){
 					if (contour.isSelected()){
 						g.setColor(Color.GRAY);
 					}	
 					else{
 						g.setColor(Color.BLACK);
 					}
-					Element ele=(Element)songs[tsong].getElement(p[w][k]);
+					Element ele=eles.get(k);
 					int[][] signal=ele.getSignal();
 					int eleLength=ele.getLength();
 					int mf=ele.getMaxF();
@@ -584,7 +725,7 @@ public class SpectrogramSideBar extends JPanel implements MouseInputListener{
 		g.fillRect(0,0,300,ysize);
 		g.setColor(Color.BLACK);
 			
-		float dx=(float)(imxsize/(sg.getScores(4).getMaxLength()+0.0));
+		float dx=(float)(imxsize/(sg.getScores(5).getMaxLength()+0.0));
 		if (dx>1){dx=1;}
 		int x,y1,y2, ys;
 		double ny;
@@ -666,7 +807,7 @@ public class SpectrogramSideBar extends JPanel implements MouseInputListener{
 		
 		public String doInBackground() {
 			MainPanel mp=new MainPanel(sg.getDBC(), songs[lookUpSongs[checked]].getSongID(), sg.getDefaults());
-			mp.startDrawing();
+			mp.startDrawing(true);
 	        return new String("done");
 		}
 

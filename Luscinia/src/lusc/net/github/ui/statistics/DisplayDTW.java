@@ -9,20 +9,21 @@ import java.awt.image.BufferedImage;
 import javax.swing.JPanel;
 
 import lusc.net.github.analysis.CompareThread;
+import lusc.net.github.analysis.CompareThread2;
 import lusc.net.github.analysis.PrepareDTW;
 
 	
 
 public class DisplayDTW extends JPanel{
 	PrepareDTW pdtw;
-	CompareThread ct;
+	CompareThread2 ct;
 	BufferedImage imf;
 	double[][]q;
 	
 	int width=500;
 	int height=500;
 	
-	public DisplayDTW(int[] wrap, PrepareDTW pdtw, CompareThread ct){
+	public DisplayDTW(int[] wrap, PrepareDTW pdtw, CompareThread2 ct){
 		this.pdtw=pdtw;
 		this.ct=ct;
 		
@@ -34,7 +35,7 @@ public class DisplayDTW extends JPanel{
 		for (int i=0; i<lengths[0]; i++){
 			for (int j=0; j<lengths[1]; j++){
 				q[i][j]=p[i][j];
-				System.out.println(i+" "+j+" "+p[i][j]);
+				//System.out.println(i+" "+j+" "+p[i][j]);
 				if (p[i][j]>max){
 					max=p[i][j];
 				}

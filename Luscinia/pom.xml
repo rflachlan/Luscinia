@@ -45,7 +45,7 @@
 		<artifactId>ejml</artifactId>
 		<version>0.20</version>
 		<scope>system</scope>
-		<systemPath>/Users/Rob/Documents/workspace/ejml-0.20.jar</systemPath>
+		<systemPath>/Users/rfl/Documents/workspace/ejml-0.20.jar</systemPath>
   	</dependency>
   	<dependency>
   		<groupId>com.h2database</groupId>
@@ -72,7 +72,7 @@
    	 	<artifactId>mdsj</artifactId>
     	<version>0.2</version>
     	<scope>system</scope>
-    	<systemPath>/Users/Rob/Documents/workspace/mdsj.jar</systemPath>
+    	<systemPath>/Users/rfl/Documents/workspace/mdsj.jar</systemPath>
 	</dependency>
 	<dependency>
   		<groupId>com.googlecode.matrix-toolkits-java</groupId>

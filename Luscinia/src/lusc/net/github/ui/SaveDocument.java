@@ -33,6 +33,7 @@ import java.awt.*;
 import lusc.net.github.Defaults;
 
 import org.apache.poi.xssf.usermodel.*;
+
 import org.apache.*;
 
 
@@ -76,6 +77,10 @@ public class SaveDocument {
 		fileType=2;
 	}
 	
+	public String getName(){
+		return name;
+	}
+	
 	public boolean makeFile(){
 		
 		int returnVal = JFileChooser.APPROVE_OPTION;
@@ -88,6 +93,7 @@ public class SaveDocument {
 				fc=new JFileChooser(thpath);
 			}
 			catch(Exception e){
+				e.printStackTrace();
 				fc=new JFileChooser();
 			}
 			fc.setDialogType(JFileChooser.SAVE_DIALOG);
@@ -113,8 +119,9 @@ public class SaveDocument {
 			else if (p==2){
 				fc.setFileFilter(sfftxt);
 			}
-
+			//System.out.println("Prepared fc...");
 			returnVal = fc.showSaveDialog(host);
+			//System.out.println("Got answer");
 		}
 		if (returnVal == JFileChooser.APPROVE_OPTION) {
 			
@@ -166,6 +173,7 @@ public class SaveDocument {
 						if (cont==0){
 							//SaveDocument sd=new SaveDocument(data, host);
 						}
+						e2.printStackTrace();
 					}
 					else{System.exit(3);}
 				}
@@ -179,6 +187,7 @@ public class SaveDocument {
 			}
 			catch(Exception e){}
 		}
+		System.out.println("Finished this");
 		return readyToWrite;
 	}
 	
@@ -232,6 +241,24 @@ public class SaveDocument {
 	}
 	
 	public void writeInt(int i){
+		try{
+			if (fileType==0){
+				row.createCell(colnum).setCellValue(i);
+				colnum++;
+			}
+			else if (fileType==1){
+				Results.print(i+",");
+			}
+			else if (fileType==2){
+				Results.print(i+"\u0009");
+			}
+		}
+		catch(Exception e){
+			e.printStackTrace();
+		}	
+	}
+	
+	public void writeLong(long i){
 		try{
 			if (fileType==0){
 				row.createCell(colnum).setCellValue(i);

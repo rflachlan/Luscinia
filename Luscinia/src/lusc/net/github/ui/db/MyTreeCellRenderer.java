@@ -28,7 +28,7 @@ public class MyTreeCellRenderer extends DefaultTreeCellRenderer{
 		
 		myNode n=(myNode)((DefaultMutableTreeNode) value);
 		
-		if (n.getLevel()==2){
+		if (n.song){
 			
 			//Song song=dbc.loadSongFromDatabase(n.dex, 0);
 			

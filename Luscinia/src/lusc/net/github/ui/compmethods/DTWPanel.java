@@ -39,6 +39,7 @@ public class DTWPanel extends JPanel implements ActionListener, PropertyChangeLi
 	static String INTERPOLATE_OPT="interpolate";
 	static String WARP_TYPE_OPT="warp type";
 	static String SQUARED_DIST="squared dist";
+	static String TUNE_DTW="tune dtw";
 	
 	
 	int progress=0;
@@ -57,6 +58,8 @@ public class DTWPanel extends JPanel implements ActionListener, PropertyChangeLi
 	
 	JRadioButton warpTypeB=new JRadioButton("Dynamic warping", true);
 	
+	JRadioButton tuneB=new JRadioButton("Tune DTW", true);
+	
 	String[] stitchOptions={"Individual elements", "Stitch elements", "Both"};
 	JComboBox stitch=new JComboBox(stitchOptions);
 	
@@ -72,6 +75,7 @@ public class DTWPanel extends JPanel implements ActionListener, PropertyChangeLi
 	boolean interpolate=true;
 	boolean dynamicWarping=true;
 	boolean squared=false;
+	boolean tune=false;
 	
 	int stitchSyllables=0;
 	double mainReductionFactor=0.25;
@@ -84,6 +88,7 @@ public class DTWPanel extends JPanel implements ActionListener, PropertyChangeLi
 	double offsetRemoval=0.0;
 	double alignmentCost=0.2;
 	double aTanTransform=0.01;
+	double stitchThreshold=30;
 	int alignmentPoints=3;
 	double syllableRepetitionWeighting=0;
 	public double[] parameterValues={1,0,0,0,0,1,0,0,0,1,0,0,0,0,1,0,0, 0, 0,0,0,0,0};
@@ -92,9 +97,12 @@ public class DTWPanel extends JPanel implements ActionListener, PropertyChangeLi
 						"Median frequency change", "Fundamental frequency change", "Harmonicity", "Wiener entropy", "Frequency bandwidth", "Amplitude", "Vibrato rate", "Vibrato amplitude", 
 						"Gap between elements", "PF norm", "MF norm", "MeF norm", "FF norm", "Upper cut-off", "Lower cut-off"};
 
+	
+	
+	
 	JFormattedTextField[] parametersTF;
 	
-	JFormattedTextField compressionFactorTF, minPointsTF, sdRatioTF, sdRatioTF2, offsetRemovalTF, stitchPunishmentTF, alignmentCostTF, addSyllRepsTF, maximumWarpTF, aTanTransformTF;
+	JFormattedTextField compressionFactorTF, minPointsTF, sdRatioTF, sdRatioTF2, offsetRemovalTF, stitchPunishmentTF, alignmentCostTF, addSyllRepsTF, maximumWarpTF, aTanTransformTF, stitchThresholdTF;
 		
 	boolean started=false;
 	boolean textOut=false;
@@ -107,9 +115,11 @@ public class DTWPanel extends JPanel implements ActionListener, PropertyChangeLi
 	
 	int mode=0;
 	
+	TunerInfo tunerInfo=null;
 	//JLabel progressLabel=new JLabel("Waiting to start. Click 'Next step' to start comparison");
 	LinkedList compScheme;
 	DataBaseController dbc;
+
 	//SongGroup sg;
 	AnalysisGroup ag;
 	Defaults defaults;
@@ -122,6 +132,7 @@ public class DTWPanel extends JPanel implements ActionListener, PropertyChangeLi
 		this.ag=ag;
 		this.enableSyllableStitching=enableSyllableStitching;
 		this.defaults=defaults;
+		tunerInfo=new TunerInfo(false, defaults);
 		getDTWParameters();
 		num=NumberFormat.getNumberInstance();
 		num.setMaximumFractionDigits(10);	
@@ -167,6 +178,10 @@ public class DTWPanel extends JPanel implements ActionListener, PropertyChangeLi
 	
 	public boolean getSquared(){
 		return squared;
+	}
+	
+	public boolean getTune(){
+		return tune;
 	}
 	
 	public int getStitchSyllables(){
@@ -217,12 +232,20 @@ public class DTWPanel extends JPanel implements ActionListener, PropertyChangeLi
 		return alignmentCost;
 	}
 	
+	public double getStitchThreshold(){
+		return stitchThreshold;
+	}
+	
 	public double getMaximumWarp(){
 		return maximumWarp;
 	}
 	
 	public int getMinPoints(){
 		return minPoints;
+	}
+	
+	public TunerInfo getTunerInfo(){
+		return tunerInfo;
 	}
 	
 	public double getSyllableRepetitionWeighting(){
@@ -244,6 +267,10 @@ public class DTWPanel extends JPanel implements ActionListener, PropertyChangeLi
 	
 	public void setSquared(boolean w){
 		squared=w;
+	}
+	
+	public void setTune(boolean w){
+		tune=w;
 	}
 	
 	public void setStitchSyllables(int a){
@@ -292,6 +319,10 @@ public class DTWPanel extends JPanel implements ActionListener, PropertyChangeLi
 	
 	public void setAlignmentCost(double a){
 		alignmentCost=a;
+	}
+	
+	public void setStitchThreshold(double a){
+		stitchThreshold=a;
 	}
 	
 	public void setMaximumWarp(double a){
@@ -394,7 +425,7 @@ public class DTWPanel extends JPanel implements ActionListener, PropertyChangeLi
 		offsetRemovalTF.addPropertyChangeListener("value", this);
 		optionsPanel.add(offsetRemovalTF);
 		*/
-		
+		/*
 		if (enableSyllableStitching){
 			JLabel stitchLabel=new JLabel("Cost for stitching syllables: ");
 			optionsPanel.add(stitchLabel);
@@ -404,6 +435,7 @@ public class DTWPanel extends JPanel implements ActionListener, PropertyChangeLi
 			stitchPunishmentTF.addPropertyChangeListener("value", this);
 			optionsPanel.add(stitchPunishmentTF);
 		}
+		*/
 		
 		JLabel alignmentLabel=new JLabel("Cost for alignment error: ");
 		optionsPanel.add(alignmentLabel);
@@ -412,6 +444,15 @@ public class DTWPanel extends JPanel implements ActionListener, PropertyChangeLi
 		alignmentCostTF.setColumns(10);
 		alignmentCostTF.addPropertyChangeListener("value", this);
 		optionsPanel.add(alignmentCostTF);
+		
+		JLabel stitchThresholdLabel=new JLabel("Stitch threshold (ms): ");
+		optionsPanel.add(stitchThresholdLabel);
+		stitchThresholdTF=new JFormattedTextField();
+		stitchThresholdTF.setValue(new Double(stitchThreshold));
+		stitchThresholdTF.setColumns(10);
+		stitchThresholdTF.addPropertyChangeListener("value", this);
+		optionsPanel.add(stitchThresholdTF);
+		
 		
 		weightByAmpB.setSelected(weightByAmp);
 		weightByAmpB.setActionCommand(WEIGHT_BY_AMP);
@@ -433,6 +474,12 @@ public class DTWPanel extends JPanel implements ActionListener, PropertyChangeLi
 		squaredDist.setActionCommand(SQUARED_DIST);
 		squaredDist.addActionListener(this);
 		optionsPanel.add(squaredDist);
+		
+		tuneB.setSelected(tune);;
+		tuneB.setActionCommand(TUNE_DTW);
+		tuneB.addActionListener(this);
+		optionsPanel.add(tuneB);
+		
 		
 		warpTypeB.setSelected(dynamicWarping);
 		warpTypeB.setActionCommand(WARP_TYPE_OPT);
@@ -522,7 +569,16 @@ public class DTWPanel extends JPanel implements ActionListener, PropertyChangeLi
 		else if (SQUARED_DIST.equals(command)){
 			squared=squaredDist.isSelected();
 		}
-			
+		
+		else if (TUNE_DTW.equals(command)){
+			tune=tuneB.isSelected();
+			tunerInfo=new TunerInfo(tune, defaults);
+			if (tune){		
+				JOptionPane.showMessageDialog(this, tunerInfo);
+				tunerInfo.getParameters();
+			}
+		}
+		
 	}
 	
 	/*
@@ -697,11 +753,17 @@ public class DTWPanel extends JPanel implements ActionListener, PropertyChangeLi
 			stitchPunishment=s;
 			stitchPunishmentTF.setValue(new Double(s));
 		}
+		
 		if (source==alignmentCostTF){
 			double s=((Number)alignmentCostTF.getValue()).doubleValue();
-			if (s<0){s=0;}
 			alignmentCost=s;
 			alignmentCostTF.setValue(new Double(s));
+		}
+		
+		if (source==stitchThresholdTF){
+			double s=((Number)stitchThresholdTF.getValue()).doubleValue();
+			stitchThreshold=s;
+			stitchThresholdTF.setValue(new Double(s));
 		}
 		if (source==addSyllRepsTF){
 			double s=(double)((Number)addSyllRepsTF.getValue()).doubleValue();
@@ -723,6 +785,57 @@ public class DTWPanel extends JPanel implements ActionListener, PropertyChangeLi
 			aTanTransform=s;
 			aTanTransformTF.setValue(new Double(s));
 		}
+	}
+	
+	
+	public LinkedList<String[]> getAnalysisParameters(){
+		LinkedList<String[]> params=new LinkedList<String[]>();
+		
+		for (int i=0; i<parameterValues.length; i++) {
+			if (parameterValues[i]>0) {
+				String[]x={parameters[i], Double.toString(parameterValues[i])};
+				params.add(x);
+			}
+		}
+		String[]x1={"Weight by amplitude", Boolean.toString(weightByAmp)};
+		params.add(x1);
+		String[]x2={"Log frequencies", Boolean.toString(logFrequencies)};
+		params.add(x2);
+		String[]x3={"Normalise with sd", Boolean.toString(normaliseWithSDs)};
+		params.add(x3);
+		String[]x4={"Interpolate time warping", Boolean.toString(interpolate)};
+		params.add(x4);
+		String[]x5={"Dynamic wapring", Boolean.toString(dynamicWarping)};
+		params.add(x5);
+		String[]x6={"Use squared dissimilarities", Boolean.toString(squared)};
+		params.add(x6);
+		String[]x7={"Stitch syllables", Integer.toString(stitchSyllables)};
+		params.add(x7);
+		
+		String[]x8={"Compression factor", Double.toString(mainReductionFactor)};
+		params.add(x8);
+		String[]x9={"Minimum number of points", Integer.toString(minPoints)};
+		params.add(x9);
+		String[]x10={"SD ratio", Double.toString(sdRatio)};
+		params.add(x10);
+		String[]x11={"SD ratio 2", Double.toString(sdRatio2)};
+		params.add(x11);
+		String[]x12={"Alignment cost", Double.toString(alignmentCost)};
+		params.add(x12);
+		String[]x13={"ArcTan transformation factor", Double.toString(aTanTransform)};
+		params.add(x13);
+		String[]x14={"Stitch threshold", Double.toString(stitchThreshold)};
+		params.add(x14);
+		String[]x15={"Number of alignment points", Integer.toString(alignmentPoints)};
+		params.add(x15);
+		String[]x16={"Syllable repetition weighting", Double.toString(syllableRepetitionWeighting)};
+		params.add(x16);
+		String[]x17={"Maximum warp", Double.toString(maximumWarp)};
+		params.add(x17);
+		
+		
+		
+		return params;
 	}
 	
 }

@@ -16,6 +16,7 @@ import javax.swing.*;
 
 import lusc.net.github.ui.compmethods.DTWPanel;
 import lusc.net.github.ui.StatOptionPanel;
+import lusc.net.github.ui.spectrogram.MainPanel;
 import lusc.net.github.ui.spectrogram.SpectrPane;
 
 /**
@@ -409,6 +410,44 @@ public class Defaults {
 		setIntProperty("maxbrush", song.maxBrush);
 		setIntProperty("minbrush", song.minBrush);
 		setIntProperty("brushtype", song.brushType);
+		
+		setIntProperty("stereomode", song.stereomode);
+		
+	}
+	
+	/**
+	 * Convenience method that gets spectrogram details about Song objects. This is used for 
+	 * defaul spectrogram parameters
+	 * @param song A Song object.
+	 */
+	
+	
+	public void setSongParametersRec(Song song){
+		setIntProperty("maxfem", song.maxf);
+		setDoubleProperty("frlem", song.frameLength, 1000);
+		setDoubleProperty("tstem", song.timeStep, 1000);
+		setDoubleProperty("fcoem", song.frequencyCutOff, 1);
+		setIntProperty("wimem", song.windowMethod);
+		setDoubleProperty("echamtem", song.echoComp, 1000);
+		setIntProperty("echlenem", song.echoRange);
+		setDoubleProperty("noiseamtem", song.noiseRemoval, 1000);
+		setIntProperty("noiselen1em", song.noiseLength1);
+		setIntProperty("noiselen2em", song.noiseLength2);
+		setDoubleProperty("dynrem", song.dynRange, 1000);
+		setIntProperty("dyneem", song.dynEqual);
+		setDoubleProperty("fundem", song.fundAdjust, 1000);
+		setDoubleProperty("gapem", song.minGap, 1000);
+		setIntProperty("brushem", song.brushSize);
+		setDoubleProperty("fund2em", song.fundJumpSuppression, 1000);
+		setDoubleProperty("minlengthem", song.minLength, 1000);
+		setDoubleProperty("upperloopem", song.upperLoop, 1000);
+		setDoubleProperty("lowerloopem", song.lowerLoop, 1000);
+		setIntProperty("maxbrushem", song.maxBrush);
+		setIntProperty("minbrushem", song.minBrush);
+		setIntProperty("brushtypeem", song.brushType);
+		
+		setIntProperty("stereomodeem", song.stereomode);
+		
 	}
 	
 	/**
@@ -436,6 +475,30 @@ public class Defaults {
 	}
 	
 	/**
+	 * A convenience method that gets spectrogram parameters for a Song object.
+	 * This should probably use the set functions in Song.
+	 * @param song a Song object.
+	 */
+	
+	public void getSongParametersRec(Song song){
+		song.maxf=getIntProperty("maxfem", 8000);
+		song.frameLength=getDoubleProperty("frlem", 1000, 5);
+		song.timeStep=getDoubleProperty("tstem", 1000, 1);
+		song.frequencyCutOff=getDoubleProperty("fcoem", 1, 0);
+		song.windowMethod=getIntProperty("wimem", 1);
+		song.echoComp=getDoubleProperty("echamtem", 1000, 0);
+		song.echoRange=getIntProperty("echlenem", 50);
+		song.noiseRemoval=(float)getDoubleProperty("noiseamtem", 1000, 0);
+		song.noiseLength1=getIntProperty("noiselen1em", 50);
+		song.noiseLength2=getIntProperty("noiselen2em", 50);
+		song.dynEqual=getIntProperty("dyneem", 0);
+		song.dynRange=getDoubleProperty("dynrem", 1000, 50);
+		song.fundAdjust=getDoubleProperty("fundem", 1000, 1);
+		song.minGap=getDoubleProperty("gapem", 1000, 0);
+		song.brushSize=getIntProperty("brushem", 1);
+	}
+	
+	/**
 	 * A convenience function that gets a range of measurement parameters for a Song
 	 * object. Is this necessary (or used)? Should it be rolled into the previous function?
 	 * @param song A Song object
@@ -452,6 +515,31 @@ public class Defaults {
 		song.maxBrush=getIntProperty("maxbrush", 10000);
 		song.minBrush=getIntProperty("minbrush", 0);
 		song.brushType=getIntProperty("brushtype", 1);
+		
+		song.stereomode=getIntProperty("stereomode", 0);
+		
+	}
+	
+	/**
+	 * A convenience function that gets a range of measurement parameters for a Song
+	 * object. Is this necessary (or used)? Should it be rolled into the previous function?
+	 * @param song A Song object
+	 */
+	
+	public void getMiscellaneousSongParametersRec(Song song){
+		song.fundAdjust=getDoubleProperty("fundem", 1000, 1);
+		song.minGap=getDoubleProperty("gapem", 1000, 0);
+		song.brushSize=getIntProperty("brushem", 1);
+		song.fundJumpSuppression=getDoubleProperty("fund2em", 1000, 100);
+		song.minLength=getDoubleProperty("minLengthem", 1000, 5);
+		song.upperLoop=getDoubleProperty("upperloopem", 1000, 15);
+		song.lowerLoop=getDoubleProperty("lowerloopem", 1000, 0);
+		song.maxBrush=getIntProperty("maxbrushem", 10000);
+		song.minBrush=getIntProperty("minbrushem", 0);
+		song.brushType=getIntProperty("brushtypeem", 1);
+		
+		song.stereomode=getIntProperty("stereomodeem", 0);
+		
 	}
 	
 	/**
@@ -512,8 +600,9 @@ public class Defaults {
 		
 		setDoubleProperty("dtwmrf", sg.getMainReductionFactor(), 1000);
 		setDoubleProperty("dtwsdr", sg.getSDRatio(), 1000);
-		setDoubleProperty("dtwstp", sg.getStitchPunishment(), 1000);
+		//setDoubleProperty("dtwstp", sg.getStitchPunishment(), 1000);
 		setDoubleProperty("dtwalc", sg.getAlignmentCost(), 1000);
+		setDoubleProperty("dtwstthresh", sg.getStitchThreshold(), 1000);
 		setIntProperty("dtwmpo", sg.getMinPoints());
 		setDoubleProperty("dtwsrw", sg.getSyllableRepetitionWeighting(), 1000);
 		setDoubleProperty("dtwmaxw", sg.getMaximumWarp(), 1000);
@@ -565,16 +654,19 @@ public class Defaults {
 		sg.setInterpolate(getBooleanProperty("dtwintp", true));
 		sg.setDynamicWarping(getBooleanProperty("dtwdyn", true));
 		sg.setStitchSyllables(getIntProperty("dtwSTISYL", 1));
-		sg.setAlignmentPoints(getIntProperty("dtwALIGN", 1));
+		sg.setAlignmentPoints(getIntProperty("dtwALIGN", 3));
 		sg.setSquared(getBooleanProperty("dtwSQUARE", false));
 				
-		sg.setMainReductionFactor(getDoubleProperty("dtwmrf", 1000, 1));
-		sg.setMinPoints(getIntProperty("dtwmpo", 10));
-		sg.setSDRatio(getDoubleProperty("dtwsdr", 1000, 0.5));
-		sg.setStitchPunishment(getDoubleProperty("dtwstp", 1000, 150));
-		sg.setAlignmentCost(getDoubleProperty("dtwalc", 1000, 150));
+		sg.setMainReductionFactor(getDoubleProperty("dtwmrf", 1000, 0.1));
+		sg.setMinPoints(getIntProperty("dtwmpo", 2));
+		sg.setSDRatio(getDoubleProperty("dtwsdr", 1000, 1));
+		//sg.setStitchPunishment(getDoubleProperty("dtwstp", 1000, 150));
+		sg.setAlignmentCost(getDoubleProperty("dtwalc", 1000, 0.2));
+		
+		sg.setStitchThreshold(getDoubleProperty("dtwstthresh", 1000, 30));
+		
 		sg.setSyllableRepetitionWeighting(getDoubleProperty("dtwsrw", 1000, 0));
-		sg.setMaximumWarp(getDoubleProperty("dtwmaxw", 1000, 0));
+		sg.setMaximumWarp(getDoubleProperty("dtwmaxw", 1000, 1));
 		sg.setATanTransform(getDoubleProperty("dtwatan", 100000, 0.02));
 	}
 	
@@ -599,11 +691,11 @@ public class Defaults {
 	 */
 	
 	public void getAnalysisOptions(StatOptionPanel sop){
-		boolean[] results1=getBooleanArray("anatyp", 13);
+		boolean[] results1=getBooleanArray("anatyp", 15);
 		if (results1!=null){
 			sop.setAnalysisTypes(results1);
 		}
-		boolean[] results2=getBooleanArray("analev", 5);
+		boolean[] results2=getBooleanArray("analev", 7);
 		if (results2!=null){
 			sop.setAnalysisLevels(results2);
 		}
@@ -672,6 +764,23 @@ public class Defaults {
 	public int getDefaultDocFormat(){
 		int p=getIntProperty("dofo", 0);
 		return p;					 
+	}
+	
+	public void getDetectParams(MainPanel mp) {
+		mp.detectThresh=getDoubleProperty("detthresh", 1000, 5);
+		mp.detectMaxFreq=getIntProperty("detmaxfreq", 5000);
+		mp.detectMinFreq=getIntProperty("detminfreq", 1000);
+		mp.detectWindow=getIntProperty("detwindow", 500);
+	}
+	
+	public void setDetectParams(MainPanel mp) {
+		setDoubleProperty("detthresh", mp.detectThresh, 1000);
+		setIntProperty("detmaxfreq", mp.detectMaxFreq);
+		setIntProperty("detminfreq", mp.detectMinFreq);
+		setIntProperty("detwindow", mp.detectWindow);
+		
+		System.out.println("Defaults detect: "+mp.detectThresh+" "+mp.detectMaxFreq+" "+mp.detectMinFreq+" "+mp.detectWindow);
+		
 	}
 	
 	/**
@@ -784,4 +893,16 @@ public class Defaults {
 		return menuBar;
 	}
 	
+	public void setVersions(String v, String dv) {
+		props.setProperty("version", v);
+		props.setProperty("dbversion", dv);
+		
+	}
+	
+	public String[] getVersions() {
+		String[] out=new String[2];
+		out[0]=props.getProperty("version");
+		out[1]=props.getProperty("dbversion");
+		return out;
+	}
 }

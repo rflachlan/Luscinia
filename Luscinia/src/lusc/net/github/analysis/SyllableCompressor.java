@@ -4,6 +4,7 @@ import java.util.LinkedList;
 
 import lusc.net.github.Element;
 import lusc.net.github.Song;
+import lusc.net.github.Syllable;
 
 public class SyllableCompressor {
 	
@@ -16,20 +17,48 @@ public class SyllableCompressor {
 	public void compressSong2(Song s){
 		this.s=s;
 		LinkedList<Element> eleList=new LinkedList<Element>();
-		LinkedList<int[][]> phrases=new LinkedList<int[][]>();
+		LinkedList<Syllable> sylList=new LinkedList<Syllable>();
+
 		try{
 			int eleCount=0;
-			int m=s.getNumPhrases();	
+			
+			LinkedList<Syllable> syls=s.getPhrases();
+			
+			int m=syls.size();	
 			for (int x=0; x<m; x++){
 			
-				int[][] ph=(int[][])s.getPhrase(x);
+				//int[][] ph=(int[][])s.getPhrase(x);
+				Syllable phr=syls.get(x);
+				
+				
 				Element ele1, ele2;
-				int a=ph.length;
-				int b=ph[0].length;
+				//int a=ph.length;
+				//int b=ph[0].length;
+				int a=phr.getNumSyllables();
+				int b=phr.getMaxSyllLength();
 				double[][]mat2=new double[a][a];
 				for (int i=0; i<a; i++){
+					//Syllable s1=syls.get(i);
+					Syllable s1=phr.getSyllable(i);
 					for (int j=0; j<a; j++){
+						//Syllable s2=syls.get(j);
+						Syllable s2=phr.getSyllable(j);
 						double sc=0;
+						if (s1.getNumEles()!=s2.getNumEles()){
+							sc+=mismatch;
+						}
+						
+						for (int k=0; k<b; k++){
+							if ((k<s1.getNumEles())&&(k<s2.getNumEles())){
+								ele1=s1.getElement(k);
+								ele2=s2.getElement(k);
+								double q=compare2(ele1, ele2);
+								sc+=q;
+							}
+						}
+						
+						/*
+						
 						for (int k=0; k<b; k++){
 							if ((ph[i][k]==-1)&&(ph[j][k]>=0)){sc+=mismatch;}
 							if ((ph[j][k]==-1)&&(ph[i][k]>=0)){sc+=mismatch;}
@@ -40,6 +69,7 @@ public class SyllableCompressor {
 								sc+=q;
 							}
 						}
+						*/
 						mat2[i][j]=sc;
 					}
 				}
@@ -61,6 +91,19 @@ public class SyllableCompressor {
 					}
 				}
 				
+				Syllable sy=phr.getSyllable(bestph);
+				
+				eleList.addAll(sy.getElements());
+				//System.out.println(s.getName()+" "+eleList.size());
+				Syllable syn=new Syllable(sy.getElements(), s.getSongID());
+				syn.addFamily(sylList, eleList);
+				syn.checkMaxLevel();
+				sylList.add(syn);
+				
+				
+				/*
+				
+				
 				int len=0;
 				for (int i=0; i<b; i++){
 					if (ph[bestph][i]>=0){len++;}
@@ -68,6 +111,7 @@ public class SyllableCompressor {
 				
 				int ph2[][]=new int[1][len];
 				len=0;
+				int[] sy={Integer.MAX_VALUE, Integer.MIN_VALUE};
 				for (int k=0; k<b; k++){
 					if(ph[bestph][k]>=0){
 						Element ele=(Element)s.getElement(ph[bestph][k]);
@@ -75,17 +119,38 @@ public class SyllableCompressor {
 						ph2[0][len]=eleCount;
 						eleCount++;
 						len++;
+						int startE=(int)Math.floor(ele.getBeginTime()*ele.getTimeStep());
+						int endE=(int)Math.ceil(startE+ele.getLength()*ele.getTimeStep());
+						if (startE<sy[0]){sy[0]=startE;}
+						if (endE>sy[1]){sy[1]=endE;}
 					}
 				}
+				sy[0]-=1;
+				sy[1]+=1;
+				syllList.add(sy);
 				phrases.add(ph2);
+				*/
 			}
 		}
 		catch(Exception e){e.printStackTrace();}
+		s.setSylList(sylList);
+		s.setEleList(eleList);
+		
+		//System.out.println(s.getName()+" "+sylList.size()+" "+eleList.size());
+		
+		/*
 		s.setPhrases(phrases);
 		s.setEleList(eleList);
+		s.setSyllList(syllList);
+		s.makeSylList();
+		*/
+		
+		
 	}
 	
-	public void compressSong3(Song s){
+	
+	/*
+	public void compressSong3XXX(Song s){
 		this.s=s;
 		LinkedList<Element> eleList=new LinkedList<Element>();
 		LinkedList<int[][]> phrases=new LinkedList<int[][]>();
@@ -127,7 +192,8 @@ public class SyllableCompressor {
 		s.setPhrases(phrases);
 		s.setEleList(eleList);
 	}
-	
+	*/
+	/*
 	public void compressSong(Song s){
 		this.s=s;
 		LinkedList<Element> eleList=new LinkedList<Element>();
@@ -192,6 +258,7 @@ public class SyllableCompressor {
 		s.setEleList(eleList);
 		//System.out.println("SELECTED: "+s.phrases.size()+" "+s.eleList.size());
 	}
+	*/
 	
 	public Element matchElement(Element ele, int[][] phrase, int position, int pr){
 		int n=phrase.length;

@@ -18,6 +18,7 @@ import java.text.*;
 import lusc.net.github.Defaults;
 import lusc.net.github.Element;
 import lusc.net.github.Song;
+import lusc.net.github.Syllable;
 import lusc.net.github.analysis.AnalysisGroup;
 import lusc.net.github.analysis.dendrograms.Dendrogram;
 import lusc.net.github.analysis.dendrograms.TreeDat;
@@ -114,7 +115,23 @@ public class DendrogramPanel extends DisplayPane implements ChangeListener{
 				ele.setTb(ele.getTimeBefore());
 				ele.setTa(ele.getTimeAfter());
 			}
+			LinkedList<Syllable>phr=songs[i].getPhrases();
 			
+			for (int j=0; j<phr.size(); j++){
+				Syllable ph=phr.get(j);
+				for (int a=0; a<ph.getNumSyllables(); a++){
+					Syllable s=ph.getSyllable(i);
+					Element ele=s.getElement(0);
+					ele.setTb(25);
+					ele.setTa(25);
+					
+					ele=s.getElement(s.getNumEles2()-1);
+					ele.setTb(25);
+					ele.setTa(25);
+				}
+			}
+			
+			/*
 			for (int j=0; j<songs[i].getNumPhrases(); j++){
 				int[][] ph=songs[i].getPhrase(j);
 				
@@ -141,6 +158,7 @@ public class DendrogramPanel extends DisplayPane implements ChangeListener{
 					ele.setTa(25);
 				}
 			}
+			*/
 		}
 	}
 	
@@ -275,7 +293,7 @@ public class DendrogramPanel extends DisplayPane implements ChangeListener{
 	public BufferedImage getSketch(int height, int unit){
 		BufferedImage bi=null;
 		
-		if (dataType<3){
+		if (dataType<4){
 			int[][] lookUp=sg.getLookUp(dataType);
 			int so=lookUp[unit][0];
 			int el=lookUp[unit][1];
@@ -284,17 +302,20 @@ public class DendrogramPanel extends DisplayPane implements ChangeListener{
 				bi=dsk.drawElement(ele, height, true);
 			}
 			else if (dataType==2){
+				bi=dsk.drawSyllable(so, el, height, false);
+			}
+			else if (dataType==3){
 				bi=dsk.drawPhraseEx(so, el, height, false);
 			}
 		}
 					
-		else if (dataType==3){
+		else if (dataType==4){
 			bi=dsk.drawTransition(unit, height, true);
 		}
-		else if (dataType==4){
+		else if (dataType==5){
 			bi=dsk.drawSong(unit, height, true);
 		}
-		else if (dataType==5){
+		else if (dataType==6){
 			bi=dsk.drawTransition2(unit, height);
 		}
 		return bi;

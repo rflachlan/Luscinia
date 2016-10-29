@@ -20,6 +20,7 @@ import java.text.*;
 
 import lusc.net.github.Defaults;
 import lusc.net.github.Song;
+import lusc.net.github.Syllable;
 //import lusc.net.github.analysis.SongGroup;
 import lusc.net.github.analysis.AnalysisGroup;
 import lusc.net.github.db.DataBaseController;
@@ -398,8 +399,8 @@ public class VisualComparison extends JPanel implements PropertyChangeListener, 
 		
 		song1=songs[spair[0]];
 		song2=songs[spair[1]];
-		song1.interpretSyllables();
-		song2.interpretSyllables();
+		//song1.interpretSyllables();
+		//song2.interpretSyllables();
 		//System.out.println(song1.name+" "+song2.name+" "+song1.timeStep);
 		song1.setFFTParameters();
 		song2.setFFTParameters();
@@ -431,29 +432,25 @@ public class VisualComparison extends JPanel implements PropertyChangeListener, 
 		playa.addItem("All");
 		playb.removeAllItems();
 		playb.addItem("All");
-		for (int i=0; i<song1.getNumSyllables(); i++){
+		for (int i=0; i<song1.getNumSyllables(2); i++){
+		//for (int i=0; i<song1.getNumSyllables(); i++){
 			playa.addItem((i+1));
 		}
-		for (int i=0; i<song2.getNumSyllables(); i++){
+		for (int i=0; i<song2.getNumSyllables(2); i++){
+		//for (int i=0; i<song2.getNumSyllables(); i++){
 			playb.addItem((i+1));
 		}
 		if(bySyllable){
-			int size1=0;
-			boolean[] phraseId1=song1.getPhraseID();
-			for (int i=0; i<phraseId1.length; i++){
-				if (phraseId1[i]){size1++;}
-			}
+			int size1=song1.getNumSyllables(2);
+			
 			System.out.println("test: "+size1);
 			if (size1==0){
 				int[] tot={0, song1.getNx()};
 				song1.addSyllable(tot);
 				size1=1;
 			}
-			int size2=0;
-			boolean[] phraseId2=song2.getPhraseID();
-			for (int i=0; i<phraseId2.length; i++){
-				if (phraseId2[i]){size2++;}
-			}
+			int size2=song2.getNumSyllables(2);
+			
 			System.out.println("test: "+size2);
 			if (size2==0){
 				int[] tot={0, song2.getNx()};
@@ -466,7 +463,15 @@ public class VisualComparison extends JPanel implements PropertyChangeListener, 
 			choices=new String[size1+1];
 			choices[0]=" ";
 			syllChoice1.addItem(choices[0]);
-			int ii=0;
+			LinkedList<Syllable> ph=song1.getPhrases();
+			for (int i=0; i<ph.size(); i++){
+				choicesL[i]=i;
+				Integer i2=new Integer(i+1);
+				String i3=i2.toString();
+				choices[i+1]=i3;
+				syllChoice1.addItem(choices[i+1]);
+			}
+			/*
 			for (int i=0; i<phraseId1.length; i++){
 				if (phraseId1[i]){
 					choicesL[ii]=i;
@@ -477,11 +482,21 @@ public class VisualComparison extends JPanel implements PropertyChangeListener, 
 					ii++;
 				}
 			}
+			*/
 			syllChoice2.removeAllItems();
 			choicesL=new int[size2];
 			choices=new String[size2+1];
 			choices[0]=" ";
 			syllChoice2.addItem(choices[0]);
+			LinkedList<Syllable> ph2=song2.getPhrases();
+			for (int i=0; i<ph2.size(); i++){
+				choicesL[i]=i;
+				Integer i2=new Integer(i+1);
+				String i3=i2.toString();
+				choices[i+1]=i3;
+				syllChoice1.addItem(choices[i+1]);
+			}
+			/*
 			int jj=0;
 			for (int i=0; i<phraseId2.length; i++){
 				if (phraseId2[i]){
@@ -494,6 +509,7 @@ public class VisualComparison extends JPanel implements PropertyChangeListener, 
 					jj++;
 				}
 			}
+			*/
 			syllSim.setSelectedIndex(0);
 			syllChoice1.setSelectedIndex(0);
 			syllChoice2.setSelectedIndex(0);
@@ -623,20 +639,15 @@ public class VisualComparison extends JPanel implements PropertyChangeListener, 
 		}
 		if ((listener)&&(source==playa)){
 			song1.setPlaybackDivider(pbSpeed);
-			song1.setUpPlayback();
 			int syllch=playa.getSelectedIndex();
-			if (syllch==0){song1.playSound(0, song1.getRawDataLength());}
+			if (syllch==0){song1.prepPlaybackAll();}
 			else{
 				syllch--;
-				int[] sya=(int[])song1.getSyllable(syllch);
+				//int[] sya=(int[])song1.getSyllable(syllch);
+				int[] sya=song1.getPhrase(syllch).getLoc();
 				
 				int[]sy={sya[0], sya[1]};
-				sya[0]-=7;
-				if (sya[0]<0){sya[0]=0;}
-				sya[1]+=7;
-				if (sya[1]>=song1.getOverallLength()){
-					sya[1]=song1.getOverallLength()-1;
-				}
+				
 				for (int i=0; i<2; i++){
 					if (song1.getSizeInBits()==16){
 						sy[i]*=(int)Math.round(song1.getSampleRate()*song1.getStereo()*0.002);
@@ -644,33 +655,28 @@ public class VisualComparison extends JPanel implements PropertyChangeListener, 
 				}
 				
 				if(song1.getRawDataLength()>sy[1]){
-					song1.playSound(sy[0], sy[1]);		
+					song1.prepPlayback(sy);		
 				}
 				sy=null;
 			}
 		}
 		if ((listener)&&(source==playb)){
 			song2.setPlaybackDivider(pbSpeed);
-			song2.setUpPlayback();
 			int syllch=playb.getSelectedIndex();
-			if (syllch==0){song2.playSound(0, song2.getRawDataLength());}
+			if (syllch==0){song2.prepPlaybackAll();}
 			else{
 				syllch--;
-				int[] sya=(int[])song2.getSyllable(syllch);
+				//int[] sya=(int[])song2.getSyllable(syllch);
+				int[] sya=(int[])song2.getPhrase(syllch).getLoc();
 				int[]sy={sya[0], sya[1]};
-				sya[0]-=7;
-				if (sya[0]<0){sya[0]=0;}
-				sya[1]+=7;
-				if (sya[1]>=song1.getOverallLength()){
-					sya[1]=song1.getOverallLength()-1;
-				}
+				
 				for (int i=0; i<2; i++){
 					if (song2.getSizeInBits()==16){
 						sy[i]*=(int)Math.round(song2.getSampleRate()*song2.getStereo()*0.002);
 					}
 				}
 				if(song2.getRawDataLength()>sy[1]){
-					song2.playSound(sy[0], sy[1]);		
+					song2.prepPlayback(sy);			
 				}
 				sy=null;
 			}

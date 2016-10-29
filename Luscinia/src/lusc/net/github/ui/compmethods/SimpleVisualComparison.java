@@ -459,10 +459,10 @@ public class SimpleVisualComparison extends JPanel implements PropertyChangeList
 			//song1=null;
 			Song song1=getCurrentSong();
 			
-			song1.playSound(0, song1.getRawDataLength());
+			song1.prepPlaybackAll();
 		}
 		if ((listener)&&(source==play2)){
-			song2.playSound(0, song2.getRawDataLength());
+			song2.prepPlaybackAll();
 		}
 		if (source==update1){replot1();}
 		if (source==update2){replot2();}

@@ -59,8 +59,8 @@ public class Luscinia implements WindowListener, ActionListener, ChangeListener{
 	private static String ADD_TAB = "add tab";
 	private static String REMOVE_TAB = "remove tab";
 
-	String lversion="2.16.10.27.01";
-	String dversion="2.16.10.27.01";
+	String lversion="2.22.12.01.01";
+	String dversion="2.22.12.01.01";
 
 	
 	public static boolean MAC_OS_X = (System.getProperty("os.name").toLowerCase().startsWith("mac os x"));
@@ -141,7 +141,7 @@ public class Luscinia implements WindowListener, ActionListener, ChangeListener{
 		//}
 		
 		defaults=new Defaults();
-		
+		defaults.setVersions(lversion, dversion);
 		
 		
 		Container container=frame.getContentPane();

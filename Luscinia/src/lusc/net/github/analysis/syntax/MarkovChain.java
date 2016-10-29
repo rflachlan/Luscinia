@@ -28,11 +28,13 @@ public class MarkovChain {
 	double[] G;
 	double eval=1/Math.log(2);
 	
+	double rho, ent, zero;
+	
 	Random random=new Random(System.currentTimeMillis());
 	
 	public MarkovChain(){}
 	
-	public MarkovChain(int[][] individualLabel, int[][] dat, int kv, int n){
+	public MarkovChain(int[][] individualLabel, int[][] dat, int kv, int n, boolean bootstrap){
 		this.kv=kv;
 		this.n=n;
 		numInd=individualLabel.length;
@@ -49,16 +51,24 @@ public class MarkovChain {
 			}
 		}
 		calculateG(2*n);
-		System.out.println("Starting mk bootstrap: "+kv);
-		double[][] results=bootstrapEntropyN();
-		redundancy=results[0];
-		entropy=results[1];
-		zeroOrder=results[2];
+		//System.out.println("Starting mk bootstrap: "+kv);
+		if (bootstrap){
+			double[][] results=bootstrapEntropyN();
+			redundancy=results[0];
+			entropy=results[1];
+			zeroOrder=results[2];
+		}
 		
-		System.out.println(redundancy[3]+" "+entropy[3]+" "+zeroOrder[3]);
+		double[] results2=calcEntropyN();
 		
-		System.out.println("Starting pos bootstrap: "+kv);
-		resultArrayP=bootstrapEntropyA();
+		rho=results2[0];
+		zero=results2[1];
+		ent=results2[2];
+		
+		//System.out.println(redundancy[3]+" "+entropy[3]+" "+zeroOrder[3]);
+		
+		//System.out.println("Starting pos bootstrap: "+kv);
+		//resultArrayP=bootstrapEntropyA();
 	}
 
 	public int getKv(){
@@ -180,6 +190,48 @@ public class MarkovChain {
 			output[1][i]=entropies[cutOffs[i]];
 			output[2][i]=zeroes[cutOffs[i]];
 		}
+		return(output);
+	}
+	
+	public double[] calcEntropyN(){
+		 
+		int kv1=kv+1;
+		double MaxH=Math.log(kv1);
+		int[][] table1=new int[kv1][kv1];
+		int[] table2=new int[kv1];
+			
+		int p,q,r;
+
+		for (int j=0; j<numInd; j++){
+				
+			for (int k=0; k<individualLabel[j].length; k++){
+				//int k=random.nextInt(individualLabel[ind].length);	
+			int kk=individualLabel[j][k];
+					
+				p=dat[kk][0];
+				table1[kv][p]++;
+				table2[kv]++;
+				table2[p]++;
+				r=dat[kk].length;
+				for (int a=1; a<r; a++){
+					q=dat[kk][a];
+					table1[p][q]++;
+					table2[q]++;
+					p=q;
+				}
+				table1[p][kv]++;
+			}
+		}
+				
+		double mean=calculateFromTable(table1);	
+		double zeroOrder=calculateZeroOrderEntropy2(table2);
+		double entropy=mean-zeroOrder;
+		double rho=(zeroOrder-entropy)/zeroOrder;
+		if (trueRedundancy){
+			rho=(MaxH-entropy)/MaxH;
+		}
+			
+		double[] output={rho, zeroOrder, entropy};
 		return(output);
 	}
 	

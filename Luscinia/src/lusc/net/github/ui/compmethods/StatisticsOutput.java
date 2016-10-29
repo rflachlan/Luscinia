@@ -19,6 +19,7 @@ import java.util.*;
 import lusc.net.github.Defaults;
 import lusc.net.github.Element;
 import lusc.net.github.Song;
+import lusc.net.github.Syllable;
 //import lusc.net.github.analysis.SongGroup;
 import lusc.net.github.analysis.AnalysisGroup;
 import lusc.net.github.ui.SaveDocument;
@@ -474,6 +475,7 @@ public class StatisticsOutput  extends JPanel implements ActionListener{
 					ele.calculateStatisticsS();
 					ele.calculatePowerSpectrumStats();
 					int[][] signal=ele.getSignal();
+					/*
 					int syll=-1;
 					int aa=ele.getLength()-1;
 					sd.writeString(songs[i].getIndividualName());
@@ -486,8 +488,19 @@ public class StatisticsOutput  extends JPanel implements ActionListener{
 							}
 						}
 					}
+		
 					else{
 						syll=0;
+					}
+					*/
+					
+					LinkedList<Syllable> phrases=songs[i].getPhrases();
+					int syll=0;
+					for (int b=0; b<phrases.size(); b++){
+						Syllable p=phrases.get(b);
+						if (p.getElements().contains(ele)){
+							syll=b;
+						}
 					}
 					
 					sd.writeString(songs[i].getName());
@@ -512,32 +525,55 @@ public class StatisticsOutput  extends JPanel implements ActionListener{
 		for (int i=0; i<amt; i++){
 			//System.out.println(i+" "+songs[i].name);
 			try{
-				if (songs[i].getNumPhrases()==0){
-					songs[i].interpretSyllables();
-				}
+				//if (songs[i].getNumPhrases()==0){
+					//songs[i].interpretSyllables();
+				//}
 				String songDate=getDate(songs[i]);
 				String songTime=getTime(songs[i]);
-				int np=songs[i].getNumPhrases();
+				LinkedList<Syllable>phr=songs[i].getPhrases();
+				int np=phr.size();
+				//int np=songs[i].getNumPhrases();
 				for (int j=0; j<np; j++){
-					int[][] phrase=(int[][])songs[i].getPhrase(j);
-					for (int k=0; k<phrase[0].length; k++){
-						int countEles=0;
-						for (int a=0; a<phrase.length; a++){
-							if (phrase[a][k]!=-1){countEles++;}
-						}
-						Element [] ele=new Element [countEles];
-						countEles=0;
-						for (int a=0; a<phrase.length; a++){
-							if (phrase[a][k]!=-1){
-								
-								Element elc=new Element((Element)songs[i].getElement(phrase[a][k]));
-								
-								ele[countEles]=elc;
-								ele[countEles].calculateStatisticsS();
-								ele[countEles].calculatePowerSpectrumStats();
-								countEles++;
+					//int[][] phrase=(int[][])songs[i].getPhrase(j);
+					Syllable ph=phr.get(j);
+					LinkedList<Syllable>ch=ph.getSyllables();
+					for (int k=0; k<ph.getMaxSyllLength(); k++){
+						LinkedList<Element> eles=new LinkedList<Element>();
+						
+						for (Syllable s: ch){
+							int q=s.getOffset()+k;
+							if ((q>=0)&&(q<s.getNumEles())){
+								eles.add(s.getElement(q));
 							}
+	
 						}
+						
+						Element[] ele=eles.toArray(new Element[eles.size()]);
+						
+						int countEles=eles.size();
+						for (int a=0; a<countEles; a++){
+							ele[a].calculateStatisticsS();
+							ele[a].calculatePowerSpectrumStats();
+						}
+						
+					//for (int k=0; k<phrase[0].length; k++){
+						//int countEles=0;
+						//for (int a=0; a<phrase.length; a++){
+							//if (phrase[a][k]!=-1){countEles++;}
+						//}
+						//Element [] ele=new Element [countEles];
+						//countEles=0;
+						//for (int a=0; a<phrase.length; a++){
+							//if (phrase[a][k]!=-1){
+								
+								//Element elc=new Element((Element)songs[i].getElement(phrase[a][k]));
+								
+								//ele[countEles]=elc;
+								//ele[countEles].calculateStatisticsS();
+								//ele[countEles].calculatePowerSpectrumStats();
+								//countEles++;
+							//}
+						//}
 						Element eleM=new Element(ele, true);
 					
 						sd.writeString(songs[i].getIndividualName());
@@ -563,42 +599,43 @@ public class StatisticsOutput  extends JPanel implements ActionListener{
 		int amt=songs.length;		
 		for (int i=0; i<amt; i++){
 			try{
-				if (songs[i].getNumPhrases()==0){
-					songs[i].interpretSyllables();
-				}
+				//if (songs[i].getNumPhrases()==0){
+					//songs[i].interpretSyllables();
+				//}
 				
 				checkTimeBefore(songs[i]);
 				
 				
 				String songDate=getDate(songs[i]);
 				String songTime=getTime(songs[i]);
-				int np=songs[i].getNumPhrases();
+				
+				
+				LinkedList<Syllable>phr=songs[i].getPhrases();
+				int np=phr.size();
+				//int np=songs[i].getNumPhrases();
 				for (int j=0; j<np; j++){
-					int[][] phrase=(int[][])songs[i].getPhrase(j);
-					int[] counter=new int[phrase.length];
-					Element[] eleSyl=new Element[phrase.length];
-					for (int k=0; k<phrase.length; k++){
-						int countEles=0;
-						for (int a=0; a<phrase[k].length; a++){
-							if (phrase[k][a]!=-1){countEles++;}
-						}
-						counter[k]=countEles;
-						Element [] ele=new Element [countEles];
-						countEles=0;
-						for (int a=0; a<phrase[k].length; a++){
-							if (phrase[k][a]!=-1){
-								
-								Element elc=new Element((Element)songs[i].getElement(phrase[k][a]));
-								
-								ele[countEles]=elc;
-								ele[countEles].calculateStatisticsS();
-								ele[countEles].calculatePowerSpectrumStats();
-								countEles++;
-							}
+					//int[][] phrase=(int[][])songs[i].getPhrase(j);
+					Syllable ph=phr.get(j);
+					LinkedList<Syllable>ch=ph.getSyllables();
+					int[] counter=new int[ch.size()];
+					Element[] eleSyl=new Element[ch.size()];
+					for (int k=0; k<ch.size(); k++){
+						Syllable s=ch.get(k);
+					
+						LinkedList<Element>eles=s.getElements();
+						
+						counter[k]=eles.size();
+						Element[] ele=eles.toArray(new Element[eles.size()]);
+						
+						int countEles=eles.size();
+						for (int a=0; a<countEles; a++){
+							
+							ele[a].calculateStatisticsS();
+							ele[a].calculatePowerSpectrumStats();
 						}
 						eleSyl[k]=new Element(ele, false);
-						
 					}
+
 					Element eleM=new Element(eleSyl, true);
 						
 					sd.writeString(songs[i].getIndividualName());
@@ -607,10 +644,12 @@ public class StatisticsOutput  extends JPanel implements ActionListener{
 					
 					writeDetails(songs[i], eleM, songDate, songTime);
 					writeElementMeasures(eleM);
-					writeSyllableMeasures(eleM, phrase[0].length, phrase.length, true);
+					//writeSyllableMeasures(eleM, phrase[0].length, phrase.length, true);
+					writeSyllableMeasures(eleM, ph.getMaxSyllLength(), ph.getNumSyllables(), true);
 					
 					sd.writeLine();
-					for (int k=0; k<phrase.length; k++){
+					//for (int k=0; k<phrase.length; k++){
+					for (int k=0; k<ph.getMaxSyllLength(); k++){
 						sd.writeString(songs[i].getIndividualName());
 						sd.writeString(songs[i].getName());
 						sd.writeInt(k+1);
@@ -620,10 +659,7 @@ public class StatisticsOutput  extends JPanel implements ActionListener{
 						
 						writeSyllableMeasures(eleSyl[k], counter[k], 1, false);
 						sd.writeLine();
-					}
-					
-				
-					
+					}	
 				}
 			}
 			catch(Exception e){

@@ -19,6 +19,7 @@ import java.text.*;
 
 import lusc.net.github.Element;
 import lusc.net.github.Song;
+import lusc.net.github.Syllable;
 
 public class GuidePanel extends JPanel implements MouseInputListener{
 
@@ -97,12 +98,13 @@ public class GuidePanel extends JPanel implements MouseInputListener{
 				g.fillRect(start, eleStartHeight, width, eleHeight);
 			}
 		}
-		int ns=song.getNumSyllables();
+		int ns=song.getSyllList().size();
 		if (ns>0){
 			g.setColor(syllableColor);
 			g.setComposite(ac);
 			for (int i=0; i<ns; i++){
-				int[] syll=(int[])song.getSyllable(i);
+				Syllable sy=song.getSyllable(i);
+				int[] syll=sy.getLoc();
 				int start=(int)Math.round(syll[0]/timeStep);
 				int width=(int)Math.round((syll[1]-syll[0])/timeStep);
 				g.fillRect(start, sylStartHeight, width, sylHeight);

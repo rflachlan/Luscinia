@@ -288,7 +288,7 @@ public class DisplayPC  extends DisplayPane implements  ActionListener, ChangeLi
 		connectors.setFont(font);
 		JCheckBox grids=new JCheckBox("Show grid lines");
 		grids.setFont(font);
-		if (dataType>=4){connectors.setEnabled(false);}
+		if (dataType>=5){connectors.setEnabled(false);}
 		connectors.setSelected(false);
 		connectors.addActionListener(this);
 		connectors.setActionCommand(CONNECT);
@@ -296,7 +296,7 @@ public class DisplayPC  extends DisplayPane implements  ActionListener, ChangeLi
 		
 		JCheckBox link=new JCheckBox("Link within songs");
 		link.setFont(font);
-		if (dataType==4){link.setEnabled(false);}
+		if (dataType==5){link.setEnabled(false);}
 		link.setSelected(true);
 		link.addActionListener(this);
 		link.setActionCommand(LINK);
@@ -630,7 +630,11 @@ public class DisplayPC  extends DisplayPane implements  ActionListener, ChangeLi
 		if (readyToWrite){
 			sd.writeString("Population");
 			sd.writeString("Individual");
+			sd.writeString("Time");
+			sd.writeString("Date");
+			sd.writeString("TimeDate");
 			sd.writeString("Song");
+			
 			for (int i=0; i<data[0].length; i++){
 				sd.writeString("pc_"+(i+1)+"_value");
 			}
@@ -666,7 +670,24 @@ public class DisplayPC  extends DisplayPane implements  ActionListener, ChangeLi
 				sd.writeString(sn2);
 				String sn1=(String)songs[g[0]].getIndividualName();
 				sd.writeString(sn1);
-				if (dataType<3){
+				
+				Calendar cal=Calendar.getInstance();
+				cal.setTimeInMillis(songs[g[0]].getTDate());
+				int hour=cal.get(Calendar.HOUR_OF_DAY);
+				int minute=cal.get(Calendar.MINUTE);
+				double second=cal.get(Calendar.SECOND)+(cal.get(Calendar.MILLISECOND)*0.001);
+				String sn3=""+hour+":"+minute+":"+second;
+				sd.writeString(sn3);
+
+				int day=cal.get(Calendar.DAY_OF_MONTH);
+				int monthid=cal.get(Calendar.MONTH)+1;
+				int year=cal.get(Calendar.YEAR);
+				String sn4=""+day+":"+monthid+":"+year;
+				
+				sd.writeString(sn4);
+				sd.writeLong(songs[g[0]].getTDate());
+				
+				if (dataType<5){
 					sd.writeString(songs[g[0]].getName()+","+(g[1]+1));
 				}
 				else{

@@ -43,39 +43,55 @@ public class DisplaySimilarityProportions extends DisplayPane {
 	double dx=0;
 	double mult=1.0;
 	int fontSize=12;
+	
+	double maxVal;
 
 	public DisplaySimilarityProportions(ComparisonResults cr, int width, int height, Defaults defaults, DistanceDistributionOptions ddo){
 		this.cr=cr;;
 		this.width=width;
 		this.height=height;
 		this.type=cr.getType();
+		
 		this.defaults=defaults;
-				
 		numCols=ddo.numCols;
 		fontSize=ddo.fontSize;
 		
-		mult=defaults.getScaleFactor();
+		this.setPreferredSize(new Dimension(width, height));
 		
+		mult=defaults.getScaleFactor();	
 		System.out.println(mult);
+		
+		preparePlot(mult);
+		imf=drawGraph(resultsM, maxVal);
+		
+		repaint();
+		
+	}
+		
+		
+	public void preparePlot(double mult){
+
+		
 		
 		LinkedList<int[]> patterns=new LinkedList<int[]>();
 		patternNames=new LinkedList<String>();
 		
 		patternNames.add("Overall");
 		
-		if (type<4){
+		if (type<5){
 			int[][] x=cr.getLookUp();
 			int[] y=new int[x.length];
 			for (int i=0; i<x.length; i++){y[i]=x[i][0];}
 			patterns.add(y);
 			patternNames.add("Song-type");
 		}
-		if (type<5){
+		if (type<6){
 			String[] ni=cr.getIndividualNames();
 			if (ni.length>1){
 				int[] x=cr.getLookUpIndividuals();
 				patterns.add(x);
 				patternNames.add("Individual");
+				
 			}
 		}
 		String[] np=cr.getPopulationNames();
@@ -92,7 +108,7 @@ public class DisplaySimilarityProportions extends DisplayPane {
 		}
 		
 		
-		this.setPreferredSize(new Dimension(width, height));
+		
 		imf=new BufferedImage((int)(width*mult), (int)(height*mult), BufferedImage.TYPE_INT_ARGB);
 		
 		xst=75*mult;
@@ -101,17 +117,13 @@ public class DisplaySimilarityProportions extends DisplayPane {
 		gh=500*mult;
 		
 		fontSize=(int)Math.round(fontSize*mult);
-
-		
-		
-		
-		
-		
+	
 		//numCols=gw;
 		int[][] cats=calculateCatMatrix();
 		xunit=gw/(numCols+0.0);
 		
 		resultsM=new LinkedList<double[]>();
+		
 		
 		int[] sp=new int[cats.length];
 		double[] r=calculateValues(cats, sp);
@@ -122,8 +134,8 @@ public class DisplaySimilarityProportions extends DisplayPane {
 			double[] s=calculateValues(cats, x);
 			resultsM.add(s);			
 		}
-		double maxVal=getMax(resultsM);
-		drawGraph(resultsM, maxVal);
+		maxVal=getMax(resultsM);
+		
 	}
 	
 	
@@ -145,7 +157,7 @@ public class DisplaySimilarityProportions extends DisplayPane {
 		double max=0;
 		for (int i=0; i<m.size(); i++){
 			double[] x=m.get(i);			
-			for (int j=0; j<x.length; j++){
+			for (int j=0; j<x.length-1; j++){
 				if (x[j]>max){max=x[j];}
 			}
 		}
@@ -202,7 +214,7 @@ public class DisplaySimilarityProportions extends DisplayPane {
 	
 	public double[] calculateValues(int[][] cats, int[] label){
 		
-		double[] results=new double[numCols+1];
+		double[] results=new double[numCols+2];
 		
 		double counts=0;
 		
@@ -218,9 +230,10 @@ public class DisplaySimilarityProportions extends DisplayPane {
 			}
 		}
 		
-		for (int i=0; i<results.length; i++){
+		for (int i=0; i<results.length-1; i++){
 			results[i]/=counts;
 		}
+		results[results.length-1]=counts;
 		return results;
 	}
 
@@ -313,7 +326,7 @@ public class DisplaySimilarityProportions extends DisplayPane {
 	*/
 	
 
-	public void drawGraph(LinkedList<double[]> results, double max){
+	public BufferedImage drawGraph(LinkedList<double[]> results, double max){
 		
 		double sx, ex, stx, enx;
 		Graphics2D g=imf.createGraphics();
@@ -503,10 +516,9 @@ public class DisplaySimilarityProportions extends DisplayPane {
 			
 			//g.drawString(s, xpl, ypl);
 		}
-			
+		g.dispose();	
+		return (imf);
 		
-		g.dispose();
-		repaint();
 	}
 	
 	public void paintComponent(Graphics g) {
@@ -522,6 +534,18 @@ public class DisplaySimilarityProportions extends DisplayPane {
 		new SaveImage(imf, this, defaults);
 		//si.save();
 	}
+	
+	public BufferedImage resizeImage(double ratio){
+		preparePlot(ratio);
+
+		BufferedImage imf1=drawGraph(resultsM, maxVal);
+		
+		preparePlot(mult);
+		imf=drawGraph(resultsM, maxVal);
+		
+		return imf1;
+	}	
+	
 	
 	public void export(){
 		SaveDocument sd=new SaveDocument(this, defaults);
@@ -545,7 +569,12 @@ public class DisplaySimilarityProportions extends DisplayPane {
 				sd.writeLine();
 				
 			}
-			
+			sd.writeInt(0);
+			for (int i=0; i<resultsM.size(); i++){
+				double[] x=resultsM.get(i);
+				sd.writeDouble(x[x.length-1]);
+			}
+			sd.writeLine();
 			sd.finishWriting();
 		}
 	}

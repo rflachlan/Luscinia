@@ -29,7 +29,7 @@ public class SongLoaderSwingWorker extends SwingWorker<AnalysisGroup, Object> {
 	}
 	
 	public AnalysisGroup doInBackground(){
-				
+		try {	
 		int tabID=cs.tabpane.getSelectedIndex();
 		
 		if (tabID==1){
@@ -51,6 +51,7 @@ public class SongLoaderSwingWorker extends SwingWorker<AnalysisGroup, Object> {
 						for (int l=0; l<2; l++){
 							if (found[l]==-1){
 								Song song=ac.dbc.loadSongFromDatabase(s[l], 1);
+								//song.makeSylList();
 								songList.add(song);
 								found[l]=songList.size()-1;
 							}
@@ -70,7 +71,6 @@ public class SongLoaderSwingWorker extends SwingWorker<AnalysisGroup, Object> {
 				int[] pair=idlist.get(i);
 				compScheme[pair[0]][pair[1]]=true;
 			}
-			System.out.println("HERE");
 			sg=new AnalysisGroup(songs, compScheme, cs.defaults, ac.dbc);
 			if (cs.selectOneSyllable1.isSelected()){
 				sg.pickJustOneExamplePerPhrase();
@@ -91,17 +91,20 @@ public class SongLoaderSwingWorker extends SwingWorker<AnalysisGroup, Object> {
 				Integer q=(Integer)cs.sa.leftList.get(i);
 				for (int j=0; j<ac.archIds.length; j++){
 					if (q.intValue()==ac.archIds[j]){
-						System.out.println(i+" "+ls+" "+j+" "+ac.archIds.length);
+						//System.out.println(i+" "+ls+" "+j+" "+ac.archIds.length);
 						try{
 							Song song=ac.dbc.loadSongFromDatabase(ac.archIds[j], 1);
-							int ne=song.getNumElements();
-							if (ne>0){
+							//song.makeSylList();
+							//THIS IS COMMENTED OUT TO ALLOW AUTOMATIC ANALYSIS!!!
+							
+							//int ne=song.getNumElements();
+							//if (ne>0){
 								LinkedList<String> list1=ac.dbc.populateContentPane(song.getIndividualID());
 								song.setSx((String)list1.get(3));
 								song.setSy((String)list1.get(4));
 							
 								songList.add(song);
-							}	
+							//}	
 						}
 						catch(Exception e){e.printStackTrace();}
 					}
@@ -133,6 +136,8 @@ public class SongLoaderSwingWorker extends SwingWorker<AnalysisGroup, Object> {
 				sg.segmentSyllableBasedOnThreshold(cs.thresh2);
 			}
 		}
+		}
+		catch(Exception e) {e.printStackTrace();}
 		
 		return (sg);
     }

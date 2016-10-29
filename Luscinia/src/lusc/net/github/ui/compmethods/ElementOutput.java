@@ -17,14 +17,15 @@ import java.util.*;
 import lusc.net.github.Defaults;
 import lusc.net.github.Element;
 import lusc.net.github.Song;
+import lusc.net.github.Syllable;
 //import lusc.net.github.analysis.SongGroup;
 import lusc.net.github.analysis.AnalysisGroup;
 import lusc.net.github.ui.SaveDocument;
 
 public class ElementOutput extends JPanel{
 
-	String [] parameters={"Time", "Peak frequency", "Mean frequency", "Median frequency", "Fundamental frequency", "Peak frequency change", "Mean frequency change", "Median frequency change", 
-	"Fundamental frequency change", "Wiener entropy", "Harmonicity", "Frequency bandwidth", "Amplitude", "Vibrato rate", "Vibrato amplitude",  "Vibrato asymmetry"};
+	String [] parameters={"Time", "Peak_frequency", "Mean_frequency", "Median_frequency", "Fundamental_frequency", "Peak_frequency_change", "Mean_frequency_change", "Median_frequency_change", 
+	"Fundamental_frequency_change", "Wiener_entropy", "Harmonicity", "Frequency_bandwidth", "Amplitude", "Vibrato_rate", "Vibrato_amplitude",  "Vibrato_asymmetry"};
 	//String [] parameters={"Peak frequency", "Mean frequency", "Median frequency", "Fundamental frequency", "Peak frequency change", "Mean frequency change", "Median frequency change", 
 	//		"Fundamental frequency change", "Wiener entropy", "Harmonicity", "Frequency bandwidth", "Amplitude", "Vibrato amplitude", "Vibrato rate", "Vibrato asymmetry", "Minimum Frequency", "Maximum frequency", "Signal location"};
 	String [] details={"Individual name", "Song name", "Syllable Number", "Element Number"};
@@ -108,12 +109,22 @@ public class ElementOutput extends JPanel{
 						int aa=ele.getLength()-1;
 						int[][] signal=ele.getSignal();
 						double[][] measurements=ele.getMeasurements();
+						LinkedList<Syllable> syls=songs[i].getPhrases();
+						for (int b=0; b<syls.size(); b++){
+							Syllable sy=syls.get(b);
+							int[] dat=sy.getLoc();
+							if ((signal[0][0]>=dat[0])&&(signal[aa][0]<=dat[1])){
+								syll=b+1;
+							}
+						}
+						/*
 						for (int b=0; b<songs[i].getNumSyllables(); b++){
 							int[] dat=(int[])songs[i].getSyllable(b);
 							if ((signal[0][0]>=dat[0])&&(signal[aa][0]<=dat[1])){
 								syll=b+1;
 							}
 						}
+						*/
 						for (int k=0; k<ele.getLength(); k++){
 							int kk=k+5;
 							sd.writeString(indname);
@@ -156,7 +167,87 @@ public class ElementOutput extends JPanel{
 		
 	}
 	
-	public void calculateElements(){
+	public void calculateElements() {
+		
+		boolean[] sel=new boolean[numParams];
+		for (int i=0; i<numParams; i++) {
+			sel[i]=rb_set[i].isSelected();
+		}
+	
+		numPoints=(int)((Number)numPointsField.getValue()).intValue();	
+		SaveDocument sd=new SaveDocument(this, defaults);
+		boolean readyToWrite=sd.makeFile();
+		if (readyToWrite){	
+			
+			sd.writeString("Individual");
+			sd.writeString("Song");
+			sd.writeString("Syllable");
+			sd.writeString("Phrase");
+			sd.writeString("Element");
+			for (int i=0; i<numParams; i++) {
+				if (sel[i]) {
+					sd.writeString(parameters[i]);
+				}
+			}
+			sd.writeLine();
+			
+			for (int i=0; i<songs.length; i++){
+				String indname=songs[i].getIndividualName();
+				int a=songs[i].getNumElements();
+				for (int j=0; j<a; j++){
+					Element ele=(Element)songs[i].getElement(j);
+					
+					int syll=0;
+					try{
+						syll=ele.getSyllable().getID();
+					}
+					catch(Exception e) {}
+					int phrase=0;
+					try{
+						phrase=ele.getPhrase().getID();
+					}
+					catch(Exception e) {}
+					
+					int p=ele.getLength();
+					double[] t=ele.getTimes();
+					double[][] meas=new double[numParams][];
+					for (int k=1; k<numParams; k++) {
+						meas[k]=ele.getMeasurements(k-1, p);
+					}
+					
+					for (int k=0; k<p; k++){
+						
+						
+						sd.writeString(indname);
+						sd.writeString(songs[i].getName());
+						sd.writeInt(syll);
+						sd.writeInt(phrase);
+						sd.writeInt(j+1);
+						
+						
+						
+						for (int ii=0; ii<numParams; ii++){
+							if (sel[ii]) {
+								if (ii==0) {
+									sd.writeDouble(t[k]);
+								}
+								else{
+									sd.writeDouble(meas[ii][k]);
+								}
+							}
+						}
+						
+						sd.writeLine();
+					}
+					
+					
+				}
+			}
+			sd.finishWriting();
+		}	
+	}
+	
+	public void calculateElements2(){
 		
 		numPoints=(int)((Number)numPointsField.getValue()).intValue();
 		
@@ -184,12 +275,22 @@ public class ElementOutput extends JPanel{
 					
 					int[][] signal=ele.getSignal();
 					int aa=signal.length-1;
+					LinkedList<Syllable> syls=songs[i].getPhrases();
+					for (int b=0; b<syls.size(); b++){
+						Syllable sy=syls.get(b);
+						int[] dat=sy.getLoc();
+						if ((signal[0][0]>=dat[0])&&(signal[aa][0]<=dat[1])){
+							syll=b+1;
+						}
+					}
+					/*
 					for (int b=0; b<songs[i].getNumSyllables(); b++){
 						int[] dat=(int[])songs[i].getSyllable(b);
 						if ((signal[0][0]>=dat[0])&&(signal[aa][0]<=dat[1])){
 							syll=b+1;
 						}
 					}
+					*/
 					sd.writeString(indname);
 					sd.writeString(songs[i].getName());
 					sd.writeInt(syll);

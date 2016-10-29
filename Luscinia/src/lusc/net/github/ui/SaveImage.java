@@ -33,7 +33,8 @@ import lusc.net.github.ui.statistics.DisplayPane;
 public class SaveImage extends JPanel implements PropertyChangeListener, ActionListener{
 	String thpath, name;
 	File file;
-	DisplayPane panel;
+	DisplayPane panel=null;
+	SpectrPane spanel=null;
 	Defaults defaults;
 	int dpi=Toolkit.getDefaultToolkit().getScreenResolution();
 	double dpcm=dpi/2.54;
@@ -67,7 +68,7 @@ public class SaveImage extends JPanel implements PropertyChangeListener, ActionL
 	
 	
 	public SaveImage(BufferedImage imf, SpectrPane s, Defaults defaults){
-		this.panel=s;
+		this.spanel=s;
 		this.defaults=defaults;
 		setUp(imf);
 	}
@@ -307,11 +308,21 @@ public class SaveImage extends JPanel implements PropertyChangeListener, ActionL
 			checkCompression(s);
 		}
 		else if (source==saveButton){
-			BufferedImage imf=panel.resizeImage(ux/(nx+0.0));
-			writeDefaults();
-			boolean succeeded=save(imf);
-			if (succeeded){
-				frame.dispose();
+			if(panel!=null){
+				BufferedImage imf=panel.resizeImage(ux/(nx+0.0));
+				writeDefaults();
+				boolean succeeded=save(imf);
+				if (succeeded){
+					frame.dispose();
+				}
+			}
+			else{
+				BufferedImage imf=spanel.resizeImage(ux/(nx+0.0));
+				writeDefaults();
+				boolean succeeded=save(imf);
+				if (succeeded){
+					frame.dispose();
+				}
 			}
 		}
 			
@@ -386,7 +397,10 @@ public class SaveImage extends JPanel implements PropertyChangeListener, ActionL
 		fc.setDialogType(JFileChooser.SAVE_DIALOG);
 		fc.setAcceptAllFileFilterUsed(false);
 		
-		int returnVal = fc.showSaveDialog(panel);
+		Component c=panel;
+		if (c==null){c=spanel;}
+		
+		int returnVal = fc.showSaveDialog(c);
 		if (returnVal == JFileChooser.APPROVE_OPTION) {
 			String s=formatNames[formats.getSelectedIndex()];
 			file = fc.getSelectedFile();
@@ -394,7 +408,7 @@ public class SaveImage extends JPanel implements PropertyChangeListener, ActionL
 			file=new File(thpath+"."+s);
 			int cont=0;
 			if (file.exists()){
-				cont= JOptionPane.showConfirmDialog(panel,"Do you really want to overwrite this file?\n"+"(It will be deleted permanently)","Confirm Overwrite", JOptionPane.YES_NO_OPTION);
+				cont= JOptionPane.showConfirmDialog(c,"Do you really want to overwrite this file?\n"+"(It will be deleted permanently)","Confirm Overwrite", JOptionPane.YES_NO_OPTION);
 			}
 			if (cont==0){
 				thpath=file.getParent();

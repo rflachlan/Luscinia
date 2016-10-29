@@ -19,17 +19,19 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.awt.event.*;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 
 import lusc.net.github.Defaults;
+import lusc.net.github.analysis.ComparisonResults;
 import lusc.net.github.analysis.GeographicComparison;
 import lusc.net.github.analysis.AnalysisGroup;
 //import lusc.net.github.analysis.SongGroup;
 import lusc.net.github.ui.SaveDocument;
 
 
-public class DisplayGeographicComparison extends DisplayPane implements PropertyChangeListener{
+public class DisplayGeographicComparison extends DisplayPane implements PropertyChangeListener, ActionListener{
 	
 	Defaults defaults;
 	int width, height;
@@ -56,7 +58,9 @@ public class DisplayGeographicComparison extends DisplayPane implements Property
 	Color[] colorPalette={Color.BLUE, Color.RED, Color.YELLOW.darker(), Color.BLACK, Color.GREEN, Color.CYAN.darker(), Color.orange, Color.MAGENTA, Color.PINK, Color.GRAY};
 
 	
-	JFormattedTextField numCategories, thresholdSimilarity, numDistCategories;
+	JFormattedTextField  thresholdSimilarity, numDistCategories;
+	
+	JButton update=new JButton("Update");
 	NumberFormat num, num2;
 	
 	//public DisplayGeographicComparison(GeographicComparison ci, int width, int height, SongGroup sg, Defaults defaults){
@@ -66,6 +70,9 @@ public class DisplayGeographicComparison extends DisplayPane implements Property
 		this.height=height;
 		this.sg=sg;
 		this.setPreferredSize(new Dimension(width, height));
+		
+		this.setLayout(new BorderLayout());
+		
 		this.defaults=defaults;
 		this.scale=defaults.getScaleFactor();
 		
@@ -93,19 +100,19 @@ public class DisplayGeographicComparison extends DisplayPane implements Property
 		
 		numDistCategories=new JFormattedTextField(num);
 		numDistCategories.setColumns(6);
-		numDistCategories.setValue(new Integer(ci.getNumTypes()));
+		numDistCategories.setValue(new Integer(ci.getNumCategories()));
 		numDistCategories.addPropertyChangeListener("value", this);
 		
 		//zoom2=new JSlider(JSlider.HORIZONTAL, 0, ci.upgma.le, ci.numTypes);
 		
-		numCategories=new JFormattedTextField(num);
-		numCategories.setColumns(6);
-		numCategories.setValue(new Integer(ci.getNumTypes()));
-		numCategories.addPropertyChangeListener("value", this);
+		//numCategories=new JFormattedTextField(num);
+		//numCategories.setColumns(6);
+		//numCategories.setValue(new Integer(ci.getNumTypes()));
+		//numCategories.addPropertyChangeListener("value", this);
 		
 		thresholdSimilarity=new JFormattedTextField(num2);
 		thresholdSimilarity.setColumns(6);
-		thresholdSimilarity.setValue(new Integer(ci.getNumTypes()));
+		thresholdSimilarity.setValue(new Double(ci.getThresholdDissimilarity()));
 		thresholdSimilarity.addPropertyChangeListener("value", this);
 		
 		//zoom2=new JSlider(JSlider.HORIZONTAL, 0, 500, 20);
@@ -126,11 +133,17 @@ public class DisplayGeographicComparison extends DisplayPane implements Property
 		zoomPanel.add(z1P, BorderLayout.NORTH);
 		
 		JPanel z2P=new JPanel(new BorderLayout());
-		JLabel z2L=new JLabel("Number of categories");
+		//JLabel z2L=new JLabel("Number of categories");
+		JLabel z2L=new JLabel("Dissimilarity threshold");
 		//z2Lab=new JLabel(Integer.toString(ci.numTypes));
 		z2P.add(z2L, BorderLayout.WEST);
 		//z2P.add(zoom2, BorderLayout.CENTER);
-		z2P.add(numCategories, BorderLayout.CENTER);
+		//z2P.add(numCategories, BorderLayout.CENTER);
+		z2P.add(thresholdSimilarity, BorderLayout.CENTER);
+		
+		
+		update.addActionListener(this);
+		z2P.add(update, BorderLayout.SOUTH);
 		//z2P.add(z2Lab, BorderLayout.EAST);
 		zoomPanel.add(z2P, BorderLayout.SOUTH);
 		
@@ -175,12 +188,14 @@ public class DisplayGeographicComparison extends DisplayPane implements Property
 		double[] meanScore=ci.getMeanScore();
 		double[][] meanScoreByGroup=ci.getMeanScoreByGroup();
 		
+		int msbg=0;
+		if (meanScoreByGroup!=null){msbg=meanScoreByGroup.length;}
 		
-		results=new double[nc][4+meanScoreByGroup.length];
+		results=new double[nc][4+msbg];
 		
 		for (int i=0; i<nc; i++){
 			if (confidenceIntervals[1][i]>max){max=confidenceIntervals[1][i];}
-			for (int j=0; j<meanScoreByGroup.length; j++){
+			for (int j=0; j<msbg; j++){
 				if (meanScoreByGroup[j][i]>max){max=meanScoreByGroup[j][i];}
 			}
 			if (minDist>distanceCategories[1][i]){minDist=distanceCategories[1][i];}
@@ -207,7 +222,7 @@ public class DisplayGeographicComparison extends DisplayPane implements Property
 				results[i][2]=1-(confidenceIntervals[1][i]/max);
 				results[i][3]=((Math.log(distanceCategories[1][i])*logc)-minDist)/(maxDist-minDist);
 				
-				for (int j=0; j<meanScoreByGroup.length; j++){
+				for (int j=0; j<msbg; j++){
 					results[i][4+j]=1-(meanScoreByGroup[j][i]/max);
 				}
 				
@@ -426,13 +441,42 @@ public class DisplayGeographicComparison extends DisplayPane implements Property
     }
     */
 	
+	public void actionPerformed(ActionEvent e) {
+		double p = ((Number)thresholdSimilarity.getValue()).doubleValue();
+    	if (p<0.001) {p=0.001;}
+    	
+    	
+    	//int value1=(int)zoom1.getValue();
+    	int value1=(int)((Number)numDistCategories.getValue()).intValue();
+    	
+    	System.out.println(p+" "+value1);
+    	
+    	ci.doRepComparison(value1, p);
+    	ci.doWithinCatRepComparison(value1, p);
+    	//ci.doComparison(value1, p);
+    	//ci.doWithinCatComparison(value1, p);
+    	calculateValues();
+		drawGraph();
+		spp.revalidate();
+	}
+	
 	public void propertyChange(PropertyChangeEvent e) {
        // Object source = e.getSource();
        // if (source==numCategories){
-        	int p = (int)((Number)numCategories.getValue()).intValue();
+        	//int p = (int)((Number)numCategories.getValue()).intValue();
+        	double p = ((Number)thresholdSimilarity.getValue()).doubleValue();
+        	if (p<0.001) {p=0.001;}
+        	
+        	
         	//int value1=(int)zoom1.getValue();
         	int value1=(int)((Number)numDistCategories.getValue()).intValue();
-        	ci.doComparison(value1, p);
+        	
+        	System.out.println(p+" "+value1);
+        	
+        	ci.doRepComparison(value1, p);
+        	ci.doWithinCatRepComparison(value1, p);
+        	//ci.doComparison(value1, p);
+        	//ci.doWithinCatComparison(value1, p);
         	calculateValues();
 			drawGraph();
 			spp.revalidate();
@@ -447,11 +491,14 @@ public class DisplayGeographicComparison extends DisplayPane implements Property
 		SaveDocument sd=new SaveDocument(this, defaults);
 		boolean readyToWrite=sd.makeFile();
 		if (readyToWrite){
-			sd.writeString("distance");
-			sd.writeString("average similarity");
+			sd.writeString("distance max");
+			sd.writeString("distance mean");
+			sd.writeString("average dissimilarity");
 			sd.writeString("maximum ci");
 			sd.writeString("minimum ci");
-			sd.writeLine();
+			sd.writeString("within-category dissimilarity");
+			
+			
 			int nc=ci.getNumCategories();
 			
 			double[][] confidenceIntervals=ci.getConfidenceIntervals();
@@ -461,6 +508,16 @@ public class DisplayGeographicComparison extends DisplayPane implements Property
 			int[][] repertoires=ci.getRepertoires();
 			int[][] repertoires2=ci.getRepertoires2();
 			double[][] meanScoreByGroup=ci.getMeanScoreByGroup();
+			double[] withinCatMeanScore=ci.getWithinCatMeanScore();
+			
+			String[] levelNames2=ci.getLevelNames2();
+			if (meanScoreByGroup!=null){
+				for (int j=0; j<meanScoreByGroup.length; j++){
+					sd.writeString(levelNames2[j]);
+				}
+			}
+			
+			sd.writeLine();
 			
 			for (int i=0; i<nc; i++){
 				sd.writeDouble(distanceCategories[0][i]);
@@ -468,18 +525,47 @@ public class DisplayGeographicComparison extends DisplayPane implements Property
 				sd.writeDouble(meanScore[i]);
 				sd.writeDouble(confidenceIntervals[0][i]);
 				sd.writeDouble(confidenceIntervals[1][i]);
-				for (int j=0; j<meanScoreByGroup.length; j++){
-					sd.writeDouble(meanScoreByGroup[j][i]);
+				sd.writeDouble(withinCatMeanScore[i]);
+				if (meanScoreByGroup!=null){
+					for (int j=0; j<meanScoreByGroup.length; j++){
+						sd.writeDouble(meanScoreByGroup[j][i]);
+					}
 				}
 				sd.writeLine();
 			}
+			
+			ComparisonResults cr=sg.getScores(ci.getDataType());
+			String[] names=cr.getIndividualNames();
+			
+			sd.writeSheet("withintypes");
+			
+			double[][][] wt=ci.getWithinTypeMatrix();
+			if (wt!=null) {
+				
+			
+				for (int i=0; i<wt.length; i++){
+					for (int j=0; j<wt[i].length; j++){
+						sd.writeInt(i);
+						for (int k=0; k<wt[i][j].length; k++){
+							sd.writeDouble(wt[i][j][k]);
+						}
+						sd.writeString(names[(int)Math.round(wt[i][j][0])]);
+						sd.writeString(names[(int)Math.round(wt[i][j][1])]);			
+						sd.writeLine();
+					}
+				}
+			}
+			
 			sd.writeSheet("repertoires");
 			for (int i=0; i<coordinates.length; i++){
+				sd.writeString(names[i]);
 				sd.writeInt(i+1);
 				sd.writeDouble(coordinates[i][0]);
 				sd.writeDouble(coordinates[i][1]);
-				for (int j=0; j<repertoires[i].length; j++){
-					sd.writeInt(repertoires[i][j]);
+				if (repertoires!=null) {
+					for (int j=0; j<repertoires[i].length; j++){
+						sd.writeInt(repertoires[i][j]);
+					}
 				}
 				sd.writeLine();
 			}

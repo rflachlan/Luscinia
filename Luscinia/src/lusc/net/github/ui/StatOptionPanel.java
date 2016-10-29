@@ -45,13 +45,16 @@ public class StatOptionPanel extends JPanel implements PropertyChangeListener, A
 	JRadioButton snn=new JRadioButton("SNN density clustering", false);
 	JRadioButton affprop=new JRadioButton("Affinity Propagation", false);
 	JRadioButton syntaxCluster=new JRadioButton("Syntactical clustering", true);
-	
+	JRadioButton rhythm=new JRadioButton("Rhythm analysis", true);
+	JRadioButton dev=new JRadioButton("Development", true);
 	
 	JRadioButton element=new JRadioButton("By element", false);
 	JRadioButton syllable=new JRadioButton("By syllable", true);
-	JRadioButton syllableTransition=new JRadioButton("By syllable transition", true);
+	JRadioButton phrase=new JRadioButton("By phrase", true);
+	JRadioButton syllableTransition=new JRadioButton("By phrase transition", true);
 	JRadioButton song=new JRadioButton("By song", false);
 	JRadioButton individual=new JRadioButton("By individual", false);
+	JRadioButton individualDay=new JRadioButton("By individual/time", false);
 	
 	
 	JRadioButton elementCompression=new JRadioButton("Compress element distance", true);
@@ -66,7 +69,7 @@ public class StatOptionPanel extends JPanel implements PropertyChangeListener, A
 	JFormattedTextField songUpperProp, songLowerProp;
 	
 	JButton dendOptionsButton, distDOptionsButton, mdsOptionsButton, hopkinsOptionsButton, mrppOptionsButton, andersonOptionsButton,
-		distFuncOptionsButton, kMedOptionsButton, snnOptionsButton, apOptionsButton, syntOptionsButton, geogOptionsButton;
+		distFuncOptionsButton, kMedOptionsButton, snnOptionsButton, apOptionsButton, syntOptionsButton, geogOptionsButton, rhythmOptionsButton, devOptionsButton;
 	
 	DendrogramOptions dendOptions;
 	DistanceDistributionOptions distDOptions;
@@ -82,8 +85,8 @@ public class StatOptionPanel extends JPanel implements PropertyChangeListener, A
 	GeographicAnalysisPreferences geogOptions;
 	
 	
-	boolean[] analysisTypes=new boolean[13];
-	boolean[] analysisLevels=new boolean[5];
+	boolean[] analysisTypes=new boolean[15];
+	boolean[] analysisLevels=new boolean[6];
 	boolean[] miscOptions=new boolean[7];
 	
 
@@ -191,6 +194,10 @@ public class StatOptionPanel extends JPanel implements PropertyChangeListener, A
 		geogOptionsButton=new JButton("options");
 		geogOptionsButton.addActionListener(this);
 		
+		rhythmOptionsButton=new JButton("options");
+		
+		devOptionsButton=new JButton("options");
+		
 		JPanel optionsettings=new JPanel();
 		optionsettings.setLayout(new GridLayout(0,1));
 		optionsettings.add(matrix);
@@ -256,6 +263,16 @@ public class StatOptionPanel extends JPanel implements PropertyChangeListener, A
 		syntPanel.add(syntOptionsButton, BorderLayout.EAST);
 		optionsettings.add(syntPanel);
 		
+		JPanel rhythmPanel=new JPanel(new BorderLayout());
+		rhythmPanel.add(rhythm, BorderLayout.WEST);
+		rhythmPanel.add(rhythmOptionsButton, BorderLayout.EAST);
+		optionsettings.add(rhythmPanel);
+		
+		JPanel devPanel=new JPanel(new BorderLayout());
+		devPanel.add(dev, BorderLayout.WEST);
+		devPanel.add(devOptionsButton, BorderLayout.EAST);
+		optionsettings.add(devPanel);
+		
 		matrix.setSelected(analysisTypes[0]);
 		distDistribution.setSelected(analysisTypes[1]);
 		upgmaTree.setSelected(analysisTypes[2]);
@@ -269,6 +286,8 @@ public class StatOptionPanel extends JPanel implements PropertyChangeListener, A
 		syntaxCluster.setSelected(analysisTypes[7]);
 		mrpp.setSelected(analysisTypes[11]);
 		affprop.setSelected(analysisTypes[12]);
+		rhythm.setSelected(analysisTypes[13]);
+		dev.setSelected(analysisTypes[14]);
 		
 		JPanel opane=new JPanel();
 		opane.setLayout(new BorderLayout());
@@ -280,8 +299,10 @@ public class StatOptionPanel extends JPanel implements PropertyChangeListener, A
 		hiersettings.add(element);
 		
 		hiersettings.add(syllable);
+		hiersettings.add(phrase);
 		hiersettings.add(syllableTransition);
 		hiersettings.add(song);
+		hiersettings.add(individualDay);
 		hiersettings.add(individual);
 		
 		element.setSelected(analysisLevels[0]);
@@ -290,9 +311,11 @@ public class StatOptionPanel extends JPanel implements PropertyChangeListener, A
 			element.setEnabled(false);
 		}
 		syllable.setSelected(analysisLevels[1]);
-		syllableTransition.setSelected(analysisLevels[2]);
-		song.setSelected(analysisLevels[3]);
-		individual.setSelected(analysisLevels[4]);
+		phrase.setSelected(analysisLevels[2]);
+		syllableTransition.setSelected(analysisLevels[3]);
+		song.setSelected(analysisLevels[4]);
+		individualDay.setSelected(analysisLevels[5]);
+		individual.setSelected(analysisLevels[6]);
 		
 				
 		JPanel variablesPanel=new JPanel(new GridLayout(0,1));
@@ -417,11 +440,15 @@ public class StatOptionPanel extends JPanel implements PropertyChangeListener, A
 		analysisTypes[9]=distfunc.isSelected();
 		analysisTypes[11]=mrpp.isSelected();
 		analysisTypes[12]=affprop.isSelected();
+		analysisTypes[13]=rhythm.isSelected();
+		analysisTypes[14]=dev.isSelected();
 		analysisLevels[0]=element.isSelected();
 		analysisLevels[1]=syllable.isSelected();
-		analysisLevels[2]=syllableTransition.isSelected();
-		analysisLevels[3]=song.isSelected();
-		analysisLevels[4]=individual.isSelected();
+		analysisLevels[2]=phrase.isSelected();
+		analysisLevels[3]=syllableTransition.isSelected();
+		analysisLevels[4]=song.isSelected();
+		analysisLevels[5]=individualDay.isSelected();
+		analysisLevels[6]=individual.isSelected();
 		
 		miscOptions[0]=elementCompression.isSelected();
 		miscOptions[1]=useTransForSong.isSelected();
@@ -551,6 +578,7 @@ public class StatOptionPanel extends JPanel implements PropertyChangeListener, A
 			JOptionPane.showMessageDialog(this, apOptions);
 			apOptions.wrapUp();
 		}
+		defaults.writeProperties();
 	}
 	
 	public void propertyChange(PropertyChangeEvent e) {

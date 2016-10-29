@@ -14,6 +14,9 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTree;
 import javax.swing.tree.*;
+
+import lusc.net.github.Individual;
+
 import javax.swing.event.TreeModelEvent;
 import javax.swing.event.TreeModelListener;
 import javax.swing.event.TreeSelectionEvent;
@@ -35,6 +38,8 @@ public class DatabaseTree extends JPanel {
     protected JTree tree;
     private Toolkit toolkit = Toolkit.getDefaultToolkit();
 	private int indc=0;
+	private int specc=0;
+	private int popc=0;
 	private DatabaseView sc;
 	myNode[] selnode;
 	
@@ -65,7 +70,7 @@ public class DatabaseTree extends JPanel {
 				TreePath[] currentSelection=tree.getSelectionPaths();
 				//TreePath currentSelection = tree.getSelectionPath();
 				if (currentSelection != null) {
-					System.out.println(currentSelection.length);
+					//System.out.println(currentSelection.length);
 					selnode=new myNode[currentSelection.length];
 					for (int i=0; i<currentSelection.length; i++){
 						selnode[i] = (myNode)(currentSelection[i].getLastPathComponent());
@@ -84,7 +89,7 @@ public class DatabaseTree extends JPanel {
 		            if (e.getClickCount() == 2) {
 		                myNode node = (myNode) tree.getLastSelectedPathComponent();
 		                if (node == null) return;
-		                if (node.getLevel()==2){
+		                if (node.song){
 		                	sc.openSpectrogram();
 		                }
 		            }
@@ -137,7 +142,7 @@ public class DatabaseTree extends JPanel {
             myNode target =
                 (myNode)dest.getLastPathComponent();
             //System.out.println("TARGET LEVEL: "+target.getLevel());
-            if (target.getLevel()==0){
+            if ((target.getLevel()==0)||(target.getLevel()==2)){
             	return false;
             }
             
@@ -348,7 +353,9 @@ public class DatabaseTree extends JPanel {
 	
 	public void updateAddButton(){
 		if ((selnode==null)||(selnode[0].getLevel()==0)){
-			sc.addIndButton.setEnabled(true);
+			sc.addPopButton.setEnabled(false);
+			sc.addSpecButton.setEnabled(true);
+			sc.addIndButton.setEnabled(false);
 			sc.addSongButton.setEnabled(false);
 			sc.addRecordingButton.setEnabled(false);
 			sc.removeButton.setEnabled(false);
@@ -357,7 +364,9 @@ public class DatabaseTree extends JPanel {
 			sc.hideInformationPanel();
 		}
 		else{
-			if (selnode[0].getLevel()==1){
+			if (selnode[0].individual){
+				sc.addPopButton.setEnabled(false);
+				sc.addSpecButton.setEnabled(false);
 				sc.addIndButton.setEnabled(false);
 				sc.addSongButton.setEnabled(true);
 				sc.addRecordingButton.setEnabled(true);
@@ -366,7 +375,9 @@ public class DatabaseTree extends JPanel {
 				sc.simpleButton.setEnabled(false);
 				sc.showInformationIndividual();
 			}
-			else{
+			else if (selnode[0].song){
+				sc.addPopButton.setEnabled(false);
+				sc.addSpecButton.setEnabled(false);
 				sc.addIndButton.setEnabled(false);
 				sc.addSongButton.setEnabled(false);
 				sc.addRecordingButton.setEnabled(false);
@@ -375,12 +386,45 @@ public class DatabaseTree extends JPanel {
 				sc.simpleButton.setEnabled(true);
 				sc.showInformationSong();
 			}
+			else if (selnode[0].species){
+				sc.addPopButton.setEnabled(true);
+				sc.addSpecButton.setEnabled(false);
+				sc.addIndButton.setEnabled(false);
+				sc.addSongButton.setEnabled(false);
+				sc.addRecordingButton.setEnabled(false);
+				sc.removeButton.setEnabled(true);
+				sc.sonogramButton.setEnabled(false);
+				sc.simpleButton.setEnabled(false);
+			}
+			else if (selnode[0].population){
+				sc.addPopButton.setEnabled(false);
+				sc.addSpecButton.setEnabled(false);
+				sc.addIndButton.setEnabled(true);
+				sc.addSongButton.setEnabled(false);
+				sc.addRecordingButton.setEnabled(false);
+				sc.removeButton.setEnabled(true);
+				sc.sonogramButton.setEnabled(false);
+				sc.simpleButton.setEnabled(false);
+			}
+			else {
+				sc.addPopButton.setEnabled(false);
+				sc.addSpecButton.setEnabled(true);
+				sc.addIndButton.setEnabled(false);
+				sc.addSongButton.setEnabled(false);
+				sc.addRecordingButton.setEnabled(false);
+				sc.removeButton.setEnabled(false);
+				sc.sonogramButton.setEnabled(false);
+				sc.simpleButton.setEnabled(false);
+			}
 		}
 		//sc.informationPanel.removeAll();
 		//sc.informationPanel.validate();
 		//sc.informationPanel.revalidate();
 		sc.repaint();
 	}
+	
+	
+	
 	
 	
     public void removeCurrentNode() {
@@ -411,12 +455,17 @@ public class DatabaseTree extends JPanel {
 		int a=0;
         if (parentPath == null) {
             parentNode = rootNode;
-			child="New Individual"+indc++;
+			child="New Species"+specc++;
 			a=0;
         } else {
 			a=parentPath.getPathCount()-1;
-			if (a>1){a=1;}
-			if (a==0){
+			if (a==0) {
+				child="New Species"+specc++;
+			}
+			else if (a==1) {
+				child="New Population"+popc++;
+			}
+			else if (a==2) {
 				child="New Individual"+indc++;
 			}
 			else{
@@ -425,8 +474,14 @@ public class DatabaseTree extends JPanel {
 			parentNode = (myNode)(parentPath.getPathComponent(a));
         }
 
-        if (a==0){
-			myNode ch=addObject(parentNode, child, true);
+        if (a==0) {
+        	myNode ch=addObject(parentNode, child, true, "Species");
+        }
+        else if (a==1) {
+        	myNode ch=addObject(parentNode, child, true, "Population");
+        }
+        else if (a==2){
+			myNode ch=addObject(parentNode, child, true, "Individual");
 			sc.addNewIndividual(ch);
 		}
 		else{
@@ -464,9 +519,24 @@ public class DatabaseTree extends JPanel {
 
         return addObject(parentNode, child, true);
     }
+	
 
     public myNode addObject(myNode parent, Object child, boolean shouldBeVisible) {
         myNode childNode = new myNode(child);
+        if (parent == null) {parent = rootNode;}
+        treeModel.insertNodeInto(childNode, parent, parent.getChildCount());
+        return childNode;
+    }
+    
+    public myNode addObject(myNode parent, Object child, boolean shouldBeVisible, String type) {
+        myNode childNode = new myNode(child, type);
+        if (parent == null) {parent = rootNode;}
+        treeModel.insertNodeInto(childNode, parent, parent.getChildCount());
+        return childNode;
+    }
+    
+    public myNode addObject(myNode parent, long date, boolean shouldBeVisible, String type) {
+        myNode childNode = new myNode(date, type);
         if (parent == null) {parent = rootNode;}
         treeModel.insertNodeInto(childNode, parent, parent.getChildCount());
         return childNode;
