@@ -22,7 +22,6 @@ import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.TreeNode;
-import javax.swing.tree.TreePath;
 
 import java.util.*;
 import java.io.*;
@@ -132,7 +131,6 @@ public class DatabaseView extends TabType implements ActionListener {
     	
     	int tr=treePanel.tree.getMinSelectionRow();
     	if (tr>0){tr--;}
-    	//System.out.println("CURRENT ROW "+tr);
     	
     	this.remove(treePanel);
     	treePanel = new DatabaseTree(this, dbc.getDBName());
